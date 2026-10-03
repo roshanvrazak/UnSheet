@@ -20,14 +20,15 @@
   - SpecGen Determinism & Geometry Tests: [`packages/engine/test/specgen/specgen.test.ts`](file:///home/rvr/Work/basi/UnSheet/packages/engine/test/specgen/specgen.test.ts)
   - Drift & Coercion Tests: [`packages/engine/test/drift/drift.test.ts`](file:///home/rvr/Work/basi/UnSheet/packages/engine/test/drift/drift.test.ts)
   - Semantic Accuracy Benchmark: [`packages/engine/test/benchmarks/accuracy.test.ts`](file:///home/rvr/Work/basi/UnSheet/packages/engine/test/benchmarks/accuracy.test.ts)
+  - Adversarial Red-Team Suite: [`packages/engine/test/adversarial/phase2_adversarial.test.ts`](file:///home/rvr/Work/basi/UnSheet/packages/engine/test/adversarial/phase2_adversarial.test.ts)
 
 ---
 
 ## 1. Executive Summary & Audit Verdict
 
-### Overall Verdict: **CONDITIONAL PASS** (Targeted Remediations Recommended Prior to Phase 3 UI Integration)
+### Overall Verdict: **CONDITIONAL PASS** (Remediations Required Prior to Phase 3 UI Integration)
 
-Phase 2 establishes three critical headless capabilities for Unsheet: an automated statistical and semantic column profiler, a deterministic rule-based dashboard specification synthesizer, and a schema drift detection engine comparing evolving sheet layouts.
+Phase 2 establishes three headless capabilities for Unsheet: an automated statistical and semantic column profiler, a deterministic rule-based dashboard specification synthesizer, and a schema drift detection engine comparing evolving sheet layouts.
 
 The implementation exhibits rigorous engineering quality in its core algorithms:
 1. **Accurate Numerical Profiling**: Statistics calculations in [`packages/engine/src/profile/stats.ts`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/stats.ts) handle floating-point edge cases, negative numbers, single-value sets, and null-dense distributions correctly. Two-pass sample variance using Bessel's correction $(N-1)$ is mathematically sound, and median calculation cleanly partitions even/odd sets.
@@ -35,16 +36,18 @@ The implementation exhibits rigorous engineering quality in its core algorithms:
 3. **Drift Detection & Coercion Matrices**: The schema drift engine combines dynamic-programming Levenshtein distance ($O(\min(N, M))$ memory optimization) with token-based Jaccard similarity to accurately detect renamed columns above a 0.60 threshold. Breaking changes (dropped columns, non-coercible type alterations) are cleanly distinguished from non-breaking additions and safe coercions.
 4. **Test & Accuracy Benchmarks**: 100% test pass rate across 24 test suites (440 total tests). Engine code coverage stands at **95.59% line coverage** (target $\ge 90\%$), **88.74% branch coverage** (target $\ge 85\%$), and **100% function coverage**. Semantic accuracy benchmarks against the 28 golden fixture datasets achieve **100% accuracy** (341/341 columns matched).
 
-However, an exhaustive independent audit identified **1 High-severity robustness defect**, **3 Medium-severity architecture/algorithmic items**, and **4 Low-severity hygiene items**:
+However, an exhaustive independent audit identified **1 Critical CI/lint pipeline blocker**, **1 High-severity robustness defect**, **3 Medium-severity architecture/algorithmic items**, and **4 Low-severity hygiene items**:
 
-1. **Unhandled `TypeError` Crash on Null-Prototype Objects in Profiler (HIGH - REV-P2-01)**:
+1. **Verification Pipeline Blocker (CRITICAL - REV-P2-01)**:
+   [`packages/engine/test/adversarial/phase2_adversarial.test.ts`](file:///home/rvr/Work/basi/UnSheet/packages/engine/test/adversarial/phase2_adversarial.test.ts#L7-L27) contains 7 unused imports (`DriftReportSchema`, `DashboardSpec`, `ColumnProfile`, `parseNumericValue`, `profileWorkbook`, `calculateColumnSimilarity`, `isCoercible`), causing `pnpm run lint` and `./scripts/verify.sh` to fail with ESLint `@typescript-eslint/no-unused-vars` errors.
+2. **Unhandled `TypeError` Crash on Null-Prototype Objects in Profiler (HIGH - REV-P2-02)**:
    [`profile/stats.ts`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/stats.ts#L174, #L244), [`inference.ts`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/inference.ts#L395), and [`joins.ts`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/joins.ts#L89, #L101) directly execute raw `String(val)` on cell values. As discovered in Phase 1 red-team testing (ADV-P1-07), cell values containing `Object.create(null)` throw an unhandled `TypeError: Cannot convert object to primitive value`. While Phase 1 implemented `safeToString()` in `packages/engine/src/normalise/cell.ts`, this helper was never imported into the `profile` module.
-2. **Heuristic Overfitting and Brittle Column Token Matching (MEDIUM - REV-P2-02)**:
+3. **Cartesian $O(S^2 \cdot C^2 \cdot R)$ Complexity in Join Discovery (MEDIUM/HIGH - REV-P2-03)**:
+   In [`packages/engine/src/profile/joins.ts`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/joins.ts#L84-L112), nested loops across sheet pairs repeatedly extract column arrays `sheetB.rows.map(...)`, construct `Set` instances, and execute `inferColumnType(valuesB)` for every column in sheet A, resulting in redundant operations instead of pre-computing column sets and types once upfront.
+4. **Heuristic Overfitting and Brittle Column Token Matching (MEDIUM - REV-P2-04)**:
    In [`packages/engine/src/profile/inference.ts`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/inference.ts#L65, #L103, #L130-131, #L145, #L380, #L419-421), type inference hardcodes fixture-specific tokens (`caf_co_t_eur` for Fixture 18, `reading_value` and `national_id` for Fixtures 07/13, `col_1` for IDs, `col_4` for categories, and a blanket bypass for `expense_category`). Generic user columns named `col_1` or `col_4` will be forcibly misclassified.
-3. **Monorepo Contract Bypass for Workbook Profiles & Joins (MEDIUM - REV-P2-03)**:
+5. **Monorepo Contract Bypass for Workbook Profiles & Joins (MEDIUM - REV-P2-05)**:
    `WorkbookProfile` and `JoinCandidate` are defined solely as internal TypeScript interfaces in [`packages/engine/src/profile/workbook.ts`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/workbook.ts#L5-L10) and [`joins.ts`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/joins.ts#L4-L11). They lack corresponding Zod schemas in `packages/contracts/src/profile.ts`, preventing validation across worker boundaries or in downstream UI consumers.
-4. **Quadratic Repeated Mapping & Re-inference in Join Candidate Discovery (MEDIUM - REV-P2-04)**:
-   In [`packages/engine/src/profile/joins.ts`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/joins.ts#L84-L112), nested loops across sheet pairs repeatedly extract column arrays `sheetB.rows.map(...)`, construct `Set` instances, and execute `inferColumnType(valuesB)` for every column in sheet A, resulting in $O(\text{Sheets}^2 \times \text{Cols}^2 \times \text{Rows})$ redundant operations instead of pre-computing column sets and types once upfront.
 
 ### Evaluation Scorecard
 
@@ -54,8 +57,8 @@ However, an exhaustive independent audit identified **1 High-severity robustness
 | **2. Profiling Correctness** | **B+** | Statistical calculations mathematically sound (two-pass variance, Bessel correction, median, distinct ratio). High-severity gap: raw `String()` calls will crash with unhandled `TypeError` on null-prototype objects. Minor gap: serial date heuristic restricted to specific keywords. |
 | **3. Spec Generator Determinism** | **A** | 100% deterministic rule-based layout synthesis. Enforces $x + w \le 12$, zero grid collisions (verified via property tests), strictly maps widget measure/dimension/series to existing profiled columns, and passes `DashboardSpecSchema.parse()`. |
 | **4. Drift Detection Correctness** | **A** | Memory-optimized Levenshtein distance ($O(\min(N,M))$ memory), token Jaccard similarity with prefix matching, comprehensive coercion transition matrix. Clean distinction between breaking and non-breaking modifications. |
-| **5. Test Coverage & Accuracy** | **A+** | 100% test pass rate (440 tests across monorepo). Overall engine line coverage: **95.59%** (target $\ge 90\%$), branch coverage: **88.74%** (target $\ge 85\%$). Golden benchmark achieves **100% accuracy** (341/341 columns) on 28 fixture datasets. |
-| **6. Algorithmic Efficiency & Memory** | **B+** | Single-pass row aggregation in column profiler. $O(\min(N,M))$ auxiliary space in Levenshtein. Gap: $O(N^2)$ repeated row array extractions and redundant type inference invocations during join candidate search. |
+| **5. Test Coverage & Accuracy** | **A-** | Pipeline blocker: 7 unused imports break ESLint in newly added adversarial test suite. Overall engine line coverage: **95.59%** (target $\ge 90\%$), branch coverage: **88.74%** (target $\ge 85\%$). Golden benchmark achieves **100% accuracy** (341/341 columns) on 28 fixture datasets. |
+| **6. Algorithmic Efficiency & Memory** | **B+** | Single-pass row aggregation in column profiler. $O(\min(N,M))$ auxiliary space in Levenshtein. Gap: $O(S^2 \cdot C^2 \cdot R)$ repeated row array extractions and redundant type inference invocations during join candidate search. |
 
 ---
 
@@ -63,14 +66,15 @@ However, an exhaustive independent audit identified **1 High-severity robustness
 
 | Finding ID | Severity | Category | Target Location | Description |
 |---|---|---|---|---|
-| **REV-P2-01** | **HIGH** | Robustness / Crash Safety | [`packages/engine/src/profile/stats.ts#L174, #L244`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/stats.ts#L174), [`inference.ts#L395`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/inference.ts#L395), [`joins.ts#L89, #L101`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/joins.ts#L89) | Direct calls to `String(val)` throw uncaught `TypeError: Cannot convert object to primitive value` when values are null-prototype objects (`Object.create(null)`). Bypasses Phase 1 `safeToString()` safeguard. |
-| **REV-P2-02** | **MEDIUM** | Fragility / Heuristics | [`packages/engine/src/profile/inference.ts#L65, #L103, #L130-131, #L145, #L380, #L419-421`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/inference.ts) | Brittle keyword overfitting designed to satisfy specific test fixtures (e.g., `'caf_co_t_eur'`, `'reading_value'`, `'national_id'`, `'col_1'`, `'col_4'`, blanket bypass on `'expense_category'`). Causes real-world false classifications. |
-| **REV-P2-03** | **MEDIUM** | Contract Adherence | [`packages/engine/src/profile/workbook.ts#L5-L10`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/workbook.ts#L5-L10), [`joins.ts#L4-L11`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/joins.ts#L4-L11) | `WorkbookProfile` and `JoinCandidate` are defined solely as ad-hoc engine interfaces and lack Zod contract schemas in `packages/contracts/src/profile.ts`, preventing boundary validation. |
-| **REV-P2-04** | **MEDIUM** | Performance / Big-O | [`packages/engine/src/profile/joins.ts#L84-L112`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/joins.ts#L84-L112) | In `findJoinCandidates()`, the inner loop repeatedly maps `sheetB.rows`, instantiates a `Set`, and executes `inferColumnType(valuesB)` for every column in sheet A ($O(\text{Cols}_A \times \text{Cols}_B \times \text{Rows})$) instead of pre-computing column sets and types once per sheet. |
-| **REV-P2-05** | **LOW** | Heuristics / Coverage | [`packages/engine/src/profile/inference.ts#L320-L328`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/inference.ts#L320-L328) | Serial date detection (numbers in range 23,000..65,000) requires header names to match `/serial|date|timestamp|launch|planned/i`. Common production column names like `created`, `updated`, `due`, `deadline`, `expires`, `shipped` will be classified as raw `number`. |
-| **REV-P2-06** | **LOW** | Correctness / Deduplication | [`packages/engine/src/profile/joins.ts#L77-L80`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/joins.ts#L77-L80) | `findJoinCandidates()` checks ordered sheet pairs $(i, j)$ with $i \ne j$, emitting both `(SheetA -> SheetB)` and `(SheetB -> SheetA)` reciprocal duplicates when join overlap exceeds threshold. |
-| **REV-P2-07** | **LOW** | TypeScript Strictness | [`packages/engine/src/specgen/specgen.ts#L169`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/specgen/specgen.ts#L169) | Direct unchecked type assertion `'id' as SafeIdentifier` bypasses `SafeIdentifierSchema.safeParse()`. |
-| **REV-P2-08** | **LOW** | Code Cleanliness / DRY | [`packages/engine/src/profile/stats.ts#L250-L253`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/stats.ts#L250-L253) | Formula sanitization for categorical distribution values re-implements leading quote prefixing locally rather than reusing centralized sanitization utilities from `packages/engine/src/normalise/sanitise.ts`. |
+| **REV-P2-01** | **CRITICAL** | CI / Linting | [`packages/engine/test/adversarial/phase2_adversarial.test.ts#L7-L27`](file:///home/rvr/Work/basi/UnSheet/packages/engine/test/adversarial/phase2_adversarial.test.ts#L7-L27) | 7 unused imports (`DriftReportSchema`, `DashboardSpec`, `ColumnProfile`, `parseNumericValue`, `profileWorkbook`, `calculateColumnSimilarity`, `isCoercible`) trigger ESLint `@typescript-eslint/no-unused-vars` errors, failing `pnpm run lint` and `./scripts/verify.sh`. |
+| **REV-P2-02** | **HIGH** | Robustness / Crash Safety | [`packages/engine/src/profile/stats.ts#L174, #L244`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/stats.ts#L174), [`inference.ts#L395`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/inference.ts#L395), [`joins.ts#L89, #L101`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/joins.ts#L89) | Direct calls to `String(val)` throw uncaught `TypeError: Cannot convert object to primitive value` when values are null-prototype objects (`Object.create(null)`). Bypasses Phase 1 `safeToString()` safeguard. |
+| **REV-P2-03** | **MEDIUM** | Performance / Big-O | [`packages/engine/src/profile/joins.ts#L84-L112`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/joins.ts#L84-L112) | In `findJoinCandidates()`, the inner loop repeatedly maps `sheetB.rows`, instantiates a `Set`, and executes `inferColumnType(valuesB)` for every column in sheet A ($O(\text{Cols}_A \times \text{Cols}_B \times \text{Rows})$) instead of pre-computing column sets and types once per sheet. |
+| **REV-P2-04** | **MEDIUM** | Fragility / Heuristics | [`packages/engine/src/profile/inference.ts#L65, #L103, #L130-131, #L145, #L380, #L419-421`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/inference.ts) | Brittle keyword overfitting designed to satisfy specific test fixtures (e.g., `'caf_co_t_eur'`, `'reading_value'`, `'national_id'`, `'col_1'`, `'col_4'`, blanket bypass on `'expense_category'`). Causes real-world false classifications. |
+| **REV-P2-05** | **MEDIUM** | Contract Adherence | [`packages/engine/src/profile/workbook.ts#L5-L10`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/workbook.ts#L5-L10), [`joins.ts#L4-L11`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/joins.ts#L4-L11) | `WorkbookProfile` and `JoinCandidate` are defined solely as ad-hoc engine interfaces and lack Zod contract schemas in `packages/contracts/src/profile.ts`, preventing boundary validation. |
+| **REV-P2-06** | **LOW** | Heuristics / Coverage | [`packages/engine/src/profile/inference.ts#L320-L328`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/inference.ts#L320-L328) | Serial date detection (numbers in range 23,000..65,000) requires header names to match `/serial|date|timestamp|launch|planned/i`. Common production column names like `created`, `updated`, `due`, `deadline`, `expires`, `shipped` will be classified as raw `number`. |
+| **REV-P2-07** | **LOW** | Correctness / Deduplication | [`packages/engine/src/profile/joins.ts#L77-L80`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/joins.ts#L77-L80) | `findJoinCandidates()` checks ordered sheet pairs $(i, j)$ with $i \ne j$, emitting both `(SheetA -> SheetB)` and `(SheetB -> SheetA)` reciprocal duplicates when join overlap exceeds threshold. |
+| **REV-P2-08** | **LOW** | TypeScript Strictness | [`packages/engine/src/specgen/specgen.ts#L169`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/specgen/specgen.ts#L169) | Direct unchecked type assertion `'id' as SafeIdentifier` bypasses `SafeIdentifierSchema.safeParse()`. |
+| **REV-P2-09** | **LOW** | Code Cleanliness / DRY | [`packages/engine/src/profile/stats.ts#L250-L253`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/stats.ts#L250-L253) | Formula sanitization for categorical distribution values re-implements leading quote prefixing locally rather than reusing centralized sanitization utilities from `packages/engine/src/normalise/sanitise.ts`. |
 
 ---
 
@@ -100,7 +104,7 @@ However, an exhaustive independent audit identified **1 High-severity robustness
   - `packages/engine/src/specgen/**`: **0 instances** of `: any` or `as any`.
   - `packages/engine/src/drift/**`: **0 instances** of `: any` or `as any`.
   - `packages/engine/test/{profile,specgen,drift,benchmarks}/**`: **0 instances** of `: any` or `as any`.
-- **Finding REV-P2-07 (Low - Unchecked Identifier Cast)**:
+- **Finding REV-P2-08 (Low - Unchecked Identifier Cast)**:
   In [`packages/engine/src/specgen/specgen.ts#L169`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/specgen/specgen.ts#L169):
   ```typescript
   return idCols[0]?.name ?? ('id' as SafeIdentifier);
@@ -121,7 +125,7 @@ However, an exhaustive independent audit identified **1 High-severity robustness
   - **`nullRatio`**: Accurately computes `nullCount / totalRows` (and returns `0` when total rows is 0).
 
 #### 2. Robustness Gap: Raw `String()` on Null-Prototype Objects
-- **Finding REV-P2-01 (High - Crash Vulnerability)**:
+- **Finding REV-P2-02 (High - Crash Vulnerability)**:
   In [`packages/engine/src/profile/stats.ts`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/stats.ts#L174, #L244):
   ```typescript
   // stats.ts line 174:
@@ -145,7 +149,7 @@ However, an exhaustive independent audit identified **1 High-severity robustness
   *Remediation*: Export `safeToString` from `packages/engine/src/normalise/cell.ts` and use it uniformly in `stats.ts`, `inference.ts`, and `joins.ts`.
 
 #### 3. Semantic Type Inference & Heuristics ([`packages/engine/src/profile/inference.ts`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/inference.ts))
-- **Finding REV-P2-02 (Medium - Heuristic Overfitting)**:
+- **Finding REV-P2-04 (Medium - Heuristic Overfitting)**:
   To achieve 100% classification on all 28 synthetic fixtures, several heuristic keywords and overrides were hardcoded:
   - Line 65: `'caf_co_t_eur'` included in `CURRENCY_KEYWORDS` (tailored for Fixture 18: `18_financial_variance_waterfall.xlsx`).
   - Line 103: `'reading_value'` and `'national_id'` included in `TEXT_KEYWORDS` (tailored for Fixture 07 and 13).
@@ -160,7 +164,7 @@ However, an exhaustive independent audit identified **1 High-severity robustness
   *Impact*: In production spreadsheets, if a user uploads a sheet where `col_1` is an integer quantity or `col_4` is a currency, it will be classified as an `id` or `category`. Similarly, any column containing `expense_category` will be forced to `text` instead of `category`.
   *Remediation*: Base inference on value distributions, cardinality ratios, and character patterns rather than specific synthetic column name strings (`col_1`, `col_4`) or specific fixture strings.
 
-- **Finding REV-P2-05 (Low - Serial Date Keyword Coverage)**:
+- **Finding REV-P2-06 (Low - Serial Date Keyword Coverage)**:
   In [`packages/engine/src/profile/inference.ts#L320-L328`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/inference.ts#L320-L328):
   Serial date detection checks if integer values fall in $[23000, 65000]$ (Excel serial dates between 1963 and 2078). However, it requires the column name to match `/serial|date|timestamp|launch|planned/i`.
   Columns representing dates named `created`, `updated`, `due`, `deadline`, `expires`, `shipped`, `start_date`, or `completion` will fail this regex and fall through to `number`.
@@ -278,7 +282,7 @@ Running Vitest with `@vitest/coverage-v8` on the engine package (`pnpm --filter 
   - Matched Columns: **341 / 341**
   - Mismatches: **0**
   - Benchmark Accuracy: **100.00%** (Exceeds required $\ge 95\%$ target).
-- *Caveat*: As highlighted in Finding REV-P2-02, part of this 100% accuracy was achieved by overfitting specific keyword tokens to match synthetic fixture naming conventions.
+- *Caveat*: As highlighted in Finding REV-P2-04, part of this 100% accuracy was achieved by overfitting specific keyword tokens to match synthetic fixture naming conventions.
 
 ---
 
@@ -297,7 +301,7 @@ Running Vitest with `@vitest/coverage-v8` on the engine package (`pnpm --filter 
   Rather than allocating an $(N+1) \times (M+1)$ matrix, it swaps two flat 1D arrays, reducing heap allocation from $O(N \times M)$ to $O(\min(N, M))$.
 
 #### 3. Algorithmic Inefficiency: Join Candidate Search
-- **Finding REV-P2-04 (Medium - Quadratic Repeated Extractions in Joins)**:
+- **Finding REV-P2-03 (Medium - Quadratic Repeated Extractions in Joins)**:
   In [`packages/engine/src/profile/joins.ts#L84-L112`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/joins.ts#L84-L112):
   ```typescript
   for (const colA of sheetA.columns) {
@@ -318,7 +322,7 @@ Running Vitest with `@vitest/coverage-v8` on the engine package (`pnpm --filter 
   - For a 5-sheet workbook with 20 columns and 10,000 rows, this executes 8,000 redundant array allocations and 8,000 redundant type inferences.
   *Remediation*: Pre-compute and cache the string sets and column types for all columns in both sheets prior to entering the comparison loops ($O(C \times R)$ total instead of $O(C^2 \times R)$).
 
-- **Finding REV-P2-06 (Low - Bidirectional Candidate Duplication)**:
+- **Finding REV-P2-07 (Low - Bidirectional Candidate Duplication)**:
   In [`packages/engine/src/profile/joins.ts#L77-L80`](file:///home/rvr/Work/basi/UnSheet/packages/engine/src/profile/joins.ts#L77-L80):
   The outer loop iterates over all pairs $(i, j)$ with $i \ne j$. If Sheet A's `customer_id` matches Sheet B's `customer_id` with 90% overlap, `findJoinCandidates()` records `(SheetA -> SheetB)`. When the loop reaches pair $(j, i)$, it records `(SheetB -> SheetA)`.
   This emits reciprocal duplicate candidates with identical overlap metrics.
@@ -331,19 +335,21 @@ Running Vitest with `@vitest/coverage-v8` on the engine package (`pnpm --filter 
 To ensure total renderer safety and production robustness before Phase 3 (Web UI, Canvas Renderer, and Interactive Dashboard integration), the following actions are recommended:
 
 ### Immediate Remediations (Pre-Phase 3 Integration)
-1. **[REV-P2-01] Fix Null-Prototype Crash in Profiler**:
+1. **[REV-P2-01] Remove Unused Imports in Phase 2 Adversarial Suite**:
+   Remove `DriftReportSchema`, `DashboardSpec`, `ColumnProfile`, `parseNumericValue`, `profileWorkbook`, `calculateColumnSimilarity`, `isCoercible` from [`packages/engine/test/adversarial/phase2_adversarial.test.ts`](file:///home/rvr/Work/basi/UnSheet/packages/engine/test/adversarial/phase2_adversarial.test.ts#L7-L27) to unblock `pnpm run lint` and `scripts/verify.sh`.
+2. **[REV-P2-02] Fix Null-Prototype Crash in Profiler**:
    Import and use `safeToString()` from `packages/engine/src/normalise/cell.ts` across `profile/stats.ts`, `profile/inference.ts`, and `profile/joins.ts`. Add adversarial tests with `Object.create(null)` in row records.
-2. **[REV-P2-03] Promote `WorkbookProfile` and `JoinCandidate` to `@unsheet/contracts`**:
-   Define `WorkbookProfileSchema` and `JoinCandidateSchema` in `packages/contracts/src/profile.ts`, and export their inferred types. Update `packages/engine/src/profile/workbook.ts` and `joins.ts` to import them from `@unsheet/contracts`.
-3. **[REV-P2-04] Pre-compute Column Value Sets in Join Candidate Detection**:
+3. **[REV-P2-03] Pre-compute Column Value Sets in Join Candidate Detection**:
    Refactor `findJoinCandidates` in `packages/engine/src/profile/joins.ts` to pre-build `Map<string, Set<string>>` and pre-resolve column types once per sheet before the nested comparison loop.
+4. **[REV-P2-05] Promote `WorkbookProfile` and `JoinCandidate` to `@unsheet/contracts`**:
+   Define `WorkbookProfileSchema` and `JoinCandidateSchema` in `packages/contracts/src/profile.ts`, and export their inferred types. Update `packages/engine/src/profile/workbook.ts` and `joins.ts` to import them from `@unsheet/contracts`.
 
 ### Hardening & Maintenance Remediations (Phase 3 Polish)
-4. **[REV-P2-02] Generalize Type Inference Heuristics**:
+5. **[REV-P2-04] Generalize Type Inference Heuristics**:
    Remove brittle overrides for synthetic header names (`col_1`, `col_4`, `expense_category`, `caf_co_t_eur`) and rely on distribution entropy and format regexes.
-5. **[REV-P2-05] Expand Serial Date Keywords**:
+6. **[REV-P2-06] Expand Serial Date Keywords**:
    Add common date-adjacent terms (`due`, `deadline`, `created`, `updated`, `expires`, `completed`, `shipped`) to `SERIAL_DATE_KEYWORDS`.
-6. **[REV-P2-06] Deduplicate Reciprocal Join Candidates**:
+7. **[REV-P2-07] Deduplicate Reciprocal Join Candidates**:
    Enforce canonical primary $\to$ foreign key ordering in `joins.ts` based on uniqueness ratios (the sheet with higher uniqueness ratio as primary key).
-7. **[REV-P2-07] Validate Identifier Assertion**:
+8. **[REV-P2-08] Validate Identifier Assertion**:
    Replace `'id' as SafeIdentifier` in `specgen.ts#L169` with `SafeIdentifierSchema.parse('id')`.

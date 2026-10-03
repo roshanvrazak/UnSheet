@@ -1,0 +1,34 @@
+title = "gitleaks config for unsheet"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Global allowlist"
+paths = [
+  '''node_modules''',
+  '''\.pnpm-store''',
+  '''pnpm-lock\.yaml''',
+  '''\.git'''
+]
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key"
+regex = '''(?i)(?:key|api|secret|token|password|auth)[_-]?(?:key|token|secret)?\s*[:=]\s*["']([A-Za-z0-9_\-\.]{16,64})["']'''
+secretGroup = 1
+keywords = [
+  "key",
+  "api",
+  "secret",
+  "token",
+  "password"
+]
+
+[[rules]]
+id = "private-key"
+description = "Private Key"
+regex = '''-----BEGIN (?:RSA|OPENSSH|DSA|EC|PGP)? PRIVATE KEY-----'''
+keywords = [
+  "-----BEGIN"
+]

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "files": [],
+  "references": [
+    { "path": "./packages/contracts" },
+    { "path": "./packages/engine" },
+    { "path": "./packages/fixtures" },
+    { "path": "./apps/web" }
+  ]
+}

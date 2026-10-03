@@ -1,0 +1,80 @@
+{
+  "fixtureId": "22_csv_delimiters",
+  "fixtureNumber": 22,
+  "filename": "22_csv_delimiters.csv",
+  "format": "csv",
+  "description": "European CSV delimited with semicolons (;)",
+  "sheets": [
+    {
+      "sheetName": "Sheet1",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "employee_id",
+          "full_name",
+          "department",
+          "annual_salary",
+          "hire_date"
+        ],
+        "sanitizedKeys": [
+          "employee_id",
+          "full_name",
+          "department",
+          "annual_salary",
+          "hire_date"
+        ]
+      },
+      "inferredTypes": {
+        "employee_id": "id",
+        "full_name": "text",
+        "department": "category",
+        "annual_salary": "currency",
+        "hire_date": "date"
+      },
+      "rowCount": 5,
+      "columnCount": 5,
+      "rows": [
+        {
+          "employee_id": "E-101",
+          "full_name": "Greta Thunberg",
+          "department": "Sustainability",
+          "annual_salary": 92000,
+          "hire_date": "2021-04-01"
+        },
+        {
+          "employee_id": "E-102",
+          "full_name": "Lukas Meyer",
+          "department": "Engineering",
+          "annual_salary": 108000,
+          "hire_date": "2020-08-15"
+        },
+        {
+          "employee_id": "E-103",
+          "full_name": "Astrid Lind",
+          "department": "Marketing",
+          "annual_salary": 85000,
+          "hire_date": "2022-02-10"
+        },
+        {
+          "employee_id": "E-104",
+          "full_name": "Nils Holgersson",
+          "department": "Logistics",
+          "annual_salary": 79000,
+          "hire_date": "2019-11-01"
+        },
+        {
+          "employee_id": "E-105",
+          "full_name": "Karin Boye",
+          "department": "Human Resources",
+          "annual_salary": 88000,
+          "hire_date": "2023-01-20"
+        }
+      ],
+      "metadata": {
+        "primaryKey": "employee_id",
+        "delimiter": ";"
+      }
+    }
+  ]
+}

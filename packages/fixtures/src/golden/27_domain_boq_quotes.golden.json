@@ -1,0 +1,386 @@
+{
+  "fixtureId": "27_domain_boq_quotes",
+  "fixtureNumber": 27,
+  "filename": "27_domain_boq_quotes.xlsx",
+  "format": "xlsx",
+  "description": "Detailed Bill of Quantities (BOQ) with construction trades, line-item rates, quantities, and vendor specs",
+  "sheets": [
+    {
+      "sheetName": "Bill_of_Quantities",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "Item Ref",
+          "Trade Section",
+          "Description",
+          "Unit of Measure",
+          "Tender Qty",
+          "Unit Rate USD",
+          "Total Cost USD",
+          "Lead Time Weeks",
+          "Preferred Vendor"
+        ],
+        "sanitizedKeys": [
+          "item_ref",
+          "trade_section",
+          "description",
+          "unit_of_measure",
+          "tender_qty",
+          "unit_rate_usd",
+          "total_cost_usd",
+          "lead_time_weeks",
+          "preferred_vendor"
+        ]
+      },
+      "inferredTypes": {
+        "item_ref": "id",
+        "trade_section": "category",
+        "description": "text",
+        "unit_of_measure": "category",
+        "tender_qty": "number",
+        "unit_rate_usd": "currency",
+        "total_cost_usd": "currency",
+        "lead_time_weeks": "number",
+        "preferred_vendor": "text"
+      },
+      "rowCount": 30,
+      "columnCount": 9,
+      "rows": [
+        {
+          "item_ref": "BOQ-01.01",
+          "trade_section": "Earthworks",
+          "description": "Site clearance and bulk soil excavation",
+          "unit_of_measure": "m3",
+          "tender_qty": 4500,
+          "unit_rate_usd": 32.5,
+          "total_cost_usd": 146250,
+          "lead_time_weeks": 3,
+          "preferred_vendor": "Titan Terraforming"
+        },
+        {
+          "item_ref": "BOQ-01.02",
+          "trade_section": "Earthworks",
+          "description": "Compacted granular structural fill (300mm layers)",
+          "unit_of_measure": "m3",
+          "tender_qty": 2800,
+          "unit_rate_usd": 48,
+          "total_cost_usd": 134400,
+          "lead_time_weeks": 2,
+          "preferred_vendor": "Titan Terraforming"
+        },
+        {
+          "item_ref": "BOQ-01.03",
+          "trade_section": "Earthworks",
+          "description": "Deep foundation drilling and soil stabilization",
+          "unit_of_measure": "m",
+          "tender_qty": 640,
+          "unit_rate_usd": 115,
+          "total_cost_usd": 73600,
+          "lead_time_weeks": 4,
+          "preferred_vendor": "Apex Groundworks"
+        },
+        {
+          "item_ref": "BOQ-02.01",
+          "trade_section": "Concrete",
+          "description": "Reinforced concrete foundation pad C35/45",
+          "unit_of_measure": "m3",
+          "tender_qty": 1200,
+          "unit_rate_usd": 285,
+          "total_cost_usd": 342000,
+          "lead_time_weeks": 3,
+          "preferred_vendor": "Holcim Premix Corp"
+        },
+        {
+          "item_ref": "BOQ-02.02",
+          "trade_section": "Concrete",
+          "description": "High-tensile deformed rebar steel (Grade 500)",
+          "unit_of_measure": "tonnes",
+          "tender_qty": 165,
+          "unit_rate_usd": 1250,
+          "total_cost_usd": 206250,
+          "lead_time_weeks": 5,
+          "preferred_vendor": "ArcelorMittal Distribution"
+        },
+        {
+          "item_ref": "BOQ-02.03",
+          "trade_section": "Concrete",
+          "description": "Post-tensioned suspended floor slabs (250mm)",
+          "unit_of_measure": "m2",
+          "tender_qty": 3200,
+          "unit_rate_usd": 95,
+          "total_cost_usd": 304000,
+          "lead_time_weeks": 4,
+          "preferred_vendor": "Holcim Premix Corp"
+        },
+        {
+          "item_ref": "BOQ-02.04",
+          "trade_section": "Concrete",
+          "description": "Architectural exposed aggregate precast panels",
+          "unit_of_measure": "m2",
+          "tender_qty": 850,
+          "unit_rate_usd": 165,
+          "total_cost_usd": 140250,
+          "lead_time_weeks": 8,
+          "preferred_vendor": "Permasteelisa Group"
+        },
+        {
+          "item_ref": "BOQ-03.01",
+          "trade_section": "Structural Steel",
+          "description": "Hot-rolled wide flange steel columns W14x90",
+          "unit_of_measure": "tonnes",
+          "tender_qty": 110,
+          "unit_rate_usd": 2400,
+          "total_cost_usd": 264000,
+          "lead_time_weeks": 6,
+          "preferred_vendor": "Vulcan Steelworks"
+        },
+        {
+          "item_ref": "BOQ-03.02",
+          "trade_section": "Structural Steel",
+          "description": "Heavy structural roof trusses span 24m",
+          "unit_of_measure": "nr",
+          "tender_qty": 18,
+          "unit_rate_usd": 14500,
+          "total_cost_usd": 261000,
+          "lead_time_weeks": 8,
+          "preferred_vendor": "Vulcan Steelworks"
+        },
+        {
+          "item_ref": "BOQ-03.03",
+          "trade_section": "Structural Steel",
+          "description": "Galvanized cold-formed Z-purlins 200mm",
+          "unit_of_measure": "m",
+          "tender_qty": 3400,
+          "unit_rate_usd": 22,
+          "total_cost_usd": 74800,
+          "lead_time_weeks": 3,
+          "preferred_vendor": "Lindab Building Systems"
+        },
+        {
+          "item_ref": "BOQ-03.04",
+          "trade_section": "Structural Steel",
+          "description": "Exterior perimeter seismic brace assemblies",
+          "unit_of_measure": "sets",
+          "tender_qty": 24,
+          "unit_rate_usd": 6200,
+          "total_cost_usd": 148800,
+          "lead_time_weeks": 7,
+          "preferred_vendor": "Nippon Steel Fabrication"
+        },
+        {
+          "item_ref": "BOQ-04.01",
+          "trade_section": "Thermal Envelope",
+          "description": "Mineral wool core insulated composite sandwich panel",
+          "unit_of_measure": "m2",
+          "tender_qty": 4800,
+          "unit_rate_usd": 72,
+          "total_cost_usd": 345600,
+          "lead_time_weeks": 6,
+          "preferred_vendor": "Kingspan Insulated Panels"
+        },
+        {
+          "item_ref": "BOQ-04.02",
+          "trade_section": "Thermal Envelope",
+          "description": "Double-glazed argon-filled curtain wall glazing",
+          "unit_of_measure": "m2",
+          "tender_qty": 1250,
+          "unit_rate_usd": 420,
+          "total_cost_usd": 525000,
+          "lead_time_weeks": 10,
+          "preferred_vendor": "Schüco International"
+        },
+        {
+          "item_ref": "BOQ-04.03",
+          "trade_section": "Thermal Envelope",
+          "description": "TPO single-ply reflective commercial roof membrane",
+          "unit_of_measure": "m2",
+          "tender_qty": 4200,
+          "unit_rate_usd": 45,
+          "total_cost_usd": 189000,
+          "lead_time_weeks": 4,
+          "preferred_vendor": "Carlisle SynTec Systems"
+        },
+        {
+          "item_ref": "BOQ-05.01",
+          "trade_section": "HVAC Mechanical",
+          "description": "Variable refrigerant flow (VRF) rooftop condenser units",
+          "unit_of_measure": "nr",
+          "tender_qty": 6,
+          "unit_rate_usd": 38500,
+          "total_cost_usd": 231000,
+          "lead_time_weeks": 12,
+          "preferred_vendor": "Daikin Applied"
+        },
+        {
+          "item_ref": "BOQ-05.02",
+          "trade_section": "HVAC Mechanical",
+          "description": "Double-wall galvanized spiral ventilation ducting",
+          "unit_of_measure": "m",
+          "tender_qty": 1850,
+          "unit_rate_usd": 65,
+          "total_cost_usd": 120250,
+          "lead_time_weeks": 5,
+          "preferred_vendor": "Lindab Building Systems"
+        },
+        {
+          "item_ref": "BOQ-05.03",
+          "trade_section": "HVAC Mechanical",
+          "description": "High-efficiency energy recovery ventilation wheels",
+          "unit_of_measure": "nr",
+          "tender_qty": 4,
+          "unit_rate_usd": 18200,
+          "total_cost_usd": 72800,
+          "lead_time_weeks": 8,
+          "preferred_vendor": "Systemair Global"
+        },
+        {
+          "item_ref": "BOQ-06.01",
+          "trade_section": "Electrical & Low Voltage",
+          "description": "1500kVA cast resin step-down power transformer",
+          "unit_of_measure": "nr",
+          "tender_qty": 2,
+          "unit_rate_usd": 62000,
+          "total_cost_usd": 124000,
+          "lead_time_weeks": 16,
+          "preferred_vendor": "Schneider Electric"
+        },
+        {
+          "item_ref": "BOQ-06.02",
+          "trade_section": "Electrical & Low Voltage",
+          "description": "Main low voltage distribution switchboard 3200A",
+          "unit_of_measure": "nr",
+          "tender_qty": 1,
+          "unit_rate_usd": 145000,
+          "total_cost_usd": 145000,
+          "lead_time_weeks": 14,
+          "preferred_vendor": "ABB Power Solutions"
+        },
+        {
+          "item_ref": "BOQ-06.03",
+          "trade_section": "Electrical & Low Voltage",
+          "description": "Continuous perforated aluminum cable tray 300mm",
+          "unit_of_measure": "m",
+          "tender_qty": 2200,
+          "unit_rate_usd": 38,
+          "total_cost_usd": 83600,
+          "lead_time_weeks": 3,
+          "preferred_vendor": "OBO Bettermann"
+        },
+        {
+          "item_ref": "BOQ-06.04",
+          "trade_section": "Electrical & Low Voltage",
+          "description": "Category 6A shielded structured data cabling",
+          "unit_of_measure": "m",
+          "tender_qty": 14500,
+          "unit_rate_usd": 4.2,
+          "total_cost_usd": 60900,
+          "lead_time_weeks": 2,
+          "preferred_vendor": "Belden Cable Solutions"
+        },
+        {
+          "item_ref": "BOQ-07.01",
+          "trade_section": "Fire Protection",
+          "description": "Pre-action dry pipe automatic fire sprinkler grid",
+          "unit_of_measure": "points",
+          "tender_qty": 850,
+          "unit_rate_usd": 95,
+          "total_cost_usd": 80750,
+          "lead_time_weeks": 6,
+          "preferred_vendor": "Viking Sprinkler Corp"
+        },
+        {
+          "item_ref": "BOQ-07.02",
+          "trade_section": "Fire Protection",
+          "description": "Diesel-driven centrifugal multistage fire pump skid",
+          "unit_of_measure": "nr",
+          "tender_qty": 1,
+          "unit_rate_usd": 88000,
+          "total_cost_usd": 88000,
+          "lead_time_weeks": 14,
+          "preferred_vendor": "Grundfos Industrial"
+        },
+        {
+          "item_ref": "BOQ-08.01",
+          "trade_section": "Interior Architecture",
+          "description": "Heavy-duty chemical resistant self-leveling epoxy flooring",
+          "unit_of_measure": "m2",
+          "tender_qty": 3600,
+          "unit_rate_usd": 55,
+          "total_cost_usd": 198000,
+          "lead_time_weeks": 3,
+          "preferred_vendor": "Sika Building Systems"
+        },
+        {
+          "item_ref": "BOQ-08.02",
+          "trade_section": "Interior Architecture",
+          "description": "Demountable acoustic glazed modular office partitions",
+          "unit_of_measure": "m",
+          "tender_qty": 320,
+          "unit_rate_usd": 380,
+          "total_cost_usd": 121600,
+          "lead_time_weeks": 5,
+          "preferred_vendor": "Maars Living Walls"
+        },
+        {
+          "item_ref": "BOQ-08.03",
+          "trade_section": "Interior Architecture",
+          "description": "Suspended micro-perforated acoustic ceiling baffle tiles",
+          "unit_of_measure": "m2",
+          "tender_qty": 2800,
+          "unit_rate_usd": 48,
+          "total_cost_usd": 134400,
+          "lead_time_weeks": 4,
+          "preferred_vendor": "Armstrong World Industries"
+        },
+        {
+          "item_ref": "BOQ-09.01",
+          "trade_section": "Civil & Paving",
+          "description": "Heavy-duty asphalt paving for articulated logistics apron",
+          "unit_of_measure": "m2",
+          "tender_qty": 5200,
+          "unit_rate_usd": 42,
+          "total_cost_usd": 218400,
+          "lead_time_weeks": 3,
+          "preferred_vendor": "Hanson Paving Group"
+        },
+        {
+          "item_ref": "BOQ-09.02",
+          "trade_section": "Civil & Paving",
+          "description": "Stormwater attenuation detention modular tank 400m3",
+          "unit_of_measure": "nr",
+          "tender_qty": 1,
+          "unit_rate_usd": 95000,
+          "total_cost_usd": 95000,
+          "lead_time_weeks": 6,
+          "preferred_vendor": "Wavin Water Management"
+        },
+        {
+          "item_ref": "BOQ-09.03",
+          "trade_section": "Civil & Paving",
+          "description": "High-security anti-climb welded wire perimeter fence",
+          "unit_of_measure": "m",
+          "tender_qty": 1400,
+          "unit_rate_usd": 75,
+          "total_cost_usd": 105000,
+          "lead_time_weeks": 4,
+          "preferred_vendor": "Betafence Systems"
+        },
+        {
+          "item_ref": "BOQ-10.01",
+          "trade_section": "Specialist Equipment",
+          "description": "Electric overhead bridge crane capacity 15 tonnes",
+          "unit_of_measure": "nr",
+          "tender_qty": 2,
+          "unit_rate_usd": 78000,
+          "total_cost_usd": 156000,
+          "lead_time_weeks": 18,
+          "preferred_vendor": "Konecranes Heavy Logistics"
+        }
+      ],
+      "metadata": {
+        "primaryKey": "item_ref"
+      }
+    }
+  ]
+}

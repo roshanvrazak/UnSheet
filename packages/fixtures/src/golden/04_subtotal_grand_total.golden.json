@@ -1,0 +1,97 @@
+{
+  "fixtureId": "04_subtotal_grand_total",
+  "fixtureNumber": 4,
+  "filename": "04_subtotal_grand_total.xlsx",
+  "format": "xlsx",
+  "description": "Interleaved subtotal and grand total rows stripped during normalisation to isolate genuine records",
+  "sheets": [
+    {
+      "sheetName": "Department_Expenses",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "Department",
+          "Expense Category",
+          "Budget",
+          "Actual",
+          "Variance"
+        ],
+        "sanitizedKeys": [
+          "department",
+          "expense_category",
+          "budget",
+          "actual",
+          "variance"
+        ]
+      },
+      "inferredTypes": {
+        "department": "category",
+        "expense_category": "text",
+        "budget": "currency",
+        "actual": "currency",
+        "variance": "currency"
+      },
+      "rowCount": 8,
+      "columnCount": 5,
+      "rows": [
+        {
+          "department": "Engineering",
+          "expense_category": "Cloud Infrastructure",
+          "budget": 60000,
+          "actual": 58200,
+          "variance": 1800
+        },
+        {
+          "department": "Engineering",
+          "expense_category": "Hardware & Peripherals",
+          "budget": 25000,
+          "actual": 27400,
+          "variance": -2400
+        },
+        {
+          "department": "Engineering",
+          "expense_category": "SaaS Subscriptions",
+          "budget": 15000,
+          "actual": 14500,
+          "variance": 500
+        },
+        {
+          "department": "Marketing",
+          "expense_category": "Paid Digital Ads",
+          "budget": 45000,
+          "actual": 48000,
+          "variance": -3000
+        },
+        {
+          "department": "Marketing",
+          "expense_category": "Conferences & Sponsorships",
+          "budget": 30000,
+          "actual": 26500,
+          "variance": 3500
+        },
+        {
+          "department": "Marketing",
+          "expense_category": "Design Agency Retainers",
+          "budget": 20000,
+          "actual": 19800,
+          "variance": 200
+        },
+        {
+          "department": "Operations",
+          "expense_category": "Office Facilities",
+          "budget": 35000,
+          "actual": 34200,
+          "variance": 800
+        },
+        {
+          "department": "Operations",
+          "expense_category": "Logistics & Courier",
+          "budget": 12000,
+          "actual": 13100,
+          "variance": -1100
+        }
+      ]
+    }
+  ]
+}

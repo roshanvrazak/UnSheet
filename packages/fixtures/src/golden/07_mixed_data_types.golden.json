@@ -1,0 +1,114 @@
+{
+  "fixtureId": "07_mixed_data_types",
+  "fixtureNumber": 7,
+  "filename": "07_mixed_data_types.xlsx",
+  "format": "xlsx",
+  "description": "Column with mixed data types (numbers, booleans, string codes, thresholds) classified safely as text",
+  "sheets": [
+    {
+      "sheetName": "Telemetry_Log",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "Record ID",
+          "Sensor Name",
+          "Reading Value",
+          "Unit",
+          "Quality Flag"
+        ],
+        "sanitizedKeys": [
+          "record_id",
+          "sensor_name",
+          "reading_value",
+          "unit",
+          "quality_flag"
+        ]
+      },
+      "inferredTypes": {
+        "record_id": "id",
+        "sensor_name": "text",
+        "reading_value": "text",
+        "unit": "category",
+        "quality_flag": "category"
+      },
+      "rowCount": 10,
+      "columnCount": 5,
+      "rows": [
+        {
+          "record_id": "REC-001",
+          "sensor_name": "Thermal Sensor A",
+          "reading_value": 42.5,
+          "unit": "Celsius",
+          "quality_flag": "Valid"
+        },
+        {
+          "record_id": "REC-002",
+          "sensor_name": "Pressure Sensor B",
+          "reading_value": "OFFLINE",
+          "unit": "PSI",
+          "quality_flag": "Sensor Fault"
+        },
+        {
+          "record_id": "REC-003",
+          "sensor_name": "Flow Meter C",
+          "reading_value": 18.2,
+          "unit": "L/min",
+          "quality_flag": "Valid"
+        },
+        {
+          "record_id": "REC-004",
+          "sensor_name": "Particulate Counter D",
+          "reading_value": "< 0.01",
+          "unit": "ppm",
+          "quality_flag": "Below Threshold"
+        },
+        {
+          "record_id": "REC-005",
+          "sensor_name": "Vibration Monitor E",
+          "reading_value": false,
+          "unit": "mm/s",
+          "quality_flag": "Zero Signal"
+        },
+        {
+          "record_id": "REC-006",
+          "sensor_name": "Humidity Sensor F",
+          "reading_value": "ERR_TIMEOUT",
+          "unit": "%RH",
+          "quality_flag": "Comm Error"
+        },
+        {
+          "record_id": "REC-007",
+          "sensor_name": "Voltage Monitor G",
+          "reading_value": 99,
+          "unit": "Volts",
+          "quality_flag": "Valid"
+        },
+        {
+          "record_id": "REC-008",
+          "sensor_name": "Radiation Detector H",
+          "reading_value": "N/A",
+          "unit": "uSv/h",
+          "quality_flag": "Not Applicable"
+        },
+        {
+          "record_id": "REC-009",
+          "sensor_name": "Calendar Clock I",
+          "reading_value": "2024-01-01",
+          "unit": "Timestamp",
+          "quality_flag": "Clock Sync"
+        },
+        {
+          "record_id": "REC-010",
+          "sensor_name": "Acoustic Sensor J",
+          "reading_value": 0,
+          "unit": "dB",
+          "quality_flag": "Valid"
+        }
+      ],
+      "metadata": {
+        "primaryKey": "record_id"
+      }
+    }
+  ]
+}

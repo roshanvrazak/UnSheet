@@ -1,0 +1,114 @@
+{
+  "fixtureId": "10_multi_format_date_strings",
+  "fixtureNumber": 10,
+  "filename": "10_multi_format_date_strings.xlsx",
+  "format": "xlsx",
+  "description": "Heterogeneous date string formats (ISO, US, UK, named months) parsed and normalized to ISO 8601",
+  "sheets": [
+    {
+      "sheetName": "Incident_Log",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "Incident ID",
+          "Format Type",
+          "Raw Date String",
+          "Expected ISO",
+          "Severity"
+        ],
+        "sanitizedKeys": [
+          "incident_id",
+          "format_type",
+          "raw_date_string",
+          "expected_iso",
+          "severity"
+        ]
+      },
+      "inferredTypes": {
+        "incident_id": "id",
+        "format_type": "category",
+        "raw_date_string": "date",
+        "expected_iso": "date",
+        "severity": "category"
+      },
+      "rowCount": 10,
+      "columnCount": 5,
+      "rows": [
+        {
+          "incident_id": "INC-101",
+          "format_type": "ISO 8601",
+          "raw_date_string": "2024-01-15",
+          "expected_iso": "2024-01-15",
+          "severity": "High"
+        },
+        {
+          "incident_id": "INC-102",
+          "format_type": "US Standard (MM/DD/YYYY)",
+          "raw_date_string": "2024-02-20",
+          "expected_iso": "2024-02-20",
+          "severity": "Medium"
+        },
+        {
+          "incident_id": "INC-103",
+          "format_type": "UK Standard (DD/MM/YYYY)",
+          "raw_date_string": "2024-03-25",
+          "expected_iso": "2024-03-25",
+          "severity": "Critical"
+        },
+        {
+          "incident_id": "INC-104",
+          "format_type": "Named Month Short",
+          "raw_date_string": "2024-04-15",
+          "expected_iso": "2024-04-15",
+          "severity": "Low"
+        },
+        {
+          "incident_id": "INC-105",
+          "format_type": "Named Month Long",
+          "raw_date_string": "2024-05-05",
+          "expected_iso": "2024-05-05",
+          "severity": "Medium"
+        },
+        {
+          "incident_id": "INC-106",
+          "format_type": "Dotted (YYYY.MM.DD)",
+          "raw_date_string": "2024-06-18",
+          "expected_iso": "2024-06-18",
+          "severity": "High"
+        },
+        {
+          "incident_id": "INC-107",
+          "format_type": "Slashed ISO (YYYY/MM/DD)",
+          "raw_date_string": "2024-07-22",
+          "expected_iso": "2024-07-22",
+          "severity": "Low"
+        },
+        {
+          "incident_id": "INC-108",
+          "format_type": "Named Reverse",
+          "raw_date_string": "2024-08-31",
+          "expected_iso": "2024-08-31",
+          "severity": "Critical"
+        },
+        {
+          "incident_id": "INC-109",
+          "format_type": "Abbreviated US",
+          "raw_date_string": "2024-09-08",
+          "expected_iso": "2024-09-08",
+          "severity": "Low"
+        },
+        {
+          "incident_id": "INC-110",
+          "format_type": "Compact ISO",
+          "raw_date_string": "2024-10-31",
+          "expected_iso": "2024-10-31",
+          "severity": "High"
+        }
+      ],
+      "metadata": {
+        "primaryKey": "incident_id"
+      }
+    }
+  ]
+}

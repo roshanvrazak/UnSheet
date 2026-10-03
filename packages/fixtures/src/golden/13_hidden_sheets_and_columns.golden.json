@@ -1,0 +1,155 @@
+{
+  "fixtureId": "13_hidden_sheets_and_columns",
+  "fixtureNumber": 13,
+  "filename": "13_hidden_sheets_and_columns.xlsx",
+  "format": "xlsx",
+  "description": "Workbook with hidden columns (PII/Salary) and a hidden secondary payroll worksheet",
+  "sheets": [
+    {
+      "sheetName": "Active_Roster",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "Employee ID",
+          "Full Name",
+          "Department",
+          "National ID",
+          "Base Salary",
+          "Security Level"
+        ],
+        "sanitizedKeys": [
+          "employee_id",
+          "full_name",
+          "department",
+          "national_id",
+          "base_salary",
+          "security_level"
+        ]
+      },
+      "inferredTypes": {
+        "employee_id": "id",
+        "full_name": "text",
+        "department": "category",
+        "national_id": "text",
+        "base_salary": "currency",
+        "security_level": "category"
+      },
+      "rowCount": 5,
+      "columnCount": 6,
+      "rows": [
+        {
+          "employee_id": "EMP-01",
+          "full_name": "Jordan Hayes",
+          "department": "Engineering",
+          "national_id": "999-12-4011",
+          "base_salary": 145000,
+          "security_level": "Secret"
+        },
+        {
+          "employee_id": "EMP-02",
+          "full_name": "Morgan Taylor",
+          "department": "Research",
+          "national_id": "999-34-8822",
+          "base_salary": 160000,
+          "security_level": "Top Secret"
+        },
+        {
+          "employee_id": "EMP-03",
+          "full_name": "Casey Morgan",
+          "department": "Operations",
+          "national_id": "999-56-1199",
+          "base_salary": 85000,
+          "security_level": "Confidential"
+        },
+        {
+          "employee_id": "EMP-04",
+          "full_name": "Riley Vance",
+          "department": "Product",
+          "national_id": "999-78-3344",
+          "base_salary": 120000,
+          "security_level": "Secret"
+        },
+        {
+          "employee_id": "EMP-05",
+          "full_name": "Quinn Alvarez",
+          "department": "Security",
+          "national_id": "999-90-5566",
+          "base_salary": 135000,
+          "security_level": "Top Secret"
+        }
+      ],
+      "metadata": {
+        "primaryKey": "employee_id",
+        "hiddenColumns": [
+          "national_id",
+          "base_salary"
+        ],
+        "hiddenSheet": false
+      }
+    },
+    {
+      "sheetName": "Confidential_Payroll",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "Record Ref",
+          "Employee ID",
+          "Bonus Allocation",
+          "Equity Units"
+        ],
+        "sanitizedKeys": [
+          "record_ref",
+          "employee_id",
+          "bonus_allocation",
+          "equity_units"
+        ]
+      },
+      "inferredTypes": {
+        "record_ref": "id",
+        "employee_id": "id",
+        "bonus_allocation": "currency",
+        "equity_units": "number"
+      },
+      "rowCount": 5,
+      "columnCount": 4,
+      "rows": [
+        {
+          "record_ref": "REC-P01",
+          "employee_id": "EMP-01",
+          "bonus_allocation": 25000,
+          "equity_units": 1000
+        },
+        {
+          "record_ref": "REC-P02",
+          "employee_id": "EMP-02",
+          "bonus_allocation": 35000,
+          "equity_units": 1500
+        },
+        {
+          "record_ref": "REC-P03",
+          "employee_id": "EMP-03",
+          "bonus_allocation": 12000,
+          "equity_units": 500
+        },
+        {
+          "record_ref": "REC-P04",
+          "employee_id": "EMP-04",
+          "bonus_allocation": 20000,
+          "equity_units": 800
+        },
+        {
+          "record_ref": "REC-P05",
+          "employee_id": "EMP-05",
+          "bonus_allocation": 28000,
+          "equity_units": 1200
+        }
+      ],
+      "metadata": {
+        "primaryKey": "record_ref",
+        "hiddenSheet": true
+      }
+    }
+  ]
+}

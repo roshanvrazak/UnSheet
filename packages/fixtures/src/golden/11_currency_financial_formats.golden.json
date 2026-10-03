@@ -1,0 +1,103 @@
+{
+  "fixtureId": "11_currency_financial_formats",
+  "fixtureNumber": 11,
+  "filename": "11_currency_financial_formats.xlsx",
+  "format": "xlsx",
+  "description": "Financial ledger with international currency symbols and accounting parentheses negative numbers",
+  "sheets": [
+    {
+      "sheetName": "Global_Ledger",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "Account Code",
+          "Description",
+          "USD Gross",
+          "EUR Expense",
+          "GBP Margin",
+          "Net Position"
+        ],
+        "sanitizedKeys": [
+          "account_code",
+          "description",
+          "usd_gross",
+          "eur_expense",
+          "gbp_margin",
+          "net_position"
+        ]
+      },
+      "inferredTypes": {
+        "account_code": "id",
+        "description": "text",
+        "usd_gross": "currency",
+        "eur_expense": "currency",
+        "gbp_margin": "currency",
+        "net_position": "currency"
+      },
+      "rowCount": 7,
+      "columnCount": 6,
+      "rows": [
+        {
+          "account_code": "ACC-101",
+          "description": "Direct Product Revenue",
+          "usd_gross": 1250000.5,
+          "eur_expense": 0,
+          "gbp_margin": 0,
+          "net_position": 1250000.5
+        },
+        {
+          "account_code": "ACC-102",
+          "description": "Cloud Hosting Europe",
+          "usd_gross": 0,
+          "eur_expense": -45000.75,
+          "gbp_margin": 0,
+          "net_position": -45000.75
+        },
+        {
+          "account_code": "ACC-103",
+          "description": "London Advisory Retainer",
+          "usd_gross": 0,
+          "eur_expense": 0,
+          "gbp_margin": -28000,
+          "net_position": -28000
+        },
+        {
+          "account_code": "ACC-104",
+          "description": "Licensing Royalties",
+          "usd_gross": 320400,
+          "eur_expense": 0,
+          "gbp_margin": 15000.25,
+          "net_position": 335400.25
+        },
+        {
+          "account_code": "ACC-105",
+          "description": "Warehouse Lease Deficit",
+          "usd_gross": -85000,
+          "eur_expense": -12000,
+          "gbp_margin": 0,
+          "net_position": -97000
+        },
+        {
+          "account_code": "ACC-106",
+          "description": "APAC Hardware Shipments",
+          "usd_gross": 450000,
+          "eur_expense": 0,
+          "gbp_margin": 0,
+          "net_position": 450000
+        },
+        {
+          "account_code": "ACC-107",
+          "description": "Foreign Exchange Variance",
+          "usd_gross": -14250.5,
+          "eur_expense": 2300,
+          "gbp_margin": -1800,
+          "net_position": -13750.5
+        }
+      ],
+      "metadata": {
+        "primaryKey": "account_code"
+      }
+    }
+  ]
+}

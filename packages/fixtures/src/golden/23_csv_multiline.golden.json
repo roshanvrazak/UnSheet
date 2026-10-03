@@ -1,0 +1,73 @@
+{
+  "fixtureId": "23_csv_multiline",
+  "fixtureNumber": 23,
+  "filename": "23_csv_multiline.csv",
+  "format": "csv",
+  "description": "RFC 4180 CSV with multiline quoted strings containing embedded newlines",
+  "sheets": [
+    {
+      "sheetName": "Sheet1",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "ticket_id",
+          "requester",
+          "summary",
+          "error_log",
+          "priority"
+        ],
+        "sanitizedKeys": [
+          "ticket_id",
+          "requester",
+          "summary",
+          "error_log",
+          "priority"
+        ]
+      },
+      "inferredTypes": {
+        "ticket_id": "id",
+        "requester": "category",
+        "summary": "text",
+        "error_log": "text",
+        "priority": "category"
+      },
+      "rowCount": 4,
+      "columnCount": 5,
+      "rows": [
+        {
+          "ticket_id": "TCK-801",
+          "requester": "dev-ops-agent",
+          "summary": "Worker node OOM crash",
+          "error_log": "Error: Out of memory\nKill process 4012 (node)\nHeap limit 4096 MB exceeded",
+          "priority": "Critical"
+        },
+        {
+          "ticket_id": "TCK-802",
+          "requester": "sec-scanner",
+          "summary": "SSL cert expiration warning",
+          "error_log": "Warning: cert *.internal.io expires in 7 days\nIssuer: Let's Encrypt\nAction required",
+          "priority": "High"
+        },
+        {
+          "ticket_id": "TCK-803",
+          "requester": "qa-bot",
+          "summary": "Flaky network retry",
+          "error_log": "SocketTimeoutException: Connection timed out to db-read-replica-2:5432\nRetry 1: Success",
+          "priority": "Medium"
+        },
+        {
+          "ticket_id": "TCK-804",
+          "requester": "audit-runner",
+          "summary": "Missing IAM role tags",
+          "error_log": "Role arn:aws:iam::123456789:role/IngestTask is missing Environment tag\nComplies with rule E-04",
+          "priority": "Low"
+        }
+      ],
+      "metadata": {
+        "primaryKey": "ticket_id",
+        "delimiter": ","
+      }
+    }
+  ]
+}

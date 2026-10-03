@@ -1,0 +1,86 @@
+{
+  "fixtureId": "05_blank_spacer_rows_columns",
+  "fixtureNumber": 5,
+  "filename": "05_blank_spacer_rows_columns.xlsx",
+  "format": "xlsx",
+  "description": "Scattered empty spacer rows and empty spacer columns cleanly pruned by normaliser",
+  "sheets": [
+    {
+      "sheetName": "Inventory",
+      "headers": {
+        "detectedRowIndex": 1,
+        "confidence": 0.9,
+        "originalHeaders": [
+          "SKU",
+          "Product Name",
+          "Category",
+          "Stock Level",
+          "Unit Price"
+        ],
+        "sanitizedKeys": [
+          "sku",
+          "product_name",
+          "category",
+          "stock_level",
+          "unit_price"
+        ]
+      },
+      "inferredTypes": {
+        "sku": "id",
+        "product_name": "text",
+        "category": "category",
+        "stock_level": "number",
+        "unit_price": "currency"
+      },
+      "rowCount": 6,
+      "columnCount": 5,
+      "rows": [
+        {
+          "sku": "SKU-001",
+          "product_name": "Hex Bolt M8x50",
+          "category": "Fasteners",
+          "stock_level": 1200,
+          "unit_price": 0.45
+        },
+        {
+          "sku": "SKU-002",
+          "product_name": "Flange Nut M8",
+          "category": "Fasteners",
+          "stock_level": 2400,
+          "unit_price": 0.25
+        },
+        {
+          "sku": "SKU-003",
+          "product_name": "Steel Washer 8mm",
+          "category": "Fasteners",
+          "stock_level": 5000,
+          "unit_price": 0.1
+        },
+        {
+          "sku": "SKU-004",
+          "product_name": "Safety Goggles UV400",
+          "category": "Safety Gear",
+          "stock_level": 350,
+          "unit_price": 12.5
+        },
+        {
+          "sku": "SKU-005",
+          "product_name": "Nitrile Gloves L (100pk)",
+          "category": "Safety Gear",
+          "stock_level": 180,
+          "unit_price": 18
+        },
+        {
+          "sku": "SKU-006",
+          "product_name": "Ear Protection Earmuffs",
+          "category": "Safety Gear",
+          "stock_level": 95,
+          "unit_price": 24.95
+        }
+      ],
+      "metadata": {
+        "primaryKey": "sku"
+      }
+    }
+  ]
+}

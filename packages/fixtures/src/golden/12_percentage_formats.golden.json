@@ -1,0 +1,103 @@
+{
+  "fixtureId": "12_percentage_formats",
+  "fixtureNumber": 12,
+  "filename": "12_percentage_formats.xlsx",
+  "format": "xlsx",
+  "description": "Percentage values represented as formatted decimal ratios with positive and negative growth rates",
+  "sheets": [
+    {
+      "sheetName": "Marketing_ROI",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "Campaign Key",
+          "Channel",
+          "Click Through Pct",
+          "Conversion Pct",
+          "YoY Growth",
+          "Discount Rate"
+        ],
+        "sanitizedKeys": [
+          "campaign_key",
+          "channel",
+          "click_through_pct",
+          "conversion_pct",
+          "yoy_growth",
+          "discount_rate"
+        ]
+      },
+      "inferredTypes": {
+        "campaign_key": "id",
+        "channel": "category",
+        "click_through_pct": "percent",
+        "conversion_pct": "percent",
+        "yoy_growth": "percent",
+        "discount_rate": "percent"
+      },
+      "rowCount": 7,
+      "columnCount": 6,
+      "rows": [
+        {
+          "campaign_key": "CMP-01",
+          "channel": "Search Ads",
+          "click_through_pct": 0.045,
+          "conversion_pct": 0.021,
+          "yoy_growth": 0.155,
+          "discount_rate": 0.1
+        },
+        {
+          "campaign_key": "CMP-02",
+          "channel": "Social Influencer",
+          "click_through_pct": 0.082,
+          "conversion_pct": 0.038,
+          "yoy_growth": 0.42,
+          "discount_rate": 0.15
+        },
+        {
+          "campaign_key": "CMP-03",
+          "channel": "Email Retargeting",
+          "click_through_pct": 0.125,
+          "conversion_pct": 0.055,
+          "yoy_growth": -0.045,
+          "discount_rate": 0.2
+        },
+        {
+          "campaign_key": "CMP-04",
+          "channel": "Display Network",
+          "click_through_pct": 0.008,
+          "conversion_pct": 0.003,
+          "yoy_growth": -0.12,
+          "discount_rate": 0.05
+        },
+        {
+          "campaign_key": "CMP-05",
+          "channel": "Affiliate Partners",
+          "click_through_pct": 0.064,
+          "conversion_pct": 0.042,
+          "yoy_growth": 0.28,
+          "discount_rate": 0.12
+        },
+        {
+          "campaign_key": "CMP-06",
+          "channel": "Organic SEO",
+          "click_through_pct": 0.095,
+          "conversion_pct": 0.061,
+          "yoy_growth": 0.35,
+          "discount_rate": 0
+        },
+        {
+          "campaign_key": "CMP-07",
+          "channel": "Webinar Outbound",
+          "click_through_pct": 0.032,
+          "conversion_pct": 0.019,
+          "yoy_growth": 0.085,
+          "discount_rate": 0.25
+        }
+      ],
+      "metadata": {
+        "primaryKey": "campaign_key"
+      }
+    }
+  ]
+}

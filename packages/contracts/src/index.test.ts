@@ -1,16 +1,25 @@
 import { describe, it, expect } from 'vitest';
-import { VersionSchema } from './index.js';
+import * as Contracts from './index.js';
 
-describe('VersionSchema', () => {
-  it('validates a valid version object', () => {
-    const valid = { version: '0.1.0', name: 'unsheet' };
-    const result = VersionSchema.safeParse(valid);
-    expect(result.success).toBe(true);
-  });
-
-  it('rejects invalid objects', () => {
-    const invalid = { version: '', name: '' };
-    const result = VersionSchema.safeParse(invalid);
-    expect(result.success).toBe(false);
+describe('@unsheet/contracts exports', () => {
+  it('exports all expected core schemas and constants', () => {
+    expect(Contracts.FORBIDDEN_OBJECT_KEYS).toContain('__proto__');
+    expect(Contracts.SafeIdentifierSchema).toBeDefined();
+    expect(Contracts.SampleValueSchema).toBeDefined();
+    expect(Contracts.WorkbookModelSchema).toBeDefined();
+    expect(Contracts.SheetModelSchema).toBeDefined();
+    expect(Contracts.CellModelSchema).toBeDefined();
+    expect(Contracts.ColumnProfileSchema).toBeDefined();
+    expect(Contracts.SheetProfileSchema).toBeDefined();
+    expect(Contracts.DashboardSpecSchema).toBeDefined();
+    expect(Contracts.WidgetSpecSchema).toBeDefined();
+    expect(Contracts.TemplateSchema).toBeDefined();
+    expect(Contracts.SchemaFingerprintSchema).toBeDefined();
+    expect(Contracts.DriftReportSchema).toBeDefined();
+    expect(Contracts.QueryPlanSchema).toBeDefined();
+    expect(Contracts.QueryResultSchema).toBeDefined();
+    expect(Contracts.SpecRefinementRequestSchema).toBeDefined();
+    expect(Contracts.CreateShareLinkRequestSchema).toBeDefined();
+    expect(Contracts.AskYourDataRequestSchema).toBeDefined();
   });
 });

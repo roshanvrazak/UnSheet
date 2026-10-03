@@ -4,6 +4,9 @@ import { normaliseWorkbook } from './normalise/index.js';
 
 export * from './parse/index.js';
 export * from './normalise/index.js';
+export * from './profile/index.js';
+export * from './specgen/index.js';
+export * from './drift/index.js';
 
 export function getEngineInfo(): Version {
   return {

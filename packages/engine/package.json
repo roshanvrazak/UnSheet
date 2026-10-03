@@ -17,6 +17,10 @@
     "build": "tsc --noEmit"
   },
   "dependencies": {
-    "@unsheet/contracts": "workspace:*"
+    "@unsheet/contracts": "workspace:*",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  },
+  "devDependencies": {
+    "fast-check": "^4.10.2"
   }
 }

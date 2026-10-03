@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SafeIdentifierSchema, SampleValuesArraySchema } from './common.js';
+import { SafeIdentifierSchema, SafeEntityIdSchema, SampleValuesArraySchema } from './common.js';
 
 /**
  * Inferred data types for spreadsheet columns.
@@ -31,26 +31,34 @@ export type SemanticRole = z.infer<typeof SemanticRoleSchema>;
 
 /**
  * Summary statistics for numeric and quantifiable columns.
+ * Constrained with finite() to reject Infinity and -Infinity.
  */
 export const NumericStatsSchema = z.object({
-  min: z.number().nullable().optional(),
-  max: z.number().nullable().optional(),
-  mean: z.number().nullable().optional(),
-  median: z.number().nullable().optional(),
-  sum: z.number().nullable().optional(),
-  variance: z.number().nullable().optional(),
-  stdDev: z.number().nullable().optional(),
+  min: z.number().finite().nullable().optional(),
+  max: z.number().finite().nullable().optional(),
+  mean: z.number().finite().nullable().optional(),
+  median: z.number().finite().nullable().optional(),
+  sum: z.number().finite().nullable().optional(),
+  variance: z.number().finite().nullable().optional(),
+  stdDev: z.number().finite().nullable().optional(),
 });
 
 export type NumericStats = z.infer<typeof NumericStatsSchema>;
 
 /**
  * Frequency breakdown for categorical columns.
+ * Sanitized against formula injection characters and capped at 100 characters.
  */
 export const CategoryFrequencySchema = z.object({
-  value: z.string().max(256),
+  value: z
+    .string()
+    .max(100, 'Category value exceeds maximum length of 100 characters')
+    .refine(
+      (val) => !/^[=+\-@\t\r\n|]/.test(val.trimStart()),
+      { message: 'Category value must not start with formula trigger characters (=, +, -, @, \\t, \\r, \\n, |) even when preceded by whitespace' }
+    ),
   count: z.number().int().nonnegative(),
-  percentage: z.number().min(0).max(100),
+  percentage: z.number().finite().min(0).max(100),
 });
 
 export type CategoryFrequency = z.infer<typeof CategoryFrequencySchema>;
@@ -68,7 +76,7 @@ export const ColumnProfileSchema = z.object({
   nullCount: z.number().int().nonnegative(),
   totalCount: z.number().int().nonnegative(),
   distinctCount: z.number().int().nonnegative(),
-  uniquenessRatio: z.number().min(0).max(1),
+  uniquenessRatio: z.number().finite().min(0).max(1),
   stats: NumericStatsSchema.optional(),
   topValues: z.array(CategoryFrequencySchema).max(50).optional(),
   sampleValues: SampleValuesArraySchema,
@@ -79,10 +87,21 @@ export const ColumnProfileSchema = z.object({
 export type ColumnProfile = z.infer<typeof ColumnProfileSchema>;
 
 /**
+ * Sanitized column profile for external LLM transmission.
+ * Omit raw topValues to prevent data exfiltration and prompt injection.
+ * Sample values remain strictly capped at max 5 items <= 40 characters each.
+ */
+export const LLMColumnProfileSchema = ColumnProfileSchema.omit({
+  topValues: true,
+});
+
+export type LLMColumnProfile = z.infer<typeof LLMColumnProfileSchema>;
+
+/**
  * Sheet-level profile with aggregated column profiles and heuristic suggestions.
  */
 export const SheetProfileSchema = z.object({
-  sheetId: z.string().min(1).max(64),
+  sheetId: SafeEntityIdSchema,
   sheetName: z.string().min(1).max(128),
   rowCount: z.number().int().nonnegative(),
   columnProfiles: z.array(ColumnProfileSchema).min(1, 'Sheet profile must have at least one column profile'),

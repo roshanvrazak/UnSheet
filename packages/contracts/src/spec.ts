@@ -1,15 +1,19 @@
 import { z } from 'zod';
-import { SafeIdentifierSchema, TitleSchema, DescriptionSchema } from './common.js';
+import { SafeIdentifierSchema, SafeEntityIdSchema, TitleSchema, DescriptionSchema } from './common.js';
 
 /**
  * Grid position and dimensions for responsive 12-column layout.
  */
-export const WidgetGridPositionSchema = z.object({
-  x: z.number().int().min(0).max(11),
-  y: z.number().int().nonnegative(),
-  w: z.number().int().min(1).max(12),
-  h: z.number().int().min(1).max(24),
-});
+export const WidgetGridPositionSchema = z
+  .object({
+    x: z.number().int().min(0).max(11),
+    y: z.number().int().nonnegative(),
+    w: z.number().int().min(1).max(12),
+    h: z.number().int().min(1).max(24),
+  })
+  .refine((pos) => pos.x + pos.w <= 12, {
+    message: 'Widget position x + w must not exceed 12 grid columns',
+  });
 
 export type WidgetGridPosition = z.infer<typeof WidgetGridPositionSchema>;
 
@@ -296,13 +300,13 @@ export type DashboardLayout = z.infer<typeof DashboardLayoutSchema>;
  */
 export const DashboardSpecSchema = z.object({
   version: z.literal('1.0'),
-  id: z.string().min(1).max(64),
+  id: SafeEntityIdSchema,
   title: TitleSchema,
   description: DescriptionSchema,
-  sheetBinding: z.string().min(1).max(128),
+  sheetBinding: SafeEntityIdSchema,
   layout: DashboardLayoutSchema.default({ columns: 12, gap: 16, padding: 16 }),
   filters: z.array(FilterSpecSchema).default([]),
-  widgets: z.array(WidgetSpecSchema).min(1, 'Dashboard must have at least one widget'),
+  widgets: z.array(WidgetSpecSchema).min(1, 'Dashboard must have at least one widget').max(50, 'Dashboard exceeds maximum 50 widgets'),
   theme: z.enum(['light', 'dark', 'system']).optional(),
 });
 

@@ -154,7 +154,7 @@ sequenceDiagram
     participant State as Zustand Store
 
     User->>UI: Drops spreadsheet (.xlsx, .csv)
-    UI->>UI: Check file size (<= 50MB)
+    UI->>UI: Check file size (<= 10MB)
     UI->>Worker: postMessage(PARSE_WORKBOOK, ArrayBuffer)
 
     Worker->>Worker: Zip-bomb check (Ratio < 100:1, Uncompressed < 200MB)

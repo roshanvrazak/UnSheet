@@ -7,7 +7,13 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      include: ['src/parse/**', 'src/normalise/**'],
+      include: [
+        'src/parse/**',
+        'src/normalise/**',
+        'src/profile/**',
+        'src/specgen/**',
+        'src/drift/**',
+      ],
       all: true,
     },
   },

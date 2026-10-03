@@ -1,0 +1,87 @@
+{
+  "fixtureId": "21_merged_data_cells",
+  "fixtureNumber": 21,
+  "filename": "21_merged_data_cells.xlsx",
+  "format": "xlsx",
+  "description": "Vertically merged data cells in grouped categorical columns forward-filled to preserve tabular integrity",
+  "sheets": [
+    {
+      "sheetName": "Store_Roster",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "Region",
+          "District",
+          "Store ID",
+          "Store Manager",
+          "Annual Target"
+        ],
+        "sanitizedKeys": [
+          "region",
+          "district",
+          "store_id",
+          "store_manager",
+          "annual_target"
+        ]
+      },
+      "inferredTypes": {
+        "region": "category",
+        "district": "category",
+        "store_id": "id",
+        "store_manager": "text",
+        "annual_target": "currency"
+      },
+      "rowCount": 6,
+      "columnCount": 5,
+      "rows": [
+        {
+          "region": "North America",
+          "district": "Pacific NW",
+          "store_id": "STR-101",
+          "store_manager": "Rachel Green",
+          "annual_target": 1200000
+        },
+        {
+          "region": "North America",
+          "district": "Pacific NW",
+          "store_id": "STR-102",
+          "store_manager": "Ross Geller",
+          "annual_target": 950000
+        },
+        {
+          "region": "North America",
+          "district": "Mountain West",
+          "store_id": "STR-103",
+          "store_manager": "Monica Geller",
+          "annual_target": 1100000
+        },
+        {
+          "region": "Europe",
+          "district": "DACH",
+          "store_id": "STR-201",
+          "store_manager": "Chandler Bing",
+          "annual_target": 1400000
+        },
+        {
+          "region": "Europe",
+          "district": "DACH",
+          "store_id": "STR-202",
+          "store_manager": "Joey Tribbiani",
+          "annual_target": 1300000
+        },
+        {
+          "region": "Europe",
+          "district": "UK & Ireland",
+          "store_id": "STR-203",
+          "store_manager": "Phoebe Buffay",
+          "annual_target": 1050000
+        }
+      ],
+      "metadata": {
+        "primaryKey": "store_id",
+        "hasMergedCells": true
+      }
+    }
+  ]
+}

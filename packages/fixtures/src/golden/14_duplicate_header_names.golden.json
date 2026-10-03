@@ -1,0 +1,100 @@
+{
+  "fixtureId": "14_duplicate_header_names",
+  "fixtureNumber": 14,
+  "filename": "14_duplicate_header_names.xlsx",
+  "format": "xlsx",
+  "description": "Duplicate header names disambiguated with deterministic sequential numeric suffixes",
+  "sheets": [
+    {
+      "sheetName": "Quarterly_Milestones",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "Department",
+          "Lead",
+          "Status",
+          "Target",
+          "Status",
+          "Score",
+          "Target",
+          "Status"
+        ],
+        "sanitizedKeys": [
+          "department",
+          "lead",
+          "status",
+          "target",
+          "status_1",
+          "score",
+          "target_1",
+          "status_2"
+        ]
+      },
+      "inferredTypes": {
+        "department": "category",
+        "lead": "text",
+        "status": "category",
+        "target": "number",
+        "status_1": "category",
+        "score": "number",
+        "target_1": "number",
+        "status_2": "category"
+      },
+      "rowCount": 5,
+      "columnCount": 8,
+      "rows": [
+        {
+          "department": "Engineering",
+          "lead": "Dev Lead A",
+          "status": "Active",
+          "target": 100,
+          "status_1": "Green",
+          "score": 95,
+          "target_1": 120,
+          "status_2": "On Schedule"
+        },
+        {
+          "department": "Product",
+          "lead": "PM Lead B",
+          "status": "Planning",
+          "target": 80,
+          "status_1": "Yellow",
+          "score": 72,
+          "target_1": 85,
+          "status_2": "Pending Review"
+        },
+        {
+          "department": "Security",
+          "lead": "SecOps Lead C",
+          "status": "Active",
+          "target": 50,
+          "status_1": "Green",
+          "score": 50,
+          "target_1": 55,
+          "status_2": "On Schedule"
+        },
+        {
+          "department": "Design",
+          "lead": "UX Lead D",
+          "status": "Blocked",
+          "target": 40,
+          "status_1": "Red",
+          "score": 28,
+          "target_1": 45,
+          "status_2": "Delayed"
+        },
+        {
+          "department": "Data Ops",
+          "lead": "Data Lead E",
+          "status": "Active",
+          "target": 90,
+          "status_1": "Green",
+          "score": 88,
+          "target_1": 95,
+          "status_2": "On Schedule"
+        }
+      ]
+    }
+  ]
+}

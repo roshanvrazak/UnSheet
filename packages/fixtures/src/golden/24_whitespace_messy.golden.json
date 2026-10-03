@@ -1,0 +1,79 @@
+{
+  "fixtureId": "24_whitespace_messy",
+  "fixtureNumber": 24,
+  "filename": "24_whitespace_messy.xlsx",
+  "format": "xlsx",
+  "description": "Messy untrimmed whitespace and tab characters in headers and cell values stripped during normalisation",
+  "sheets": [
+    {
+      "sheetName": "Messy_Spacing",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "   Product SKU   ",
+          "\tProduct Description  ",
+          "  Category \t",
+          "   Unit Cost   ",
+          " In Stock Flag "
+        ],
+        "sanitizedKeys": [
+          "product_sku",
+          "product_description",
+          "category",
+          "unit_cost",
+          "in_stock_flag"
+        ]
+      },
+      "inferredTypes": {
+        "product_sku": "id",
+        "product_description": "text",
+        "category": "category",
+        "unit_cost": "currency",
+        "in_stock_flag": "boolean"
+      },
+      "rowCount": 5,
+      "columnCount": 5,
+      "rows": [
+        {
+          "product_sku": "SKU-091",
+          "product_description": "High-Torque Servomotor",
+          "category": "Robotics",
+          "unit_cost": 450,
+          "in_stock_flag": true
+        },
+        {
+          "product_sku": "SKU-092",
+          "product_description": "Planetary Gearbox 10:1",
+          "category": "Mechanical",
+          "unit_cost": 180.5,
+          "in_stock_flag": false
+        },
+        {
+          "product_sku": "SKU-093",
+          "product_description": "Optocoupler High-Speed",
+          "category": "Electronics",
+          "unit_cost": 3.25,
+          "in_stock_flag": true
+        },
+        {
+          "product_sku": "SKU-094",
+          "product_description": "Linear Actuator 200mm",
+          "category": "Robotics",
+          "unit_cost": 295,
+          "in_stock_flag": true
+        },
+        {
+          "product_sku": "SKU-095",
+          "product_description": "Microcontroller Board",
+          "category": "Electronics",
+          "unit_cost": 42.1,
+          "in_stock_flag": true
+        }
+      ],
+      "metadata": {
+        "primaryKey": "product_sku"
+      }
+    }
+  ]
+}

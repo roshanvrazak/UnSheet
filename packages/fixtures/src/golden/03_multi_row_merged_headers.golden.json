@@ -1,0 +1,153 @@
+{
+  "fixtureId": "03_multi_row_merged_headers",
+  "fixtureNumber": 3,
+  "filename": "03_multi_row_merged_headers.xlsx",
+  "format": "xlsx",
+  "description": "Multi-row merged hierarchical headers forward-filled and combined across header tiers",
+  "sheets": [
+    {
+      "sheetName": "Regional_Performance",
+      "headers": {
+        "detectedRowIndex": 1,
+        "confidence": 0.92,
+        "originalHeaders": [
+          "Location Country",
+          "Location City",
+          "Q1 Figures Target",
+          "Q1 Figures Actual",
+          "Q1 Figures Variance",
+          "Q2 Figures Target",
+          "Q2 Figures Actual",
+          "Q2 Figures Variance"
+        ],
+        "sanitizedKeys": [
+          "location_country",
+          "location_city",
+          "q1_figures_target",
+          "q1_figures_actual",
+          "q1_figures_variance",
+          "q2_figures_target",
+          "q2_figures_actual",
+          "q2_figures_variance"
+        ]
+      },
+      "inferredTypes": {
+        "location_country": "category",
+        "location_city": "text",
+        "q1_figures_target": "currency",
+        "q1_figures_actual": "currency",
+        "q1_figures_variance": "currency",
+        "q2_figures_target": "currency",
+        "q2_figures_actual": "currency",
+        "q2_figures_variance": "currency"
+      },
+      "rowCount": 10,
+      "columnCount": 8,
+      "rows": [
+        {
+          "location_country": "United States",
+          "location_city": "New York",
+          "q1_figures_target": 500000,
+          "q1_figures_actual": 520000,
+          "q1_figures_variance": 20000,
+          "q2_figures_target": 550000,
+          "q2_figures_actual": 580000,
+          "q2_figures_variance": 30000
+        },
+        {
+          "location_country": "United States",
+          "location_city": "Chicago",
+          "q1_figures_target": 320000,
+          "q1_figures_actual": 310000,
+          "q1_figures_variance": -10000,
+          "q2_figures_target": 340000,
+          "q2_figures_actual": 350000,
+          "q2_figures_variance": 10000
+        },
+        {
+          "location_country": "United States",
+          "location_city": "Dallas",
+          "q1_figures_target": 280000,
+          "q1_figures_actual": 295000,
+          "q1_figures_variance": 15000,
+          "q2_figures_target": 300000,
+          "q2_figures_actual": 315000,
+          "q2_figures_variance": 15000
+        },
+        {
+          "location_country": "Canada",
+          "location_city": "Toronto",
+          "q1_figures_target": 400000,
+          "q1_figures_actual": 390000,
+          "q1_figures_variance": -10000,
+          "q2_figures_target": 420000,
+          "q2_figures_actual": 440000,
+          "q2_figures_variance": 20000
+        },
+        {
+          "location_country": "Canada",
+          "location_city": "Vancouver",
+          "q1_figures_target": 250000,
+          "q1_figures_actual": 260000,
+          "q1_figures_variance": 10000,
+          "q2_figures_target": 270000,
+          "q2_figures_actual": 285000,
+          "q2_figures_variance": 15000
+        },
+        {
+          "location_country": "United Kingdom",
+          "location_city": "London",
+          "q1_figures_target": 600000,
+          "q1_figures_actual": 640000,
+          "q1_figures_variance": 40000,
+          "q2_figures_target": 650000,
+          "q2_figures_actual": 690000,
+          "q2_figures_variance": 40000
+        },
+        {
+          "location_country": "United Kingdom",
+          "location_city": "Manchester",
+          "q1_figures_target": 210000,
+          "q1_figures_actual": 205000,
+          "q1_figures_variance": -5000,
+          "q2_figures_target": 230000,
+          "q2_figures_actual": 225000,
+          "q2_figures_variance": -5000
+        },
+        {
+          "location_country": "Germany",
+          "location_city": "Frankfurt",
+          "q1_figures_target": 450000,
+          "q1_figures_actual": 475000,
+          "q1_figures_variance": 25000,
+          "q2_figures_target": 480000,
+          "q2_figures_actual": 510000,
+          "q2_figures_variance": 30000
+        },
+        {
+          "location_country": "Germany",
+          "location_city": "Munich",
+          "q1_figures_target": 380000,
+          "q1_figures_actual": 395000,
+          "q1_figures_variance": 15000,
+          "q2_figures_target": 400000,
+          "q2_figures_actual": 420000,
+          "q2_figures_variance": 20000
+        },
+        {
+          "location_country": "France",
+          "location_city": "Paris",
+          "q1_figures_target": 520000,
+          "q1_figures_actual": 505000,
+          "q1_figures_variance": -15000,
+          "q2_figures_target": 540000,
+          "q2_figures_actual": 560000,
+          "q2_figures_variance": 20000
+        }
+      ],
+      "metadata": {
+        "hasMergedCells": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "fixtureId": "19_formula_cached_values",
+  "fixtureNumber": 19,
+  "filename": "19_formula_cached_values.xlsx",
+  "format": "xlsx",
+  "description": "Calculated formula cells where cached evaluation result is read directly without formula execution",
+  "sheets": [
+    {
+      "sheetName": "Invoice_Calculations",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "Item SKU",
+          "Quantity",
+          "Unit Price",
+          "Subtotal",
+          "Tax Rate",
+          "Tax Amount",
+          "Grand Total"
+        ],
+        "sanitizedKeys": [
+          "item_sku",
+          "quantity",
+          "unit_price",
+          "subtotal",
+          "tax_rate",
+          "tax_amount",
+          "grand_total"
+        ]
+      },
+      "inferredTypes": {
+        "item_sku": "id",
+        "quantity": "number",
+        "unit_price": "currency",
+        "subtotal": "currency",
+        "tax_rate": "percent",
+        "tax_amount": "currency",
+        "grand_total": "currency"
+      },
+      "rowCount": 5,
+      "columnCount": 7,
+      "rows": [
+        {
+          "item_sku": "ITM-01",
+          "quantity": 10,
+          "unit_price": 50,
+          "subtotal": 500,
+          "tax_rate": 0.08,
+          "tax_amount": 40,
+          "grand_total": 540
+        },
+        {
+          "item_sku": "ITM-02",
+          "quantity": 4,
+          "unit_price": 125,
+          "subtotal": 500,
+          "tax_rate": 0.08,
+          "tax_amount": 40,
+          "grand_total": 540
+        },
+        {
+          "item_sku": "ITM-03",
+          "quantity": 25,
+          "unit_price": 12,
+          "subtotal": 300,
+          "tax_rate": 0.05,
+          "tax_amount": 15,
+          "grand_total": 315
+        },
+        {
+          "item_sku": "ITM-04",
+          "quantity": 2,
+          "unit_price": 450,
+          "subtotal": 900,
+          "tax_rate": 0.1,
+          "tax_amount": 90,
+          "grand_total": 990
+        },
+        {
+          "item_sku": "ITM-05",
+          "quantity": 15,
+          "unit_price": 80,
+          "subtotal": 1200,
+          "tax_rate": 0.08,
+          "tax_amount": 96,
+          "grand_total": 1296
+        }
+      ],
+      "metadata": {
+        "hasFormulas": true,
+        "formulaEvaluationPresent": true
+      }
+    }
+  ]
+}

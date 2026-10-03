@@ -1,0 +1,94 @@
+{
+  "fixtureId": "08_excel_serial_dates_1900",
+  "fixtureNumber": 8,
+  "filename": "08_excel_serial_dates_1900.xlsx",
+  "format": "xlsx",
+  "description": "Excel 1900 date epoch serial numbers correctly normalized to ISO 8601 dates",
+  "sheets": [
+    {
+      "sheetName": "Schedule_1900",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "Milestone Code",
+          "Task Description",
+          "Target Serial",
+          "Planned Date",
+          "Duration Days"
+        ],
+        "sanitizedKeys": [
+          "milestone_code",
+          "task_description",
+          "target_serial",
+          "planned_date",
+          "duration_days"
+        ]
+      },
+      "inferredTypes": {
+        "milestone_code": "id",
+        "task_description": "text",
+        "target_serial": "date",
+        "planned_date": "date",
+        "duration_days": "number"
+      },
+      "rowCount": 7,
+      "columnCount": 5,
+      "rows": [
+        {
+          "milestone_code": "MS-01",
+          "task_description": "Groundbreaking & Site Prep",
+          "target_serial": "2023-10-01",
+          "planned_date": "2023-10-01",
+          "duration_days": 30
+        },
+        {
+          "milestone_code": "MS-02",
+          "task_description": "Foundation Pouring",
+          "target_serial": "2024-01-01",
+          "planned_date": "2024-01-01",
+          "duration_days": 45
+        },
+        {
+          "milestone_code": "MS-03",
+          "task_description": "Steel Framing Assembly",
+          "target_serial": "2024-03-01",
+          "planned_date": "2024-03-01",
+          "duration_days": 60
+        },
+        {
+          "milestone_code": "MS-04",
+          "task_description": "Roofing and Envelope Sealing",
+          "target_serial": "2024-07-01",
+          "planned_date": "2024-07-01",
+          "duration_days": 40
+        },
+        {
+          "milestone_code": "MS-05",
+          "task_description": "MEP Rough-in",
+          "target_serial": "2024-08-31",
+          "planned_date": "2024-08-31",
+          "duration_days": 50
+        },
+        {
+          "milestone_code": "MS-06",
+          "task_description": "Interior Drywall & Finishes",
+          "target_serial": "2024-10-31",
+          "planned_date": "2024-10-31",
+          "duration_days": 35
+        },
+        {
+          "milestone_code": "MS-07",
+          "task_description": "Final Inspection & Handover",
+          "target_serial": "2024-12-31",
+          "planned_date": "2024-12-31",
+          "duration_days": 14
+        }
+      ],
+      "metadata": {
+        "primaryKey": "milestone_code",
+        "dateSystem": "1900"
+      }
+    }
+  ]
+}

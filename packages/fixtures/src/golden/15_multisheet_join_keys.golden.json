@@ -1,0 +1,246 @@
+{
+  "fixtureId": "15_multisheet_join_keys",
+  "fixtureNumber": 15,
+  "filename": "15_multisheet_join_keys.xlsx",
+  "format": "xlsx",
+  "description": "Relational 3-sheet schema linked by primary-foreign key relationships",
+  "sheets": [
+    {
+      "sheetName": "customers",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "customer_id",
+          "company_name",
+          "country",
+          "account_tier"
+        ],
+        "sanitizedKeys": [
+          "customer_id",
+          "company_name",
+          "country",
+          "account_tier"
+        ]
+      },
+      "inferredTypes": {
+        "customer_id": "id",
+        "company_name": "text",
+        "country": "category",
+        "account_tier": "category"
+      },
+      "rowCount": 5,
+      "columnCount": 4,
+      "rows": [
+        {
+          "customer_id": "CUST-001",
+          "company_name": "Astra Dynamics",
+          "country": "Germany",
+          "account_tier": "Enterprise"
+        },
+        {
+          "customer_id": "CUST-002",
+          "company_name": "Borealis Energy",
+          "country": "Norway",
+          "account_tier": "Strategic"
+        },
+        {
+          "customer_id": "CUST-003",
+          "company_name": "Caspian Shipping",
+          "country": "Greece",
+          "account_tier": "Mid-Market"
+        },
+        {
+          "customer_id": "CUST-004",
+          "company_name": "Delta Robotics",
+          "country": "Japan",
+          "account_tier": "Enterprise"
+        },
+        {
+          "customer_id": "CUST-005",
+          "company_name": "Echo Telemetry",
+          "country": "United States",
+          "account_tier": "Standard"
+        }
+      ],
+      "metadata": {
+        "primaryKey": "customer_id"
+      }
+    },
+    {
+      "sheetName": "orders",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "order_id",
+          "customer_id",
+          "order_date",
+          "order_status",
+          "total_amount"
+        ],
+        "sanitizedKeys": [
+          "order_id",
+          "customer_id",
+          "order_date",
+          "order_status",
+          "total_amount"
+        ]
+      },
+      "inferredTypes": {
+        "order_id": "id",
+        "customer_id": "id",
+        "order_date": "date",
+        "order_status": "category",
+        "total_amount": "currency"
+      },
+      "rowCount": 6,
+      "columnCount": 5,
+      "rows": [
+        {
+          "order_id": "ORD-501",
+          "customer_id": "CUST-001",
+          "order_date": "2024-01-12",
+          "order_status": "Fulfilled",
+          "total_amount": 45000
+        },
+        {
+          "order_id": "ORD-502",
+          "customer_id": "CUST-001",
+          "order_date": "2024-02-18",
+          "order_status": "Fulfilled",
+          "total_amount": 32000
+        },
+        {
+          "order_id": "ORD-503",
+          "customer_id": "CUST-002",
+          "order_date": "2024-02-24",
+          "order_status": "Processing",
+          "total_amount": 89000
+        },
+        {
+          "order_id": "ORD-504",
+          "customer_id": "CUST-003",
+          "order_date": "2024-03-05",
+          "order_status": "Fulfilled",
+          "total_amount": 15400
+        },
+        {
+          "order_id": "ORD-505",
+          "customer_id": "CUST-004",
+          "order_date": "2024-03-12",
+          "order_status": "Fulfilled",
+          "total_amount": 120000
+        },
+        {
+          "order_id": "ORD-506",
+          "customer_id": "CUST-005",
+          "order_date": "2024-03-20",
+          "order_status": "Shipped",
+          "total_amount": 8500
+        }
+      ],
+      "metadata": {
+        "primaryKey": "order_id",
+        "foreignKeys": [
+          {
+            "column": "customer_id",
+            "targetSheet": "customers",
+            "targetColumn": "customer_id"
+          }
+        ]
+      }
+    },
+    {
+      "sheetName": "order_items",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "item_id",
+          "order_id",
+          "sku_code",
+          "quantity",
+          "unit_price"
+        ],
+        "sanitizedKeys": [
+          "item_id",
+          "order_id",
+          "sku_code",
+          "quantity",
+          "unit_price"
+        ]
+      },
+      "inferredTypes": {
+        "item_id": "id",
+        "order_id": "id",
+        "sku_code": "id",
+        "quantity": "number",
+        "unit_price": "currency"
+      },
+      "rowCount": 7,
+      "columnCount": 5,
+      "rows": [
+        {
+          "item_id": "ITEM-101",
+          "order_id": "ORD-501",
+          "sku_code": "SKU-TURB-01",
+          "quantity": 2,
+          "unit_price": 15000
+        },
+        {
+          "item_id": "ITEM-102",
+          "order_id": "ORD-501",
+          "sku_code": "SKU-CTRL-09",
+          "quantity": 3,
+          "unit_price": 5000
+        },
+        {
+          "item_id": "ITEM-103",
+          "order_id": "ORD-502",
+          "sku_code": "SKU-VALV-44",
+          "quantity": 8,
+          "unit_price": 4000
+        },
+        {
+          "item_id": "ITEM-104",
+          "order_id": "ORD-503",
+          "sku_code": "SKU-GENR-88",
+          "quantity": 1,
+          "unit_price": 89000
+        },
+        {
+          "item_id": "ITEM-105",
+          "order_id": "ORD-504",
+          "sku_code": "SKU-HOSE-12",
+          "quantity": 20,
+          "unit_price": 770
+        },
+        {
+          "item_id": "ITEM-106",
+          "order_id": "ORD-505",
+          "sku_code": "SKU-ROBOT-02",
+          "quantity": 4,
+          "unit_price": 30000
+        },
+        {
+          "item_id": "ITEM-107",
+          "order_id": "ORD-506",
+          "sku_code": "SKU-SENS-77",
+          "quantity": 10,
+          "unit_price": 850
+        }
+      ],
+      "metadata": {
+        "primaryKey": "item_id",
+        "foreignKeys": [
+          {
+            "column": "order_id",
+            "targetSheet": "orders",
+            "targetColumn": "order_id"
+          }
+        ]
+      }
+    }
+  ]
+}

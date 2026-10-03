@@ -1,0 +1,185 @@
+{
+  "fixtureId": "01_clean_baseline",
+  "fixtureNumber": 1,
+  "filename": "01_clean_baseline.xlsx",
+  "format": "xlsx",
+  "description": "Clean single sheet workbook with headers on row 1 and well-typed data rows",
+  "sheets": [
+    {
+      "sheetName": "Employees",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "Employee ID",
+          "First Name",
+          "Last Name",
+          "Department",
+          "Hire Date",
+          "Salary",
+          "Is Active"
+        ],
+        "sanitizedKeys": [
+          "employee_id",
+          "first_name",
+          "last_name",
+          "department",
+          "hire_date",
+          "salary",
+          "is_active"
+        ]
+      },
+      "inferredTypes": {
+        "employee_id": "id",
+        "first_name": "text",
+        "last_name": "text",
+        "department": "category",
+        "hire_date": "date",
+        "salary": "currency",
+        "is_active": "boolean"
+      },
+      "rowCount": 15,
+      "columnCount": 7,
+      "rows": [
+        {
+          "employee_id": "EMP-1001",
+          "first_name": "Alice",
+          "last_name": "Vance",
+          "department": "Engineering",
+          "hire_date": "2021-03-15",
+          "salary": 125000,
+          "is_active": true
+        },
+        {
+          "employee_id": "EMP-1002",
+          "first_name": "Marcus",
+          "last_name": "Chen",
+          "department": "Product",
+          "hire_date": "2020-07-01",
+          "salary": 115000,
+          "is_active": true
+        },
+        {
+          "employee_id": "EMP-1003",
+          "first_name": "Elena",
+          "last_name": "Rostova",
+          "department": "Engineering",
+          "hire_date": "2022-01-10",
+          "salary": 130000,
+          "is_active": true
+        },
+        {
+          "employee_id": "EMP-1004",
+          "first_name": "David",
+          "last_name": "Kim",
+          "department": "Finance",
+          "hire_date": "2019-11-20",
+          "salary": 98000,
+          "is_active": false
+        },
+        {
+          "employee_id": "EMP-1005",
+          "first_name": "Sarah",
+          "last_name": "Jenkins",
+          "department": "Design",
+          "hire_date": "2021-09-05",
+          "salary": 92000,
+          "is_active": true
+        },
+        {
+          "employee_id": "EMP-1006",
+          "first_name": "Tariq",
+          "last_name": "Al-Mansoor",
+          "department": "Engineering",
+          "hire_date": "2023-02-14",
+          "salary": 110000,
+          "is_active": true
+        },
+        {
+          "employee_id": "EMP-1007",
+          "first_name": "Chloe",
+          "last_name": "Dubois",
+          "department": "Sales",
+          "hire_date": "2018-05-12",
+          "salary": 88000,
+          "is_active": true
+        },
+        {
+          "employee_id": "EMP-1008",
+          "first_name": "Liam",
+          "last_name": "O’Connor",
+          "department": "Operations",
+          "hire_date": "2022-06-30",
+          "salary": 82000,
+          "is_active": true
+        },
+        {
+          "employee_id": "EMP-1009",
+          "first_name": "Priya",
+          "last_name": "Nair",
+          "department": "Product",
+          "hire_date": "2020-09-18",
+          "salary": 118000,
+          "is_active": true
+        },
+        {
+          "employee_id": "EMP-1010",
+          "first_name": "Carlos",
+          "last_name": "Mendoza",
+          "department": "Engineering",
+          "hire_date": "2023-08-01",
+          "salary": 105000,
+          "is_active": true
+        },
+        {
+          "employee_id": "EMP-1011",
+          "first_name": "Hannah",
+          "last_name": "Schmidt",
+          "department": "Finance",
+          "hire_date": "2017-03-01",
+          "salary": 102000,
+          "is_active": true
+        },
+        {
+          "employee_id": "EMP-1012",
+          "first_name": "Kenji",
+          "last_name": "Sato",
+          "department": "Design",
+          "hire_date": "2021-11-15",
+          "salary": 95000,
+          "is_active": false
+        },
+        {
+          "employee_id": "EMP-1013",
+          "first_name": "Zoe",
+          "last_name": "Kowalski",
+          "department": "Sales",
+          "hire_date": "2022-10-01",
+          "salary": 91000,
+          "is_active": true
+        },
+        {
+          "employee_id": "EMP-1014",
+          "first_name": "Amara",
+          "last_name": "Okafor",
+          "department": "Operations",
+          "hire_date": "2023-04-12",
+          "salary": 84000,
+          "is_active": true
+        },
+        {
+          "employee_id": "EMP-1015",
+          "first_name": "Gabriel",
+          "last_name": "Silva",
+          "department": "Engineering",
+          "hire_date": "2020-02-28",
+          "salary": 135000,
+          "is_active": true
+        }
+      ],
+      "metadata": {
+        "primaryKey": "employee_id"
+      }
+    }
+  ]
+}

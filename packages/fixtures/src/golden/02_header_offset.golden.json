@@ -1,0 +1,125 @@
+{
+  "fixtureId": "02_header_offset",
+  "fixtureNumber": 2,
+  "filename": "02_header_offset.xlsx",
+  "format": "xlsx",
+  "description": "Header row offset to row 4 with 3 preceding metadata/title rows",
+  "sheets": [
+    {
+      "sheetName": "Q3_Sales",
+      "headers": {
+        "detectedRowIndex": 3,
+        "confidence": 0.95,
+        "originalHeaders": [
+          "Region",
+          "Branch Name",
+          "Units Sold",
+          "Gross Revenue",
+          "Target Met"
+        ],
+        "sanitizedKeys": [
+          "region",
+          "branch_name",
+          "units_sold",
+          "gross_revenue",
+          "target_met"
+        ]
+      },
+      "inferredTypes": {
+        "region": "category",
+        "branch_name": "text",
+        "units_sold": "number",
+        "gross_revenue": "currency",
+        "target_met": "boolean"
+      },
+      "rowCount": 12,
+      "columnCount": 5,
+      "rows": [
+        {
+          "region": "North",
+          "branch_name": "Seattle Alpha",
+          "units_sold": 1420,
+          "gross_revenue": 355000,
+          "target_met": true
+        },
+        {
+          "region": "North",
+          "branch_name": "Portland Beta",
+          "units_sold": 980,
+          "gross_revenue": 245000,
+          "target_met": false
+        },
+        {
+          "region": "North",
+          "branch_name": "Spokane Gamma",
+          "units_sold": 640,
+          "gross_revenue": 160000,
+          "target_met": true
+        },
+        {
+          "region": "South",
+          "branch_name": "Dallas Main",
+          "units_sold": 2150,
+          "gross_revenue": 537500,
+          "target_met": true
+        },
+        {
+          "region": "South",
+          "branch_name": "Austin Tech",
+          "units_sold": 1890,
+          "gross_revenue": 472500,
+          "target_met": true
+        },
+        {
+          "region": "South",
+          "branch_name": "Houston Port",
+          "units_sold": 1230,
+          "gross_revenue": 307500,
+          "target_met": false
+        },
+        {
+          "region": "East",
+          "branch_name": "Boston Central",
+          "units_sold": 1650,
+          "gross_revenue": 412500,
+          "target_met": true
+        },
+        {
+          "region": "East",
+          "branch_name": "New York Metro",
+          "units_sold": 3100,
+          "gross_revenue": 775000,
+          "target_met": true
+        },
+        {
+          "region": "East",
+          "branch_name": "Philadelphia Bay",
+          "units_sold": 890,
+          "gross_revenue": 222500,
+          "target_met": false
+        },
+        {
+          "region": "West",
+          "branch_name": "San Jose Hub",
+          "units_sold": 2400,
+          "gross_revenue": 600000,
+          "target_met": true
+        },
+        {
+          "region": "West",
+          "branch_name": "San Francisco Point",
+          "units_sold": 1950,
+          "gross_revenue": 487500,
+          "target_met": true
+        },
+        {
+          "region": "West",
+          "branch_name": "Oakland Yard",
+          "units_sold": 780,
+          "gross_revenue": 195000,
+          "target_met": false
+        }
+      ]
+    }
+  ]
+}

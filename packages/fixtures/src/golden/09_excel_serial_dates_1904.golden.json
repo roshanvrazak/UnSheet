@@ -1,0 +1,80 @@
+{
+  "fixtureId": "09_excel_serial_dates_1904",
+  "fixtureNumber": 9,
+  "filename": "09_excel_serial_dates_1904.xlsx",
+  "format": "xlsx",
+  "description": "Excel 1904 date system (Mac Excel compatibility) offsets correctly resolved to ISO dates",
+  "sheets": [
+    {
+      "sheetName": "Schedule_1904",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "Contract ID",
+          "Vendor Name",
+          "Execution Serial",
+          "Formatted Date",
+          "Contract Value"
+        ],
+        "sanitizedKeys": [
+          "contract_id",
+          "vendor_name",
+          "execution_serial",
+          "formatted_date",
+          "contract_value"
+        ]
+      },
+      "inferredTypes": {
+        "contract_id": "id",
+        "vendor_name": "text",
+        "execution_serial": "date",
+        "formatted_date": "date",
+        "contract_value": "currency"
+      },
+      "rowCount": 5,
+      "columnCount": 5,
+      "rows": [
+        {
+          "contract_id": "CTR-801",
+          "vendor_name": "Krupp Industrial",
+          "execution_serial": "2023-10-01",
+          "formatted_date": "2023-10-01",
+          "contract_value": 1200000
+        },
+        {
+          "contract_id": "CTR-802",
+          "vendor_name": "Vortex Dynamics",
+          "execution_serial": "2024-01-01",
+          "formatted_date": "2024-01-01",
+          "contract_value": 850000
+        },
+        {
+          "contract_id": "CTR-803",
+          "vendor_name": "Apex Logistics",
+          "execution_serial": "2024-04-01",
+          "formatted_date": "2024-04-01",
+          "contract_value": 420000
+        },
+        {
+          "contract_id": "CTR-804",
+          "vendor_name": "Nordic Energy AG",
+          "execution_serial": "2024-07-01",
+          "formatted_date": "2024-07-01",
+          "contract_value": 2100000
+        },
+        {
+          "contract_id": "CTR-805",
+          "vendor_name": "Helios Solar Tech",
+          "execution_serial": "2024-10-01",
+          "formatted_date": "2024-10-01",
+          "contract_value": 630000
+        }
+      ],
+      "metadata": {
+        "primaryKey": "contract_id",
+        "dateSystem": "1904"
+      }
+    }
+  ]
+}

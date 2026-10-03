@@ -1,0 +1,92 @@
+{
+  "fixtureId": "18_unicode_rtl_headers",
+  "fixtureNumber": 18,
+  "filename": "18_unicode_rtl_headers.xlsx",
+  "format": "xlsx",
+  "description": "International multilingual and RTL headers safely converted into valid ASCII SafeIdentifiers",
+  "sheets": [
+    {
+      "sheetName": "International_Data",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "المعرف",
+          "שם_המוצר",
+          "项目名称",
+          "Категория",
+          "Café_Coût_EUR",
+          "🚀_Launch_Date",
+          "⭐_Rating"
+        ],
+        "sanitizedKeys": [
+          "col_0",
+          "_",
+          "col_2",
+          "col_3",
+          "caf_cot_eur",
+          "_launch_date",
+          "_rating"
+        ]
+      },
+      "inferredTypes": {
+        "col_0": "id",
+        "_": "text",
+        "col_2": "text",
+        "col_3": "category",
+        "caf_cot_eur": "currency",
+        "_launch_date": "date",
+        "_rating": "number"
+      },
+      "rowCount": 5,
+      "columnCount": 7,
+      "rows": [
+        {
+          "col_0": "AR-101",
+          "_": "סורק לייזר",
+          "col_2": "太阳能发电厂",
+          "col_3": "Оборудование",
+          "caf_cot_eur": 1250.5,
+          "_launch_date": "2024-06-01",
+          "_rating": 4.8
+        },
+        {
+          "col_0": "AR-102",
+          "_": "בקר חכם",
+          "col_2": "智慧城市网格",
+          "col_3": "Электроника",
+          "caf_cot_eur": 890,
+          "_launch_date": "2024-07-15",
+          "_rating": 4.5
+        },
+        {
+          "col_0": "AR-103",
+          "_": "משאבת ואקום",
+          "col_2": "深水钻井平台",
+          "col_3": "Гидравлика",
+          "caf_cot_eur": 3400.75,
+          "_launch_date": "2024-08-20",
+          "_rating": 4.9
+        },
+        {
+          "col_0": "AR-104",
+          "_": "מערכת ניווט",
+          "col_2": "低空货运无人机",
+          "col_3": "Авионика",
+          "caf_cot_eur": 5200,
+          "_launch_date": "2024-09-10",
+          "_rating": 4.2
+        },
+        {
+          "col_0": "AR-105",
+          "_": "חיישן טמפרטורה",
+          "col_2": "工业物联网网关",
+          "col_3": "Сенсоры",
+          "caf_cot_eur": 175.25,
+          "_launch_date": "2024-10-05",
+          "_rating": 4.7
+        }
+      ]
+    }
+  ]
+}

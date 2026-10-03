@@ -1,0 +1,98 @@
+{
+  "fixtureId": "06_footnotes_trailing_notes",
+  "fixtureNumber": 6,
+  "filename": "06_footnotes_trailing_notes.xlsx",
+  "format": "xlsx",
+  "description": "Trailing footnotes, disclaimer asterisks, and regulatory approval notes stripped below data boundary",
+  "sheets": [
+    {
+      "sheetName": "Quarterly_Audit",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "Audit ID",
+          "Facility Location",
+          "Compliance Score",
+          "Lead Auditor",
+          "Audit Status"
+        ],
+        "sanitizedKeys": [
+          "audit_id",
+          "facility_location",
+          "compliance_score",
+          "lead_auditor",
+          "audit_status"
+        ]
+      },
+      "inferredTypes": {
+        "audit_id": "id",
+        "facility_location": "text",
+        "compliance_score": "number",
+        "lead_auditor": "text",
+        "audit_status": "category"
+      },
+      "rowCount": 7,
+      "columnCount": 5,
+      "rows": [
+        {
+          "audit_id": "AUD-2024-01",
+          "facility_location": "Austin Plant 1",
+          "compliance_score": 94.5,
+          "lead_auditor": "Dr. Aris Thorne",
+          "audit_status": "Passed"
+        },
+        {
+          "audit_id": "AUD-2024-02",
+          "facility_location": "Detroit Assembly",
+          "compliance_score": 88,
+          "lead_auditor": "Sarah O’Malley",
+          "audit_status": "Passed"
+        },
+        {
+          "audit_id": "AUD-2024-03",
+          "facility_location": "Reno Gigafactory",
+          "compliance_score": 67.5,
+          "lead_auditor": "Marcus Brody",
+          "audit_status": "Needs Remediation"
+        },
+        {
+          "audit_id": "AUD-2024-04",
+          "facility_location": "Stuttgart Hub",
+          "compliance_score": 96,
+          "lead_auditor": "Hans Becker",
+          "audit_status": "Passed"
+        },
+        {
+          "audit_id": "AUD-2024-05",
+          "facility_location": "Tokyo Robotics Lab",
+          "compliance_score": 91.5,
+          "lead_auditor": "Yuki Tanaka",
+          "audit_status": "Passed"
+        },
+        {
+          "audit_id": "AUD-2024-06",
+          "facility_location": "Monterrey Foundry",
+          "compliance_score": 72,
+          "lead_auditor": "Elena Rodriguez",
+          "audit_status": "Needs Remediation"
+        },
+        {
+          "audit_id": "AUD-2024-07",
+          "facility_location": "Manchester Distribution",
+          "compliance_score": 85.5,
+          "lead_auditor": "Nigel Campbell",
+          "audit_status": "Passed"
+        }
+      ],
+      "metadata": {
+        "primaryKey": "audit_id",
+        "notes": [
+          "* Note: Facilities scoring below 75.0 require formal corrective action plan within 30 days.",
+          "** Confidential compliance record prepared pursuant to ISO 14001:2015 environmental standards.",
+          "Report approved by: Global EHS Director on 2024-09-28."
+        ]
+      }
+    }
+  ]
+}

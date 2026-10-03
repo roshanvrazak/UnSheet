@@ -1,0 +1,11 @@
+ticket_id,requester,summary,error_log,priority
+TCK-801,dev-ops-agent,Worker node OOM crash,"Error: Out of memory
+Kill process 4012 (node)
+Heap limit 4096 MB exceeded",Critical
+TCK-802,sec-scanner,SSL cert expiration warning,"Warning: cert *.internal.io expires in 7 days
+Issuer: Let's Encrypt
+Action required",High
+TCK-803,qa-bot,Flaky network retry,"SocketTimeoutException: Connection timed out to db-read-replica-2:5432
+Retry 1: Success",Medium
+TCK-804,audit-runner,Missing IAM role tags,"Role arn:aws:iam::123456789:role/IngestTask is missing Environment tag
+Complies with rule E-04",Low

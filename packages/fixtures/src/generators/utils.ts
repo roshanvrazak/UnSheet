@@ -1,73 +1,100 @@
-import type { SafeIdentifier } from '@unsheet/contracts';
-import { FORBIDDEN_OBJECT_KEYS } from '@unsheet/contracts';
+import {
+  SafeIdentifierSchema,
+  FORBIDDEN_OBJECT_KEYS,
+  type SafeIdentifier,
+} from '@unsheet/contracts';
 import type { Worksheet, Row } from 'exceljs';
 
+const FORBIDDEN_SET = new Set<string>(FORBIDDEN_OBJECT_KEYS);
+
 /**
- * Sanitizes a raw header string into a valid SafeIdentifier conforming to contracts.
+ * Sanitizes a raw column header string into a valid SafeIdentifier candidate.
+ * Aligns strictly with @unsheet/engine's sanitiseHeaderToken.
  */
-export function sanitizeHeaderKey(raw: string, fallbackIndex = 0): SafeIdentifier {
-  if (!raw || typeof raw !== 'string') {
-    return `col_${fallbackIndex}` as SafeIdentifier;
+export function sanitizeHeaderKey(raw: unknown, columnIndex = 0): string {
+  const rawStr = String(raw ?? '').trim();
+
+  if (rawStr === '') {
+    return `col_${columnIndex + 1}`;
   }
 
-  // Remove leading/trailing whitespace
-  let clean = raw.trim();
-
-  // Handle common symbols and punctuation
-  clean = clean
-    .replace(/[#$€£¥%&/\\()[\],.?*!@^+=<>:;"'~`|]/g, ' ')
-    .trim()
-    .replace(/\s+/g, '_')
-    .toLowerCase();
-
-  // Strip non-alphanumeric/non-underscore characters
-  clean = clean.replace(/[^a-z0-9_]/g, '');
-
-  // If starts with digit, prepend 'col_'
-  if (/^[0-9]/.test(clean)) {
-    clean = `col_${clean}`;
+  const rawLower = rawStr.toLowerCase();
+  if (
+    rawLower === '__proto__' ||
+    rawLower === 'constructor' ||
+    rawLower === 'prototype'
+  ) {
+    return `safe_${rawLower}`;
   }
 
-  // If empty or invalid, fallback
-  if (!clean || !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(clean)) {
-    clean = `col_${fallbackIndex}`;
+  // Insert underscores between camelCase boundaries (e.g. "firstName" -> "first_name")
+  let str = rawStr.replace(/([a-z0-9])([A-Z])/g, '$1_$2');
+
+  // Replace any non-alphanumeric or underscore characters with underscores
+  str = str.replace(/[^a-zA-Z0-9_]/g, '_');
+
+  // Collapse multiple consecutive underscores
+  str = str.replace(/_+/g, '_');
+
+  // Convert to lowercase for clean, uniform programmatic identifiers
+  str = str.toLowerCase();
+
+  // If identifier begins with a digit, prefix with an underscore
+  if (/^[0-9]/.test(str)) {
+    str = `_${str}`;
   }
 
-  // Neutralize prototype pollution vectors
-  if (FORBIDDEN_OBJECT_KEYS.includes(clean as typeof FORBIDDEN_OBJECT_KEYS[number])) {
-    clean = `col_${clean}`;
+  // Strip trailing underscore if longer than 1 character
+  if (str.length > 1 && str.endsWith('_')) {
+    str = str.slice(0, -1);
   }
 
-  // Cap at 128 characters
-  if (clean.length > 128) {
-    clean = clean.slice(0, 128);
+  // Strip leading underscore if followed only by symbols, or if empty
+  if (str === '' || str === '_') {
+    str = `col_${columnIndex + 1}`;
   }
 
-  return clean as SafeIdentifier;
+  // Check against forbidden prototype pollution keywords
+  if (FORBIDDEN_SET.has(str) || str === '__proto__' || str === 'constructor' || str === 'prototype') {
+    str = `safe_${str}`;
+  }
+
+  // Truncate to maximum 120 characters to allow room for sequential disambiguation suffixes
+  if (str.length > 120) {
+    str = str.slice(0, 120);
+  }
+
+  return str;
 }
 
 /**
  * Disambiguates an array of raw headers into unique SafeIdentifiers with sequential suffixes.
+ * Uses a while (seen.has(candidateKey)) loop to prevent collision on pre-indexed headers
+ * and parses each key through SafeIdentifierSchema.
  */
-export function disambiguateHeaders(rawHeaders: string[]): SafeIdentifier[] {
-  const seenCount = new Map<string, number>();
-  const result: SafeIdentifier[] = [];
+export function disambiguateHeaders(rawHeaders: unknown[]): SafeIdentifier[] {
+  const seenKeys = new Set<string>();
+  const sanitized: SafeIdentifier[] = [];
 
   for (let i = 0; i < rawHeaders.length; i++) {
-    const raw = rawHeaders[i] ?? `col_${i}`;
-    const baseKey = sanitizeHeaderKey(raw, i);
-    const count = seenCount.get(baseKey) ?? 0;
-    seenCount.set(baseKey, count + 1);
+    const baseKey = sanitizeHeaderKey(rawHeaders[i], i);
+    let key = baseKey;
+    let counter = 1;
 
-    if (count === 0) {
-      result.push(baseKey);
-    } else {
-      const uniqueKey = `${baseKey}_${count}` as SafeIdentifier;
-      result.push(uniqueKey);
+    // Disambiguate duplicate keys, guaranteeing absolute uniqueness
+    while (seenKeys.has(key) || FORBIDDEN_SET.has(key)) {
+      key = `${baseKey}_${counter}`;
+      counter++;
     }
+
+    seenKeys.add(key);
+
+    // Validate with contract schema (no unchecked casts)
+    const validatedKey = SafeIdentifierSchema.parse(key);
+    sanitized.push(validatedKey);
   }
 
-  return result;
+  return sanitized;
 }
 
 /**

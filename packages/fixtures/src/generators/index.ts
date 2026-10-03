@@ -38,6 +38,8 @@ import {
   generate28DomainSupplierLeadTimes,
 } from './domains.js';
 
+export * from './utils.js';
+
 export {
   generate01CleanBaseline,
   generate02HeaderOffset,

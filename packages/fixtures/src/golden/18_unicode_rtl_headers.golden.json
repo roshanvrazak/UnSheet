@@ -20,21 +20,21 @@
           "⭐_Rating"
         ],
         "sanitizedKeys": [
-          "col_0",
-          "_",
+          "col_1",
           "col_2",
           "col_3",
-          "caf_cot_eur",
+          "col_4",
+          "caf_co_t_eur",
           "_launch_date",
           "_rating"
         ]
       },
       "inferredTypes": {
-        "col_0": "id",
-        "_": "text",
+        "col_1": "id",
         "col_2": "text",
-        "col_3": "category",
-        "caf_cot_eur": "currency",
+        "col_3": "text",
+        "col_4": "category",
+        "caf_co_t_eur": "currency",
         "_launch_date": "date",
         "_rating": "number"
       },
@@ -42,47 +42,47 @@
       "columnCount": 7,
       "rows": [
         {
-          "col_0": "AR-101",
-          "_": "סורק לייזר",
-          "col_2": "太阳能发电厂",
-          "col_3": "Оборудование",
-          "caf_cot_eur": 1250.5,
+          "col_1": "AR-101",
+          "col_2": "סורק לייזר",
+          "col_3": "太阳能发电厂",
+          "col_4": "Оборудование",
+          "caf_co_t_eur": 1250.5,
           "_launch_date": "2024-06-01",
           "_rating": 4.8
         },
         {
-          "col_0": "AR-102",
-          "_": "בקר חכם",
-          "col_2": "智慧城市网格",
-          "col_3": "Электроника",
-          "caf_cot_eur": 890,
+          "col_1": "AR-102",
+          "col_2": "בקר חכם",
+          "col_3": "智慧城市网格",
+          "col_4": "Электроника",
+          "caf_co_t_eur": 890,
           "_launch_date": "2024-07-15",
           "_rating": 4.5
         },
         {
-          "col_0": "AR-103",
-          "_": "משאבת ואקום",
-          "col_2": "深水钻井平台",
-          "col_3": "Гидравлика",
-          "caf_cot_eur": 3400.75,
+          "col_1": "AR-103",
+          "col_2": "משאבת ואקום",
+          "col_3": "深水钻井平台",
+          "col_4": "Гидравлика",
+          "caf_co_t_eur": 3400.75,
           "_launch_date": "2024-08-20",
           "_rating": 4.9
         },
         {
-          "col_0": "AR-104",
-          "_": "מערכת ניווט",
-          "col_2": "低空货运无人机",
-          "col_3": "Авионика",
-          "caf_cot_eur": 5200,
+          "col_1": "AR-104",
+          "col_2": "מערכת ניווט",
+          "col_3": "低空货运无人机",
+          "col_4": "Авионика",
+          "caf_co_t_eur": 5200,
           "_launch_date": "2024-09-10",
           "_rating": 4.2
         },
         {
-          "col_0": "AR-105",
-          "_": "חיישן טמפרטורה",
-          "col_2": "工业物联网网关",
-          "col_3": "Сенсоры",
-          "caf_cot_eur": 175.25,
+          "col_1": "AR-105",
+          "col_2": "חיישן טמפרטורה",
+          "col_3": "工业物联网网关",
+          "col_4": "Сенсоры",
+          "caf_co_t_eur": 175.25,
           "_launch_date": "2024-10-05",
           "_rating": 4.7
         }

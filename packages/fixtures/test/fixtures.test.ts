@@ -1,6 +1,10 @@
 import fs from 'node:fs';
 import { describe, it, expect } from 'vitest';
-import { SafeIdentifierSchema, InferredDataTypeSchema } from '@unsheet/contracts';
+import {
+  SafeIdentifierSchema,
+  InferredDataTypeSchema,
+  WorkbookModelSchema,
+} from '@unsheet/contracts';
 import {
   fixtureMetadata,
   fixtureGenerators,
@@ -8,8 +12,12 @@ import {
   getFixtureFilePath,
   getFixtureBuffer,
   getFixtureGolden,
+  getFixtureWorkbookModel,
+  validateGoldenAgainstWorkbookModel,
   getAllGoldenBaselines,
   getAllFixtureMetas,
+  sanitizeHeaderKey,
+  disambiguateHeaders,
 } from '../src/index.js';
 
 describe('Fixtures Corpus Registry & Metadata', () => {
@@ -65,6 +73,51 @@ describe('Fixtures Corpus Registry & Metadata', () => {
   });
 });
 
+describe('Header Sanitization & Disambiguation (REV-P1-11 & REV-P1-12)', () => {
+  it('REV-P1-11: disambiguates pre-indexed colliding headers without collisions', () => {
+    const input1 = ['user', 'user', 'user_1'];
+    const result1 = disambiguateHeaders(input1);
+    expect(result1).toEqual(['user', 'user_1', 'user_1_1']);
+    expect(new Set(result1).size).toBe(3);
+
+    const input2 = ['user', 'user_1', 'user'];
+    const result2 = disambiguateHeaders(input2);
+    expect(result2).toEqual(['user', 'user_1', 'user_2']);
+    expect(new Set(result2).size).toBe(3);
+
+    const input3 = ['data', 'data_1', 'data_2', 'data', 'data_1'];
+    const result3 = disambiguateHeaders(input3);
+    expect(new Set(result3).size).toBe(5);
+  });
+
+  it('REV-P1-11: validates every returned key against SafeIdentifierSchema.parse', () => {
+    const headers = ['Normal Header', '123 Number', 'Special & Symbols', '__proto__', 'constructor'];
+    const sanitized = disambiguateHeaders(headers);
+    for (const key of sanitized) {
+      expect(() => SafeIdentifierSchema.parse(key)).not.toThrow();
+    }
+  });
+
+  it('REV-P1-12: prefixes leading digits with underscore aligned with engine sanitise', () => {
+    expect(sanitizeHeaderKey('2024 Sales')).toBe('_2024_sales');
+    expect(sanitizeHeaderKey('1st Place')).toBe('_1st_place');
+    expect(sanitizeHeaderKey('99 Bottles')).toBe('_99_bottles');
+  });
+
+  it('REV-P1-12: maps prototype pollution keys to safe_ prefixed identifiers', () => {
+    expect(sanitizeHeaderKey('__proto__')).toBe('safe___proto__');
+    expect(sanitizeHeaderKey('constructor')).toBe('safe_constructor');
+    expect(sanitizeHeaderKey('prototype')).toBe('safe_prototype');
+    expect(sanitizeHeaderKey('__PROTO__')).toBe('safe___proto__');
+  });
+
+  it('REV-P1-12: splits camelCase boundaries with underscore', () => {
+    expect(sanitizeHeaderKey('firstName')).toBe('first_name');
+    expect(sanitizeHeaderKey('unitPriceUSD')).toBe('unit_price_usd');
+    expect(sanitizeHeaderKey('YoY Growth')).toBe('yo_y_growth');
+  });
+});
+
 describe('Workbook Files & Buffer Generation', () => {
   it('loads valid buffers for all 28 fixtures', async () => {
     for (const meta of fixtureMetadata) {
@@ -89,7 +142,7 @@ describe('Workbook Files & Buffer Generation', () => {
   });
 });
 
-describe('Golden Baselines Schema & Contracts Validation', () => {
+describe('Golden Baselines Schema & WorkbookModelSchema Validation', () => {
   const allGoldens = getAllGoldenBaselines();
 
   it('loads all 28 golden baseline JSON files', () => {
@@ -106,6 +159,21 @@ describe('Golden Baselines Schema & Contracts Validation', () => {
         expect(golden.fixtureNumber).toBe(meta.number);
         expect(golden.filename).toBe(meta.filename);
         expect(golden.sheets.length).toBeGreaterThanOrEqual(1);
+      });
+
+      it('safely validates against WorkbookModelSchema via validateGoldenAgainstWorkbookModel', () => {
+        const model = validateGoldenAgainstWorkbookModel(golden);
+        expect(model).toBeDefined();
+        expect(model.id).toBe(meta.id);
+        expect(model.filename).toBe(meta.filename);
+        expect(model.sheets.length).toBe(golden.sheets.length);
+        expect(WorkbookModelSchema.safeParse(model).success).toBe(true);
+      });
+
+      it('loads directly as validated WorkbookModel via getFixtureWorkbookModel', () => {
+        const model = getFixtureWorkbookModel(meta.id);
+        expect(model.sheets.length).toBe(golden.sheets.length);
+        expect(model.sheets[0]?.columns.length).toBe(golden.sheets[0]?.columnCount);
       });
 
       it('validates all sanitized keys against SafeIdentifierSchema', () => {
@@ -249,7 +317,7 @@ describe('Specific Edge Case & Domain Workbook Invariants', () => {
     const sheet = golden.sheets[0]!;
     expect(sheet.inferredTypes.click_through_pct).toBe('percent');
     expect(sheet.rows[0]?.click_through_pct).toBe(0.045);
-    expect(sheet.rows[0]?.yoy_growth).toBe(0.155);
+    expect(sheet.rows[0]?.yo_y_growth).toBe(0.155);
   });
 
   it('Fixture 13 (Hidden Sheets and Columns): tracks hidden columns and hidden sheets', () => {

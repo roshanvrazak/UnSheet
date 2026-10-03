@@ -45,6 +45,8 @@ import {
   ExportTableSchema,
   ExportFormatSchema,
   ExportOptionsSchema,
+  JoinCandidateSchema,
+  WorkbookProfileSchema,
   type DashboardSpec,
   type WorkbookModel,
 } from '../src/index.js';
@@ -274,6 +276,90 @@ describe('Column Profile & Sheet Profile Contracts', () => {
     });
 
     expect(sheetProfile.recommendedTimeColumn).toBe('order_date');
+  });
+
+  it('rejects forbidden prototype pollution keys in SheetProfile sheetName', () => {
+    const baseProfile = {
+      sheetId: 'sheet-1',
+      rowCount: 10,
+      columnProfiles: [
+        {
+          columnKey: 'col1',
+          originalName: 'Col 1',
+          inferredType: 'text' as const,
+          semanticRole: 'dimension' as const,
+          nullable: false,
+          nullCount: 0,
+          totalCount: 10,
+          distinctCount: 5,
+          uniquenessRatio: 0.5,
+          sampleValues: ['val1', 'val2'],
+        },
+      ],
+      recommendedDimensions: [],
+      recommendedMeasures: [],
+    };
+
+    // Valid sheet names
+    expect(SheetProfileSchema.parse({ ...baseProfile, sheetName: 'Sheet1' }).sheetName).toBe('Sheet1');
+    expect(SheetProfileSchema.parse({ ...baseProfile, sheetName: 'Q1 2024' }).sheetName).toBe('Q1 2024');
+    expect(SheetProfileSchema.parse({ ...baseProfile, sheetName: 'Sales & Marketing' }).sheetName).toBe('Sales & Marketing');
+
+    // Forbidden prototype pollution keys (case-insensitive and trimmed)
+    expect(() => SheetProfileSchema.parse({ ...baseProfile, sheetName: '__proto__' })).toThrow();
+    expect(() => SheetProfileSchema.parse({ ...baseProfile, sheetName: '__PROTO__' })).toThrow();
+    expect(() => SheetProfileSchema.parse({ ...baseProfile, sheetName: '  __proto__  ' })).toThrow();
+    expect(() => SheetProfileSchema.parse({ ...baseProfile, sheetName: 'constructor' })).toThrow();
+    expect(() => SheetProfileSchema.parse({ ...baseProfile, sheetName: 'Constructor' })).toThrow();
+    expect(() => SheetProfileSchema.parse({ ...baseProfile, sheetName: ' CONSTRUCTOR ' })).toThrow();
+    expect(() => SheetProfileSchema.parse({ ...baseProfile, sheetName: 'prototype' })).toThrow();
+    expect(() => SheetProfileSchema.parse({ ...baseProfile, sheetName: 'Prototype' })).toThrow();
+    expect(() => SheetProfileSchema.parse({ ...baseProfile, sheetName: '\tprototype\n' })).toThrow();
+  });
+
+  it('validates JoinCandidateSchema and WorkbookProfileSchema', () => {
+    const join = JoinCandidateSchema.parse({
+      sourceSheet: 'Orders',
+      sourceColumn: 'customer_id',
+      targetSheet: 'Customers',
+      targetColumn: 'id',
+      confidence: 0.95,
+      overlapRatio: 0.98,
+      sampleMatches: ['CUST-001', 'CUST-002'],
+    });
+
+    expect(join.confidence).toBe(0.95);
+    expect(join.sourceSheet).toBe('Orders');
+
+    const sheetProfile = {
+      sheetId: 'sheet-1',
+      sheetName: 'Orders',
+      rowCount: 10,
+      columnProfiles: [
+        {
+          columnKey: 'customer_id',
+          originalName: 'Customer ID',
+          inferredType: 'id' as const,
+          semanticRole: 'identifier' as const,
+          nullable: false,
+          nullCount: 0,
+          totalCount: 10,
+          distinctCount: 10,
+          uniquenessRatio: 1,
+          sampleValues: ['CUST-001'],
+        },
+      ],
+      recommendedDimensions: [],
+      recommendedMeasures: [],
+    };
+
+    const wbProfile = WorkbookProfileSchema.parse({
+      sheets: [sheetProfile],
+      crossSheetJoins: [join],
+    });
+
+    expect(wbProfile.sheets).toHaveLength(1);
+    expect(wbProfile.crossSheetJoins).toHaveLength(1);
   });
 });
 

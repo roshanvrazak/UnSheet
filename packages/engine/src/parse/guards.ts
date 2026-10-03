@@ -13,7 +13,7 @@ const UTF8_BOM = [0xef, 0xbb, 0xbf];
 const UTF16_LE_BOM = [0xff, 0xfe];
 const UTF16_BE_BOM = [0xfe, 0xff];
 
-const MACRO_EXTENSIONS = new Set(['xlsm', 'xlsb', 'xltm', 'xlam']);
+const MACRO_EXTENSIONS = new Set(['xlsm', 'xlsb', 'xltm', 'xlam', 'xlm', 'xla']);
 
 export interface GuardValidationResult {
   fileType: FileType;

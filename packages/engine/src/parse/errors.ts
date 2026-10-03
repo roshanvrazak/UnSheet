@@ -12,6 +12,13 @@ export class IngestError extends Error {
   }
 }
 
+export class UploadGuardError extends IngestError {
+  constructor(message = 'Upload guard validation failed') {
+    super(message, 'UPLOAD_GUARD_FAILED');
+    this.name = 'UploadGuardError';
+  }
+}
+
 export class FileSizeLimitError extends IngestError {
   constructor(message = 'File size exceeds maximum 10MB limit') {
     super(message, 'FILE_SIZE_EXCEEDED');

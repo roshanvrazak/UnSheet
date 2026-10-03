@@ -1,7 +1,43 @@
 /**
+ * Safely converts an arbitrary value to a string, gracefully handling
+ * null-prototype objects (Object.create(null)) without throwing
+ * "TypeError: Cannot convert object to primitive value".
+ */
+export function safeToString(val: unknown): string {
+  if (val === null || val === undefined) {
+    return '';
+  }
+  if (typeof val === 'string') {
+    return val;
+  }
+  if (typeof val === 'number' || typeof val === 'boolean' || typeof val === 'bigint') {
+    return String(val);
+  }
+  if (val instanceof Date) {
+    return Number.isNaN(val.getTime()) ? '' : val.toISOString();
+  }
+  if (typeof val === 'object') {
+    try {
+      if (Object.getPrototypeOf(val) === null) {
+        return '';
+      }
+      return String(val);
+    } catch {
+      return '';
+    }
+  }
+  try {
+    return String(val);
+  } catch {
+    return '';
+  }
+}
+
+/**
  * Normalises an arbitrary raw spreadsheet cell value into a clean, JSON-serializable value.
  * Empty cells, whitespace strings, and invalid numbers are mapped to null.
  * Dates are converted to ISO 8601 strings.
+ * Leading/trailing whitespace on string cells is trimmed.
  */
 export function normaliseCellValue(raw: unknown): unknown {
   if (raw === null || raw === undefined) {
@@ -13,7 +49,8 @@ export function normaliseCellValue(raw: unknown): unknown {
     if (trimmed === '') {
       return null;
     }
-    return raw;
+    // REV-P1-06: Return trimmed string to eliminate messy leading/trailing whitespace
+    return trimmed;
   }
 
   if (typeof raw === 'number') {
@@ -39,5 +76,20 @@ export function normaliseCellValue(raw: unknown): unknown {
     return Number(raw);
   }
 
-  return String(raw);
+  if (typeof raw === 'object') {
+    try {
+      if (Object.getPrototypeOf(raw) === null) {
+        return null;
+      }
+      return String(raw);
+    } catch {
+      return null;
+    }
+  }
+
+  try {
+    return String(raw);
+  } catch {
+    return null;
+  }
 }

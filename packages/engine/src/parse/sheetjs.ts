@@ -3,6 +3,7 @@ import {
   MAX_SHEETS,
   MAX_ROWS,
   MAX_COLUMNS,
+  FORBIDDEN_OBJECT_KEYS,
   type FileType,
   type SheetBounds,
 } from '@unsheet/contracts';
@@ -50,7 +51,10 @@ export function parseSheetJs(
       cellHTML: false,
       cellText: false,
       WTF: false,
-    });
+      doctype: false,
+      nodeProcess: false,
+      bookVBA: false,
+    } as XLSX.ParsingOptions);
   } catch (err: unknown) {
     throw new CorruptedFileError(
       `Failed to parse spreadsheet file: ${err instanceof Error ? err.message : String(err)}`
@@ -70,10 +74,19 @@ export function parseSheetJs(
   const sheets: RawSheet[] = [];
 
   for (const sheetName of workbook.SheetNames) {
-    const ws = workbook.Sheets[sheetName];
+    // SEC-P1-10 / ADV-P1-06: Guard against prototype property lookup on workbook.Sheets
+    const ws =
+      Object.prototype.hasOwnProperty.call(workbook.Sheets, sheetName)
+        ? (workbook.Sheets[sheetName] as XLSX.WorkSheet | undefined)
+        : undefined;
+
+    // SEC-P1-10: Sanitize sheet name against prototype pollution keys
+    const isForbidden = (FORBIDDEN_OBJECT_KEYS as readonly string[]).includes(sheetName);
+    const safeSheetName = isForbidden ? `safe_${sheetName}` : sheetName;
+
     if (!ws) {
       sheets.push({
-        name: sheetName,
+        name: safeSheetName,
         grid: [],
         merges: [],
       });
@@ -141,7 +154,7 @@ export function parseSheetJs(
     }
 
     sheets.push({
-      name: sheetName,
+      name: safeSheetName,
       grid,
       merges,
       rawBounds,

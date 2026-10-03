@@ -2,17 +2,13 @@ import { describe, it, expect } from 'vitest';
 import * as XLSX from 'xlsx';
 import {
   SampleValueSchema,
-  MAX_UNCOMPRESSED_BYTES,
   MAX_FILE_SIZE_BYTES,
-  MAX_ROWS,
-  MAX_COLUMNS,
 } from '@unsheet/contracts';
 import {
   inspectZipArchive,
   validateUploadGuards,
   parseSheetJs,
   normaliseSheet,
-  normaliseWorkbook,
   ingestWorkbook,
   detectHeaderRow,
   sanitiseHeaders,
@@ -23,7 +19,6 @@ import {
   CorruptedFileError,
   FileSizeLimitError,
   MagicBytesMismatchError,
-  SheetBoundsError,
 } from '../../src/index.js';
 
 /**
@@ -149,11 +144,7 @@ describe('Adversarial Red-Team Suite: Phase 1 Ingest & Normalise Engine', () => 
   // ATTACK VECTOR 1: Zip Bomb Variants & Decompression Limits
   // =========================================================================
   describe('Vector 1: Zip Bomb Variants & Crafted Headers', () => {
-    it('ADV-V1-01: Exposes division-by-zero bypass in compression ratio check when compressedSize === 0', () => {
-      // Craft a zip where compressedSize is 0, but declared uncompressedSize is 150MB.
-      // In physics and data compression, 0 bytes compressing to 150MB is impossible / synthetic bomb.
-      // However, inspectZipArchive guards `if (compressedSize > 0)` and `totalCompressedSize > 0`,
-      // defaulting compressionRatio to 1 and failing to flag the bomb!
+    it('ADV-V1-01: Rejects zero-compressed size decompression bomb (compressedSize === 0, uncompressedSize > 0)', () => {
       const zip = createMockZipWithCD([
         {
           filename: 'xl/worksheets/sheet1.xml',
@@ -162,11 +153,7 @@ describe('Adversarial Red-Team Suite: Phase 1 Ingest & Normalise Engine', () => 
         },
       ]);
 
-      const inspection = inspectZipArchive(zip);
-      // Security Gap: The bomb is NOT rejected, and compression ratio is reported as 1:1!
-      expect(inspection.compressionRatio).toBe(1);
-      expect(inspection.totalUncompressedSize).toBe(150 * 1024 * 1024);
-      expect(inspection.totalCompressedSize).toBe(0);
+      expect(() => inspectZipArchive(zip)).toThrow(ZipBombError);
     });
 
     it('ADV-V1-02: Exposes bypass of entry-level ratio check for high ratios under 1MB threshold', () => {
@@ -245,10 +232,7 @@ describe('Adversarial Red-Team Suite: Phase 1 Ingest & Normalise Engine', () => 
       expect(result.fileType).toBe('csv');
     });
 
-    it('ADV-V2-02: Exposes silent loop break on corrupted Central Directory entry signature', () => {
-      // Craft a ZIP where EOCD is valid, but at cdOffset the signature is garbage (not 0x02014b50).
-      // inspectZipArchive line 85 encounters `sig !== 0x02014b50` and simply `break`s!
-      // It returns an empty inspection result without throwing CorruptedFileError!
+    it('ADV-V2-02: Fails closed on corrupted Central Directory entry signature', () => {
       const corruptedCDZip = createMockZipWithCD(
         [
           {
@@ -260,10 +244,7 @@ describe('Adversarial Red-Team Suite: Phase 1 Ingest & Normalise Engine', () => 
         { customCdSig: 0x99999999 } // Invalid signature!
       );
 
-      const inspection = inspectZipArchive(corruptedCDZip);
-      // Security Gap: Corrupted entry signature fails open with 0 entries instead of throwing CorruptedFileError!
-      expect(inspection.entries).toHaveLength(0);
-      expect(inspection.compressionRatio).toBe(1);
+      expect(() => inspectZipArchive(corruptedCDZip)).toThrow();
     });
 
     it('ADV-V2-03: Fails closed on truncated ZIP buffers smaller than 22 bytes', () => {
@@ -311,11 +292,7 @@ describe('Adversarial Red-Team Suite: Phase 1 Ingest & Normalise Engine', () => 
   // ATTACK VECTOR 3: Prototype Pollution Keys in Sheet Names, Headers, and Cells
   // =========================================================================
   describe('Vector 3: Prototype Pollution Keys in Sheet Names, Headers, & Cells', () => {
-    it('ADV-V3-01: Exposes prototype pollution acceptance in SheetModel.name (__proto__, constructor)', () => {
-      // Sheet names are typed as `z.string().min(1).max(128)` in SheetModelSchema.
-      // Unlike column keys which enforce SafeIdentifierSchema, SheetModel.name
-      // permits '__proto__', 'constructor', 'prototype'!
-      // If downstream apps index sheets via `sheetsMap[sheet.name] = sheet`, Object.prototype is polluted!
+    it('ADV-V3-01: Sanitizes prototype pollution keywords in SheetModel.name (__proto__, constructor)', () => {
       const rawSheet = {
         name: '__proto__',
         grid: [
@@ -326,8 +303,7 @@ describe('Adversarial Red-Team Suite: Phase 1 Ingest & Normalise Engine', () => 
       };
 
       const sheetModel = normaliseSheet(rawSheet, 0);
-      // Security Gap: The sheet name remains raw '__proto__' without sanitization!
-      expect(sheetModel.name).toBe('__proto__');
+      expect(sheetModel.name).toBe('safe___proto__');
     });
 
     it('ADV-V3-02: Exposes data loss when sheet name in SheetJS workbook matches Object.prototype property (constructor)', () => {
@@ -349,12 +325,9 @@ describe('Adversarial Red-Team Suite: Phase 1 Ingest & Normalise Engine', () => 
       expect(sheet).toBeDefined();
     });
 
-    it('ADV-V3-03: Exposes unhandled TypeError crash when cell value is Object.create(null)', () => {
-      // If a cell in the grid is an object with a null prototype (Object.create(null)):
-      // detectHeaderRow line 61: `String(val)` crashes with unhandled TypeError:
-      // "TypeError: Cannot convert object to primitive value"
+    it('ADV-V3-03: Gracefully handles cell value with Object.create(null) without throwing', () => {
       const rawSheet = {
-        name: 'NullProtoCrash',
+        name: 'NullProtoSafe',
         grid: [
           ['Col1', Object.create(null)],
           ['Val1', 'Val2'],
@@ -362,9 +335,7 @@ describe('Adversarial Red-Team Suite: Phase 1 Ingest & Normalise Engine', () => 
         merges: [],
       };
 
-      expect(() => detectHeaderRow(rawSheet.grid)).toThrow(
-        /Cannot convert object to primitive value/
-      );
+      expect(() => detectHeaderRow(rawSheet.grid)).not.toThrow();
     });
 
     it('ADV-V3-04: Successfully sanitizes prototype pollution keywords in column headers', () => {
@@ -423,12 +394,12 @@ describe('Adversarial Red-Team Suite: Phase 1 Ingest & Normalise Engine', () => 
 
       const sheetModel = normaliseSheet(rawSheet, 0);
 
-      // Verify that normaliseSheet stored the raw formula strings unescaped
+      // Verify that normaliseSheet stored the raw formula strings unescaped (with whitespace trimmed)
       for (let i = 0; i < hostileFormulas.length; i++) {
         const rowVal = sheetModel.rows[i]?.['formula_col'];
-        expect(rowVal).toBe(hostileFormulas[i]);
+        expect(rowVal).toBe(hostileFormulas[i]?.trim());
 
-        // Security Gap: Passing this raw row cell value directly to contracts' SampleValueSchema fails!
+        // Passing this formula string to contracts' SampleValueSchema fails
         expect(() => SampleValueSchema.parse(rowVal)).toThrow();
       }
     });
@@ -584,12 +555,7 @@ describe('Adversarial Red-Team Suite: Phase 1 Ingest & Normalise Engine', () => 
   // ATTACK VECTOR 6: Macro Workbooks Disguised as .xlsx or Plain CSV
   // =========================================================================
   describe('Vector 6: Macro Workbooks Disguised as .xlsx or Plain CSV', () => {
-    it('ADV-V6-01: Exposes macro inspection bypass via Windows backslash path separator (xl\\macros\\sheet1.bin)', () => {
-      // In inspectZipArchive (packages/engine/src/parse/zip.ts line 22):
-      // MACRO_ENTRY_PATTERNS contains: `/xl\/macros\//i`.
-      // It specifically uses forward slashes `/`.
-      // On Windows or maliciously crafted archives, entries can use backslashes: `xl\\macros\\sheet1.bin`.
-      // The regex fails to match, allowing the macro entry through!
+    it('ADV-V6-01: Rejects macro inspection bypass via Windows backslash path separator (xl\\macros\\sheet1.bin)', () => {
       const zip = createMockZipWithCD([
         {
           filename: 'xl\\macros\\sheet1.bin', // Backslash path separator!
@@ -598,19 +564,10 @@ describe('Adversarial Red-Team Suite: Phase 1 Ingest & Normalise Engine', () => 
         },
       ]);
 
-      // Security Gap: Backslash path separator bypasses the macro pattern!
-      const inspection = inspectZipArchive(zip);
-      expect(inspection.entries.map((e) => e.filename)).toContain('xl\\macros\\sheet1.bin');
+      expect(() => inspectZipArchive(zip)).toThrow(MacroNotAllowedError);
     });
 
-    it('ADV-V6-02: Exposes Excel 4.0 XLM Macro sheet bypass (xl/macroSheets/sheet1.xml)', () => {
-      // Excel 4.0 XLM macro workbooks store macro sheets under: `xl/macroSheets/sheet1.xml`.
-      // MACRO_ENTRY_PATTERNS:
-      // - /vbaproject\.bin$/i
-      // - /vbaprojectsignature\.bin$/i
-      // - /xl\/macros\//i
-      // - /macroenabled/i
-      // NONE of these patterns match 'xl/macroSheets/sheet1.xml' (macrosheet != macros/, and macroSheets != macroenabled)!
+    it('ADV-V6-02: Rejects Excel 4.0 XLM Macro sheet (xl/macroSheets/sheet1.xml)', () => {
       const zip = createMockZipWithCD([
         {
           filename: 'xl/macroSheets/sheet1.xml', // Excel 4.0 XLM macro sheet!
@@ -619,9 +576,7 @@ describe('Adversarial Red-Team Suite: Phase 1 Ingest & Normalise Engine', () => 
         },
       ]);
 
-      // Security Gap: Excel 4.0 macro sheet completely bypasses inspectZipArchive!
-      const inspection = inspectZipArchive(zip);
-      expect(inspection.entries.map((e) => e.filename)).toContain('xl/macroSheets/sheet1.xml');
+      expect(() => inspectZipArchive(zip)).toThrow(MacroNotAllowedError);
     });
 
     it('ADV-V6-03: Exposes missing VBA macro inspection in legacy OLE (.xls) workbooks', () => {
@@ -638,12 +593,14 @@ describe('Adversarial Red-Team Suite: Phase 1 Ingest & Normalise Engine', () => 
       expect(result.fileType).toBe('xls');
     });
 
-    it('ADV-V6-04: Fails closed on macro extensions (.xlsm, .xlsb, .xltm, .xlam)', () => {
+    it('ADV-V6-04: Fails closed on macro extensions (.xlsm, .xlsb, .xltm, .xlam, .xlm, .xla)', () => {
       const dummy = new Uint8Array(100);
       expect(() => validateUploadGuards(dummy, 'report.xlsm')).toThrow(MacroNotAllowedError);
       expect(() => validateUploadGuards(dummy, 'report.xlsb')).toThrow(MacroNotAllowedError);
       expect(() => validateUploadGuards(dummy, 'report.xltm')).toThrow(MacroNotAllowedError);
       expect(() => validateUploadGuards(dummy, 'report.xlam')).toThrow(MacroNotAllowedError);
+      expect(() => validateUploadGuards(dummy, 'report.xlm')).toThrow(MacroNotAllowedError);
+      expect(() => validateUploadGuards(dummy, 'report.xla')).toThrow(MacroNotAllowedError);
     });
 
     it('ADV-V6-05: Rejects standard VBA macro component in XLSX archive (vbaProject.bin)', () => {

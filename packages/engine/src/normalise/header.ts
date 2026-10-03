@@ -1,18 +1,21 @@
 import type { SafeIdentifier } from '@unsheet/contracts';
 import { isEmptySpacerRow, isSubtotalRow } from './noise.js';
 import { sanitiseHeaders } from './sanitise.js';
+import { safeToString } from './cell.js';
 
 export interface HeaderDetectionResult {
   detectedRowIndex: number;
   confidence: number;
   originalHeaders: string[];
   sanitizedKeys: SafeIdentifier[];
+  activeColumnIndices?: number[];
 }
 
 /**
  * Automatically detects the true header row within a 2D spreadsheet grid.
  * Evaluates candidate rows up to row 20 using string density, fill ratio,
  * distinctness, and type transitions into subsequent data rows.
+ * Consolidates multi-tier merged headers and prunes empty spacer columns.
  */
 export function detectHeaderRow(grid: unknown[][]): HeaderDetectionResult {
   if (!grid || grid.length === 0) {
@@ -21,13 +24,16 @@ export function detectHeaderRow(grid: unknown[][]): HeaderDetectionResult {
       confidence: 0,
       originalHeaders: ['Column 1'],
       sanitizedKeys: sanitiseHeaders(['Column 1']),
+      activeColumnIndices: [0],
     };
   }
 
-  // Calculate the maximum column width across the grid
+  // Calculate the maximum column width across candidate header rows (rows 0..26)
+  const candidateScanLimit = Math.min(26, grid.length);
   let maxCols = 0;
-  for (const row of grid) {
-    if (row.length > maxCols) {
+  for (let r = 0; r < candidateScanLimit; r++) {
+    const row = grid[r];
+    if (row && row.length > maxCols) {
       maxCols = row.length;
     }
   }
@@ -38,6 +44,7 @@ export function detectHeaderRow(grid: unknown[][]): HeaderDetectionResult {
       confidence: 0,
       originalHeaders: ['Column 1'],
       sanitizedKeys: sanitiseHeaders(['Column 1']),
+      activeColumnIndices: [0],
     };
   }
 
@@ -58,7 +65,7 @@ export function detectHeaderRow(grid: unknown[][]): HeaderDetectionResult {
     for (let c = 0; c < row.length; c++) {
       const val = row[c];
       if (val === null || val === undefined) continue;
-      const str = String(val).trim();
+      const str = safeToString(val).trim();
       if (str === '') continue;
 
       filledCount++;
@@ -73,7 +80,8 @@ export function detectHeaderRow(grid: unknown[][]): HeaderDetectionResult {
     // Rows with zero string cells cannot be header rows
     let rawStringCount = 0;
     for (let c = 0; c < row.length; c++) {
-      if (typeof row[c] === 'string' && String(row[c]).trim() !== '') {
+      const cellVal = row[c];
+      if (typeof cellVal === 'string' && safeToString(cellVal).trim() !== '') {
         rawStringCount++;
       }
     }
@@ -106,7 +114,7 @@ export function detectHeaderRow(grid: unknown[][]): HeaderDetectionResult {
       for (let c = 0; c < subRow.length; c++) {
         const val = subRow[c];
         if (val === null || val === undefined) continue;
-        const str = String(val).trim();
+        const str = safeToString(val).trim();
         if (str === '') continue;
 
         subsequentFilledCells++;
@@ -154,18 +162,76 @@ export function detectHeaderRow(grid: unknown[][]): HeaderDetectionResult {
 
   const confidence = Math.min(1, Math.max(0, Math.round(bestScore * 100) / 100));
 
-  // Extract original headers from bestRowIndex
+  // REV-P1-05: Check if preceding row contains parent category labels for multi-row merged headers
+  let isMultiRowHeader = false;
+  let parentRow: unknown[] | undefined;
+  if (bestRowIndex > 0) {
+    const candidateParent = grid[bestRowIndex - 1];
+    if (candidateParent && !isEmptySpacerRow(candidateParent) && !isSubtotalRow(candidateParent)) {
+      let parentFilledCount = 0;
+      let parentStringCount = 0;
+      for (let c = 0; c < candidateParent.length; c++) {
+        const str = safeToString(candidateParent[c]).trim();
+        if (str !== '') {
+          parentFilledCount++;
+          if (Number.isNaN(Number(str))) {
+            parentStringCount++;
+          }
+        }
+      }
+      if (parentFilledCount >= 2 && parentStringCount >= 2) {
+        isMultiRowHeader = true;
+        parentRow = candidateParent;
+      }
+    }
+  }
+
   const headerRow = grid[bestRowIndex] ?? [];
+  const activeColumnIndices: number[] = [];
   const originalHeaders: string[] = [];
 
+  // REV-P1-04: Inspect columns to detect and prune empty spacer columns
   for (let c = 0; c < maxCols; c++) {
-    const val = headerRow[c];
-    let label = val !== null && val !== undefined ? String(val).trim() : '';
-    if (label === '') {
+    const childRaw = safeToString(headerRow[c]).trim();
+    const parentRaw = isMultiRowHeader && parentRow ? safeToString(parentRow[c]).trim() : '';
+    const hasHeader = childRaw !== '' || parentRaw !== '';
+
+    // Check if column has any non-empty cell in subsequent data rows
+    let hasData = false;
+    for (let r = bestRowIndex + 1; r < grid.length; r++) {
+      const dataCell = safeToString(grid[r]?.[c]).trim();
+      if (dataCell !== '') {
+        hasData = true;
+        break;
+      }
+    }
+
+    // Prune spacer column if header is empty AND all data rows in this column are empty
+    if (!hasHeader && !hasData) {
+      continue;
+    }
+
+    activeColumnIndices.push(c);
+
+    let label = '';
+    if (parentRaw !== '' && childRaw !== '' && parentRaw.toLowerCase() !== childRaw.toLowerCase()) {
+      // Combine parent tier category with child subheader
+      label = `${parentRaw} ${childRaw}`;
+    } else if (childRaw !== '') {
+      label = childRaw;
+    } else if (parentRaw !== '') {
+      label = parentRaw;
+    } else {
       label = `Column ${c + 1}`;
     }
-    // Truncate to maximum 256 characters per contracts schema
+
     originalHeaders.push(label.slice(0, 256));
+  }
+
+  // Ensure at least one column remains even if entirely empty
+  if (originalHeaders.length === 0) {
+    activeColumnIndices.push(0);
+    originalHeaders.push('Column 1');
   }
 
   const sanitizedKeys = sanitiseHeaders(originalHeaders);
@@ -175,5 +241,6 @@ export function detectHeaderRow(grid: unknown[][]): HeaderDetectionResult {
     confidence,
     originalHeaders,
     sanitizedKeys,
+    activeColumnIndices,
   };
 }

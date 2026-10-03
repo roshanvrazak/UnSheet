@@ -127,6 +127,22 @@ describe('Adversarial Red-Team Tests: Phase 0 Contracts', () => {
       expect(() => DashboardSpecSchema.parse(specWithProtoBinding)).toThrow();
     });
 
+    it('rejects prototype pollution keys in SheetModel name', () => {
+      const baseSheet = {
+        id: 'sheet_01',
+        headers: { detectedRowIndex: 0, confidence: 1.0, originalHeaders: ['col1'], sanitizedKeys: ['col1'] },
+        columns: [{ key: 'col1', originalName: 'col1', columnIndex: 0 }],
+        rows: [],
+        rowCount: 0,
+        columnCount: 1,
+      };
+
+      expect(() => SheetModelSchema.parse({ ...baseSheet, name: '__proto__' })).toThrow();
+      expect(() => SheetModelSchema.parse({ ...baseSheet, name: 'constructor' })).toThrow();
+      expect(() => SheetModelSchema.parse({ ...baseSheet, name: 'Prototype' })).toThrow();
+      expect(() => SheetModelSchema.parse({ ...baseSheet, name: '  __proto__ ' })).toThrow();
+    });
+
     it('rejects SQL injection and path traversal patterns in SafeIdentifierSchema', () => {
       expect(() => SafeIdentifierSchema.parse('col; DROP TABLE users;--')).toThrow();
       expect(() => SafeIdentifierSchema.parse('../../etc/passwd')).toThrow();
@@ -310,6 +326,36 @@ describe('Adversarial Red-Team Tests: Phase 0 Contracts', () => {
         ],
       };
       expect(() => WorkbookModelSchema.parse(oversizedWb)).toThrow();
+    });
+
+    it('rejects workbooks with aggregate row count exceeding MAX_ROWS (200,000)', () => {
+      const multiSheetWb = {
+        id: 'wb_overflow',
+        filename: 'overflow.xlsx',
+        fileSize: 5000,
+        activeSheetIndex: 0,
+        sheets: [
+          {
+            id: 's1',
+            name: 'Sheet1',
+            headers: { detectedRowIndex: 0, confidence: 1, originalHeaders: ['h1'], sanitizedKeys: ['h1'] },
+            columns: [{ key: 'h1', originalName: 'h1', columnIndex: 0 }],
+            rows: [],
+            rowCount: 150_000,
+            columnCount: 1,
+          },
+          {
+            id: 's2',
+            name: 'Sheet2',
+            headers: { detectedRowIndex: 0, confidence: 1, originalHeaders: ['h1'], sanitizedKeys: ['h1'] },
+            columns: [{ key: 'h1', originalName: 'h1', columnIndex: 0 }],
+            rows: [],
+            rowCount: 60_000,
+            columnCount: 1,
+          },
+        ],
+      };
+      expect(() => WorkbookModelSchema.parse(multiSheetWb)).toThrow();
     });
   });
 

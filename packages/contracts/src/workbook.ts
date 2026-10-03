@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SafeIdentifierSchema, SafeEntityIdSchema, IsoDateTimeSchema } from './common.js';
+import { SafeIdentifierSchema, SafeEntityIdSchema, IsoDateTimeSchema, FORBIDDEN_OBJECT_KEYS } from './common.js';
 
 /**
  * Ingestion limit safety constants.
@@ -79,7 +79,14 @@ export type SheetBounds = z.infer<typeof SheetBoundsSchema>;
  */
 export const SheetModelSchema = z.object({
   id: SafeEntityIdSchema,
-  name: z.string().min(1).max(128),
+  name: z
+    .string()
+    .min(1, 'Sheet name must not be empty')
+    .max(128, 'Sheet name exceeds maximum length of 128 characters')
+    .refine(
+      (val) => !FORBIDDEN_OBJECT_KEYS.includes(val.trim().toLowerCase() as (typeof FORBIDDEN_OBJECT_KEYS)[number]),
+      { message: 'Sheet name cannot match prototype properties (__proto__, constructor, prototype)' }
+    ),
   headers: HeaderMetadataSchema,
   columns: z.array(ColumnMetadataSchema).min(1, 'Sheet must contain at least one column').max(MAX_COLUMNS, `Sheet exceeds maximum ${MAX_COLUMNS} columns`),
   rows: z.array(z.record(SafeIdentifierSchema, z.unknown())).max(MAX_ROWS, `Sheet exceeds maximum ${MAX_ROWS} rows`),
@@ -111,13 +118,20 @@ export type WorkbookMetadata = z.infer<typeof WorkbookMetadataSchema>;
 /**
  * Normalized workbook model representing a complete spreadsheet document.
  */
-export const WorkbookModelSchema = z.object({
-  id: SafeEntityIdSchema,
-  filename: z.string().min(1).max(256),
-  fileSize: z.number().int().positive().max(MAX_FILE_SIZE_BYTES, `File size exceeds maximum ${MAX_FILE_SIZE_BYTES} bytes`),
-  sheets: z.array(SheetModelSchema).min(1, 'Workbook must contain at least one sheet').max(MAX_SHEETS, `Workbook exceeds maximum ${MAX_SHEETS} sheets`),
-  activeSheetIndex: z.number().int().nonnegative(),
-  metadata: WorkbookMetadataSchema.optional(),
-});
+export const WorkbookModelSchema = z
+  .object({
+    id: SafeEntityIdSchema,
+    filename: z.string().min(1).max(256),
+    fileSize: z.number().int().positive().max(MAX_FILE_SIZE_BYTES, `File size exceeds maximum ${MAX_FILE_SIZE_BYTES} bytes`),
+    sheets: z.array(SheetModelSchema).min(1, 'Workbook must contain at least one sheet').max(MAX_SHEETS, `Workbook exceeds maximum ${MAX_SHEETS} sheets`),
+    activeSheetIndex: z.number().int().nonnegative(),
+    metadata: WorkbookMetadataSchema.optional(),
+  })
+  .refine(
+    (wb) =>
+      wb.sheets.reduce((acc, s) => acc + s.rowCount, 0) <= MAX_ROWS &&
+      wb.sheets.reduce((acc, s) => acc + s.rows.length, 0) <= MAX_ROWS,
+    { message: `Total workbook rows across all sheets cannot exceed ${MAX_ROWS}` }
+  );
 
 export type WorkbookModel = z.infer<typeof WorkbookModelSchema>;

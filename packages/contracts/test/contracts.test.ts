@@ -946,4 +946,65 @@ describe('Ingestion Limits & Safety Bounds', () => {
     expect(() => SafeEntityIdSchema.parse('semi;colon')).toThrow();
     expect(() => SafeEntityIdSchema.parse('<script>')).toThrow();
   });
+
+  it('rejects forbidden prototype pollution keys in SheetModel name', () => {
+    const baseSheet = {
+      id: 'sheet_01',
+      headers: { detectedRowIndex: 0, confidence: 1, originalHeaders: ['col'], sanitizedKeys: ['col'] },
+      columns: [{ key: 'col', originalName: 'Col', columnIndex: 0 }],
+      rows: [],
+      rowCount: 0,
+      columnCount: 1,
+    };
+
+    // Valid sheet names
+    expect(SheetModelSchema.parse({ ...baseSheet, name: 'Sheet1' }).name).toBe('Sheet1');
+    expect(SheetModelSchema.parse({ ...baseSheet, name: 'Q1 2024' }).name).toBe('Q1 2024');
+    expect(SheetModelSchema.parse({ ...baseSheet, name: 'Sales & Marketing' }).name).toBe('Sales & Marketing');
+
+    // Forbidden prototype pollution keys (case-insensitive and trimmed)
+    expect(() => SheetModelSchema.parse({ ...baseSheet, name: '__proto__' })).toThrow();
+    expect(() => SheetModelSchema.parse({ ...baseSheet, name: '__PROTO__' })).toThrow();
+    expect(() => SheetModelSchema.parse({ ...baseSheet, name: '  __proto__  ' })).toThrow();
+    expect(() => SheetModelSchema.parse({ ...baseSheet, name: 'constructor' })).toThrow();
+    expect(() => SheetModelSchema.parse({ ...baseSheet, name: 'Constructor' })).toThrow();
+    expect(() => SheetModelSchema.parse({ ...baseSheet, name: ' CONSTRUCTOR ' })).toThrow();
+    expect(() => SheetModelSchema.parse({ ...baseSheet, name: 'prototype' })).toThrow();
+    expect(() => SheetModelSchema.parse({ ...baseSheet, name: 'Prototype' })).toThrow();
+    expect(() => SheetModelSchema.parse({ ...baseSheet, name: '\tprototype\n' })).toThrow();
+  });
+
+  it('enforces total workbook rows across all sheets cannot exceed MAX_ROWS (200,000)', () => {
+    const makeSheet = (id: string, rowCount: number) => ({
+      id,
+      name: `Sheet_${id}`,
+      headers: { detectedRowIndex: 0, confidence: 1, originalHeaders: ['c'], sanitizedKeys: ['c'] },
+      columns: [{ key: 'c', originalName: 'C', columnIndex: 0 }],
+      rows: [],
+      rowCount,
+      columnCount: 1,
+    });
+
+    // Valid: 100,000 + 100,000 = 200,000 <= MAX_ROWS
+    const validWb = {
+      id: 'wb_multi',
+      filename: 'multi.xlsx',
+      fileSize: 1000,
+      activeSheetIndex: 0,
+      sheets: [makeSheet('s1', 100_000), makeSheet('s2', 100_000)],
+    };
+    expect(WorkbookModelSchema.parse(validWb)).toBeDefined();
+
+    // Invalid: 120,000 + 90,000 = 210,000 > MAX_ROWS
+    const invalidWb = {
+      id: 'wb_multi_over',
+      filename: 'multi_over.xlsx',
+      fileSize: 1000,
+      activeSheetIndex: 0,
+      sheets: [makeSheet('s1', 120_000), makeSheet('s2', 90_000)],
+    };
+    expect(() => WorkbookModelSchema.parse(invalidWb)).toThrow(
+      `Total workbook rows across all sheets cannot exceed ${MAX_ROWS}`
+    );
+  });
 });

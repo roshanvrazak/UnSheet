@@ -107,23 +107,24 @@ describe('Adversarial Red-Team Tests: Phase 0 Contracts', () => {
       ).toThrow();
     });
 
-    it('exposes prototype pollution acceptance in entity IDs not governed by SafeIdentifierSchema', () => {
-      // DashboardSpec.id uses z.string().min(1).max(64), NOT SafeIdentifierSchema
-      // This exposes that __proto__ and constructor can be stored as dashboard IDs
+    it('rejects prototype pollution keys in entity IDs governed by SafeEntityIdSchema', () => {
       const specWithProtoId = {
         ...minimalValidSpec,
         id: '__proto__',
       };
-      const parsed = DashboardSpecSchema.parse(specWithProtoId);
-      expect(parsed.id).toBe('__proto__'); // Gaps identified: Spec ID accepts prototype pollution key
+      expect(() => DashboardSpecSchema.parse(specWithProtoId)).toThrow();
 
-      // sheetBinding also accepts __proto__
+      const specWithConstructorId = {
+        ...minimalValidSpec,
+        id: 'constructor',
+      };
+      expect(() => DashboardSpecSchema.parse(specWithConstructorId)).toThrow();
+
       const specWithProtoBinding = {
         ...minimalValidSpec,
         sheetBinding: '__proto__',
       };
-      const parsedBinding = DashboardSpecSchema.parse(specWithProtoBinding);
-      expect(parsedBinding.sheetBinding).toBe('__proto__');
+      expect(() => DashboardSpecSchema.parse(specWithProtoBinding)).toThrow();
     });
 
     it('rejects SQL injection and path traversal patterns in SafeIdentifierSchema', () => {
@@ -149,31 +150,36 @@ describe('Adversarial Red-Team Tests: Phase 0 Contracts', () => {
       expect(() => SampleValueSchema.parse('\r=cmd')).toThrow();
     });
 
-    it('exposes whitespace and newline bypass vectors in SampleValueSchema', () => {
-      // Leading space bypass: Excel and Google Sheets can interpret formulas with leading spaces
+    it('rejects whitespace, newline, and pipe bypass vectors in SampleValueSchema', () => {
+      // Leading space bypass rejected
       const leadingSpaceFormula = ' =cmd|\' /C calc\'!A0';
-      const parsedSpace = SampleValueSchema.parse(leadingSpaceFormula);
-      expect(parsedSpace).toBe(leadingSpaceFormula); // Gap: leading space formula bypasses /^[=+\-@\t\r]/
+      expect(() => SampleValueSchema.parse(leadingSpaceFormula)).toThrow();
 
-      // Leading newline bypass: \n is NOT in [\t\r]
+      // Leading newline bypass rejected
       const leadingNewlineFormula = '\n=1+1';
-      const parsedNewline = SampleValueSchema.parse(leadingNewlineFormula);
-      expect(parsedNewline).toBe(leadingNewlineFormula); // Gap: \n newline formula bypasses /^[=+\-@\t\r]/
+      expect(() => SampleValueSchema.parse(leadingNewlineFormula)).toThrow();
 
-      // Pipe operator bypass: DDE formula can trigger with leading pipe |
+      // Pipe operator bypass rejected
       const pipeDdeFormula = '|cmd|\' /C calc\'!A0';
-      const parsedPipe = SampleValueSchema.parse(pipeDdeFormula);
-      expect(parsedPipe).toBe(pipeDdeFormula); // Gap: DDE pipe formula bypasses /^[=+\-@\t\r]/
+      expect(() => SampleValueSchema.parse(pipeDdeFormula)).toThrow();
     });
 
-    it('exposes formula injection in ColumnProfile topValues (CategoryFrequency)', () => {
-      // CategoryFrequencySchema.value uses z.string().max(256), NOT SampleValueSchema
-      const maliciousFrequency = CategoryFrequencySchema.parse({
-        value: '=cmd|\' /C calc\'!A0',
-        count: 10,
-        percentage: 100,
-      });
-      expect(maliciousFrequency.value).toBe('=cmd|\' /C calc\'!A0'); // Gap: topValues allows formula injection
+    it('rejects formula injection in ColumnProfile topValues (CategoryFrequency)', () => {
+      expect(() =>
+        CategoryFrequencySchema.parse({
+          value: '=cmd|\' /C calc\'!A0',
+          count: 10,
+          percentage: 100,
+        })
+      ).toThrow();
+
+      expect(() =>
+        CategoryFrequencySchema.parse({
+          value: ' =cmd',
+          count: 5,
+          percentage: 50,
+        })
+      ).toThrow();
     });
 
     it('rejects formula injection inside ColumnProfile sampleValues', () => {
@@ -262,13 +268,12 @@ describe('Adversarial Red-Team Tests: Phase 0 Contracts', () => {
       ).toThrow();
     });
 
-    it('exposes lack of upper bound on widgets in DashboardSpec (DoS vector)', () => {
-      // There is no .max() constraint on DashboardSpecSchema.widgets
-      const massiveWidgetArray = Array.from({ length: 500 }, (_, i) => ({
+    it('rejects oversized widget array in DashboardSpec (>50 widgets)', () => {
+      const massiveWidgetArray = Array.from({ length: 51 }, (_, i) => ({
         id: `widget_${i}`,
         type: 'kpi' as const,
         title: `Widget ${i}`,
-        grid: { x: 0, y: i * 2, w: 4, h: 2 },
+        grid: { x: 0, y: (i % 10) * 2, w: 4, h: 2 },
         measure: 'revenue',
         aggregation: 'sum' as const,
       }));
@@ -278,12 +283,10 @@ describe('Adversarial Red-Team Tests: Phase 0 Contracts', () => {
         widgets: massiveWidgetArray,
       };
 
-      const parsed = DashboardSpecSchema.parse(specWithMassiveWidgets);
-      expect(parsed.widgets).toHaveLength(500); // Gap: unconstrained widget array size allows memory exhaustion
+      expect(() => DashboardSpecSchema.parse(specWithMassiveWidgets)).toThrow();
     });
 
-    it('exposes unbounded fileSize in WorkbookModelSchema', () => {
-      // fileSize has no max bound (e.g. 1 Petabyte or Number.MAX_SAFE_INTEGER)
+    it('rejects unbounded fileSize in WorkbookModelSchema', () => {
       const oversizedWb = {
         id: 'wb_giant',
         filename: 'huge.xlsx',
@@ -306,8 +309,7 @@ describe('Adversarial Red-Team Tests: Phase 0 Contracts', () => {
           },
         ],
       };
-      const parsed = WorkbookModelSchema.parse(oversizedWb);
-      expect(parsed.fileSize).toBe(10 ** 15); // Gap: no upper bound on file size
+      expect(() => WorkbookModelSchema.parse(oversizedWb)).toThrow();
     });
   });
 
@@ -348,10 +350,9 @@ describe('Adversarial Red-Team Tests: Phase 0 Contracts', () => {
       expect(() => WidgetGridPositionSchema.parse({ x: 0, y: 0, w: 4, h: 25 })).toThrow();
     });
 
-    it('exposes horizontal grid overflow where x + w > 12 columns', () => {
-      // x is valid (11 <= 11), w is valid (12 <= 12), but x + w = 23 > 12 columns
-      const overflowGrid = WidgetGridPositionSchema.parse({ x: 11, y: 0, w: 12, h: 4 });
-      expect(overflowGrid.x + overflowGrid.w).toBe(23); // Gap: grid overflow not validated across x + w
+    it('rejects horizontal grid overflow where x + w > 12 columns', () => {
+      expect(() => WidgetGridPositionSchema.parse({ x: 11, y: 0, w: 12, h: 4 })).toThrow();
+      expect(() => WidgetGridPositionSchema.parse({ x: 6, y: 0, w: 7, h: 4 })).toThrow();
     });
 
     it('rejects negative layout padding and gap', () => {
@@ -446,14 +447,24 @@ describe('Adversarial Red-Team Tests: Phase 0 Contracts', () => {
       expect(parsed).toBe(lowEntropyToken); // Gap: token format checks length/charset, not actual entropy
     });
 
-    it('exposes dangerous URI schemes accepted by CreateShareLinkResponse shareUrl', () => {
-      // z.string().url() in Zod accepts javascript:, data:, and file: schemes
+    it('rejects dangerous URI schemes accepted by unconstrained URLs in CreateShareLinkResponse shareUrl', () => {
       const responseWithXssUrl = {
         shareToken: 'k9Z_3Xv8Lm2Qp7Rt1Wy4Bn',
         shareUrl: 'javascript:alert(document.domain)',
       };
-      const parsed = CreateShareLinkResponseSchema.parse(responseWithXssUrl);
-      expect(parsed.shareUrl).toBe('javascript:alert(document.domain)'); // Gap: unconstrained protocol allows javascript: URLs
+      expect(() => CreateShareLinkResponseSchema.parse(responseWithXssUrl)).toThrow();
+
+      const responseWithDataUrl = {
+        shareToken: 'k9Z_3Xv8Lm2Qp7Rt1Wy4Bn',
+        shareUrl: 'data:text/html,<script>alert(1)</script>',
+      };
+      expect(() => CreateShareLinkResponseSchema.parse(responseWithDataUrl)).toThrow();
+
+      const responseWithFileUrl = {
+        shareToken: 'k9Z_3Xv8Lm2Qp7Rt1Wy4Bn',
+        shareUrl: 'file:///etc/passwd',
+      };
+      expect(() => CreateShareLinkResponseSchema.parse(responseWithFileUrl)).toThrow();
     });
   });
 
@@ -524,19 +535,16 @@ describe('Adversarial Red-Team Tests: Phase 0 Contracts', () => {
   // 7. Non-Finite Numbers & Floating Point Edge Cases
   // =========================================================================
   describe('7. Floating Point & Numeric Edge Cases (Infinity, -Infinity)', () => {
-    it('exposes acceptance of Infinity in NumericStatsSchema', () => {
-      // z.number() accepts Infinity unless .finite() is specified
+    it('rejects Infinity and -Infinity in NumericStatsSchema', () => {
       const statsWithInfinity = {
         min: -Infinity,
         max: Infinity,
         sum: Infinity,
       };
-      const parsed = NumericStatsSchema.parse(statsWithInfinity);
-      expect(parsed.max).toBe(Infinity);
-      expect(parsed.min).toBe(-Infinity); // Gap: Infinity accepted in numeric statistics
+      expect(() => NumericStatsSchema.parse(statsWithInfinity)).toThrow();
     });
 
-    it('exposes acceptance of Infinity in QueryResult executionTimeMs', () => {
+    it('rejects Infinity in QueryResult executionTimeMs', () => {
       const resultWithInfinity = {
         queryId: 'q_exec_inf',
         columns: [{ name: 'col1', type: 'VARCHAR' }],
@@ -544,8 +552,7 @@ describe('Adversarial Red-Team Tests: Phase 0 Contracts', () => {
         rowCount: 1,
         executionTimeMs: Infinity,
       };
-      const parsed = QueryResultSchema.parse(resultWithInfinity);
-      expect(parsed.executionTimeMs).toBe(Infinity); // Gap: executionTimeMs accepts Infinity
+      expect(() => QueryResultSchema.parse(resultWithInfinity)).toThrow();
     });
   });
 });

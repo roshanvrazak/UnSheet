@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SafeIdentifierSchema, TitleSchema, DescriptionSchema, IsoDateTimeSchema } from './common.js';
+import { SafeIdentifierSchema, SafeEntityIdSchema, TitleSchema, DescriptionSchema, IsoDateTimeSchema } from './common.js';
 import { InferredDataTypeSchema } from './profile.js';
 import { DashboardSpecSchema } from './spec.js';
 
@@ -46,7 +46,7 @@ export type TemplateCategory = z.infer<typeof TemplateCategorySchema>;
  * Dashboard template encapsulating a validated spec alongside a schema fingerprint.
  */
 export const TemplateSchema = z.object({
-  id: z.string().min(1).max(64),
+  id: SafeEntityIdSchema,
   name: TitleSchema,
   description: DescriptionSchema,
   category: TemplateCategorySchema.default('general'),

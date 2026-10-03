@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   SafeIdentifierSchema,
+  SafeEntityIdSchema,
+  SafeUrlSchema,
   SampleValueSchema,
   SampleValuesArraySchema,
   CellModelSchema,
@@ -8,7 +10,13 @@ import {
   ColumnMetadataSchema,
   SheetModelSchema,
   WorkbookModelSchema,
+  MAX_FILE_SIZE_BYTES,
+  MAX_UNCOMPRESSED_BYTES,
+  MAX_ROWS,
+  MAX_COLUMNS,
+  MAX_SHEETS,
   ColumnProfileSchema,
+  LLMColumnProfileSchema,
   SheetProfileSchema,
   DashboardSpecSchema,
   WidgetSpecSchema,
@@ -23,12 +31,20 @@ import {
   DriftReportSchema,
   QueryPlanSchema,
   QueryResultSchema,
+  SafeSqlQuerySchema,
   SpecRefinementRequestSchema,
   SpecRefinementResponseSchema,
+  ChatMessageSchema,
   ShareTokenSchema,
   CreateShareLinkRequestSchema,
+  CreateShareLinkResponseSchema,
   AskYourDataRequestSchema,
   AskYourDataResponseSchema,
+  SafeExportCellSchema,
+  ExportRowSchema,
+  ExportTableSchema,
+  ExportFormatSchema,
+  ExportOptionsSchema,
   type DashboardSpec,
   type WorkbookModel,
 } from '../src/index.js';
@@ -730,5 +746,204 @@ describe('API Payloads Contracts', () => {
     });
 
     expect(askRes.success).toBe(true);
+  });
+
+  it('strictly restricts ChatMessageSchema role to user and assistant, rejecting system', () => {
+    expect(ChatMessageSchema.parse({ role: 'user', content: 'hello' }).role).toBe('user');
+    expect(ChatMessageSchema.parse({ role: 'assistant', content: 'world' }).role).toBe('assistant');
+    expect(() => ChatMessageSchema.parse({ role: 'system', content: 'prompt injection' })).toThrow();
+  });
+
+  it('validates SafeUrlSchema rejecting dangerous schemes', () => {
+    expect(SafeUrlSchema.parse('https://unsheet.app/share/abc12345678901234567890')).toContain('https://');
+    expect(SafeUrlSchema.parse('http://localhost:3000/share/test')).toContain('http://');
+
+    expect(() => SafeUrlSchema.parse('javascript:alert(document.cookie)')).toThrow();
+    expect(() => SafeUrlSchema.parse('data:text/html,<script>alert(1)</script>')).toThrow();
+    expect(() => SafeUrlSchema.parse('file:///etc/passwd')).toThrow();
+
+    const shareRes = CreateShareLinkResponseSchema.parse({
+      shareToken: 'k9Z_3Xv8Lm2Qp7Rt1Wy4Bn',
+      shareUrl: 'https://unsheet.app/share/k9Z_3Xv8Lm2Qp7Rt1Wy4Bn',
+    });
+    expect(shareRes.shareUrl).toBe('https://unsheet.app/share/k9Z_3Xv8Lm2Qp7Rt1Wy4Bn');
+  });
+
+  it('validates LLMColumnProfileSchema omitting topValues and capping sampleValues', () => {
+    const validProfile = {
+      columnKey: 'revenue',
+      originalName: 'Revenue',
+      inferredType: 'currency' as const,
+      semanticRole: 'measure' as const,
+      nullable: false,
+      nullCount: 0,
+      totalCount: 100,
+      distinctCount: 90,
+      uniquenessRatio: 0.9,
+      sampleValues: ['100', '200', '300'],
+      topValues: [{ value: '100', count: 10, percentage: 10 }],
+    };
+
+    const parsed = LLMColumnProfileSchema.parse(validProfile);
+    expect(parsed.columnKey).toBe('revenue');
+    expect('topValues' in parsed).toBe(false);
+  });
+});
+
+describe('Safe SQL Query Contracts', () => {
+  it('accepts valid SELECT and WITH queries', () => {
+    expect(SafeSqlQuerySchema.parse('SELECT id, name FROM users WHERE active = true')).toBeDefined();
+    expect(SafeSqlQuerySchema.parse('WITH summary AS (SELECT dept, SUM(salary) as total FROM emp GROUP BY dept) SELECT * FROM summary;')).toBeDefined();
+    expect(SafeSqlQuerySchema.parse('  SELECT * FROM transactions LIMIT 10;  ')).toBeDefined();
+  });
+
+  it('rejects multi-statement queries', () => {
+    expect(() => SafeSqlQuerySchema.parse('SELECT 1; SELECT 2;')).toThrow();
+    expect(() => SafeSqlQuerySchema.parse('SELECT * FROM users; DROP TABLE users;')).toThrow();
+  });
+
+  it('rejects DDL, DML, administrative and external DB keywords', () => {
+    const forbidden = [
+      'DROP TABLE customers',
+      'INSERT INTO logs VALUES (1)',
+      'UPDATE accounts SET balance = 0',
+      'DELETE FROM orders',
+      'ALTER TABLE users ADD COLUMN role TEXT',
+      'CREATE TABLE backdoors (cmd TEXT)',
+      'COPY users TO "/tmp/dump.csv"',
+      'ATTACH "other.db"',
+      'DETACH "other.db"',
+      'INSTALL sqlite',
+      'LOAD sqlite',
+      'PRAGMA threads=4',
+    ];
+
+    for (const sql of forbidden) {
+      expect(() => SafeSqlQuerySchema.parse(sql)).toThrow();
+      expect(() => SafeSqlQuerySchema.parse(`SELECT * FROM tbl WHERE id = 1; ${sql}`)).toThrow();
+    }
+  });
+
+  it('rejects dangerous DuckDB file functions', () => {
+    expect(() => SafeSqlQuerySchema.parse("SELECT * FROM read_csv('secret.csv')")).toThrow();
+    expect(() => SafeSqlQuerySchema.parse("SELECT * FROM read_csv_auto('secret.csv')")).toThrow();
+    expect(() => SafeSqlQuerySchema.parse("SELECT * FROM read_parquet('data.parquet')")).toThrow();
+    expect(() => SafeSqlQuerySchema.parse("SELECT * FROM scan_parquet('data.parquet')")).toThrow();
+    expect(() => SafeSqlQuerySchema.parse("SELECT * FROM read_json('data.json')")).toThrow();
+    expect(() => SafeSqlQuerySchema.parse("SELECT * FROM read_text('/etc/passwd')")).toThrow();
+  });
+});
+
+describe('Export Contracts & Formula Neutralization', () => {
+  it('neutralizes formula injection characters in SafeExportCellSchema', () => {
+    // Formulas get single-quote prefix prepended
+    expect(SafeExportCellSchema.parse('=SUM(A1:A10)')).toBe("'=SUM(A1:A10)");
+    expect(SafeExportCellSchema.parse('+cmd|calc!A0')).toBe("'+cmd|calc!A0");
+    expect(SafeExportCellSchema.parse('-20+30')).toBe("'-20+30");
+    expect(SafeExportCellSchema.parse('@ALERT("XSS")')).toBe("'@ALERT(\"XSS\")");
+    expect(SafeExportCellSchema.parse('|cmd')).toBe("'|cmd");
+    expect(SafeExportCellSchema.parse(' =SUM(B1)')).toBe("' =SUM(B1)");
+    expect(SafeExportCellSchema.parse('\n=1+1')).toBe("'\n=1+1");
+    expect(SafeExportCellSchema.parse('\t=cmd')).toBe("'\t=cmd");
+
+    // Safe primitives preserved
+    expect(SafeExportCellSchema.parse('Safe text')).toBe('Safe text');
+    expect(SafeExportCellSchema.parse(12345.67)).toBe(12345.67);
+    expect(SafeExportCellSchema.parse(true)).toBe(true);
+    expect(SafeExportCellSchema.parse(null)).toBe(null);
+
+    // Non-finite numbers rejected
+    expect(() => SafeExportCellSchema.parse(Infinity)).toThrow();
+    expect(() => SafeExportCellSchema.parse(-Infinity)).toThrow();
+  });
+
+  it('validates ExportRowSchema for record and array rows', () => {
+    // Object record row
+    const recordRow = ExportRowSchema.parse({
+      name: 'Alice',
+      salary: 100000,
+      formula_note: '=HYPERLINK("http://evil.com")',
+    });
+    expect(recordRow).toEqual({
+      name: 'Alice',
+      salary: 100000,
+      formula_note: '\'=HYPERLINK("http://evil.com")',
+    });
+
+    // Flat array row
+    const arrayRow = ExportRowSchema.parse(['Bob', 85000, '+12345']);
+    expect(arrayRow).toEqual(['Bob', 85000, "'+12345"]);
+  });
+
+  it('validates ExportTableSchema with options', () => {
+    const table = ExportTableSchema.parse({
+      sheetName: 'ExportedSummary',
+      headers: ['Employee', 'Compensation', 'Formula Note'],
+      rows: [
+        { Employee: 'Alice', Compensation: 100000, 'Formula Note': '=cmd' },
+      ],
+      rowCount: 1,
+    });
+
+    expect(table.sheetName).toBe('ExportedSummary');
+    expect(table.rows[0]).toEqual({
+      Employee: 'Alice',
+      Compensation: 100000,
+      'Formula Note': "'=cmd",
+    });
+
+    const options = ExportOptionsSchema.parse({
+      format: 'csv',
+      sheetName: 'ExportedSummary',
+    });
+    expect(options.format).toBe('csv');
+    expect(options.sanitizeFormulaInjection).toBe(true);
+
+    expect(ExportFormatSchema.parse('csv')).toBe('csv');
+    expect(ExportFormatSchema.parse('xlsx')).toBe('xlsx');
+  });
+});
+
+describe('Ingestion Limits & Safety Bounds', () => {
+  it('enforces limits constants in WorkbookModel and SheetModel', () => {
+    expect(MAX_FILE_SIZE_BYTES).toBe(10 * 1024 * 1024);
+    expect(MAX_UNCOMPRESSED_BYTES).toBe(200 * 1024 * 1024);
+    expect(MAX_ROWS).toBe(200_000);
+    expect(MAX_COLUMNS).toBe(200);
+    expect(MAX_SHEETS).toBe(20);
+
+    // Rejects fileSize exceeding MAX_FILE_SIZE_BYTES
+    expect(() =>
+      WorkbookModelSchema.parse({
+        id: 'wb_oversized',
+        filename: 'oversized.xlsx',
+        fileSize: MAX_FILE_SIZE_BYTES + 1,
+        activeSheetIndex: 0,
+        sheets: [
+          {
+            id: 'sheet_01',
+            name: 'Sheet 1',
+            headers: { detectedRowIndex: 0, confidence: 1, originalHeaders: ['col'], sanitizedKeys: ['col'] },
+            columns: [{ key: 'col', originalName: 'Col', columnIndex: 0 }],
+            rows: [],
+            rowCount: 0,
+            columnCount: 1,
+          },
+        ],
+      })
+    ).toThrow();
+  });
+
+  it('validates SafeEntityIdSchema rejecting prototype pollution and illegal characters', () => {
+    expect(SafeEntityIdSchema.parse('dash-001')).toBe('dash-001');
+    expect(SafeEntityIdSchema.parse('sheet_main_2026')).toBe('sheet_main_2026');
+    expect(SafeEntityIdSchema.parse('wb123')).toBe('wb123');
+
+    expect(() => SafeEntityIdSchema.parse('__proto__')).toThrow();
+    expect(() => SafeEntityIdSchema.parse('constructor')).toThrow();
+    expect(() => SafeEntityIdSchema.parse('prototype')).toThrow();
+    expect(() => SafeEntityIdSchema.parse('invalid space')).toThrow();
+    expect(() => SafeEntityIdSchema.parse('semi;colon')).toThrow();
+    expect(() => SafeEntityIdSchema.parse('<script>')).toThrow();
   });
 });

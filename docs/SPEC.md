@@ -88,11 +88,11 @@ Spreadsheet Ingest (XLSX, CSV)
 ### Stage 1: Parse
 - **Input**: Raw binary buffer (`ArrayBuffer`) or text (`File` object) from drag-and-drop or file picker.
 - **Safety Checks**:
-  - File size cap: 50MB raw file size limit.
-  - Uncompressed size cap: 200MB maximum uncompressed memory footprint.
+  - File size cap: 10MB raw file size limit (`MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024`).
+  - Uncompressed size cap: 200MB maximum uncompressed memory footprint (`MAX_UNCOMPRESSED_BYTES = 200 * 1024 * 1024`).
   - Compression ratio: abort if uncompressed / compressed ratio exceeds 100:1 (zip-bomb defense).
-  - Sheet count cap: maximum 50 sheets per workbook.
-  - Cell bounds check: reject sheets exceeding 1,000,000 cells or 100,000 rows.
+  - Sheet count cap: maximum 20 sheets per workbook (`MAX_SHEETS = 20`).
+  - Sheet bounds check: maximum 200,000 rows (`MAX_ROWS = 200_000`) and 200 columns (`MAX_COLUMNS = 200`).
 - **Execution**: SheetJS parser loaded strictly from the verified vendor tarball (`cdn.sheetjs.com/xlsx-0.20.3`). Read cached formula values only (`cell.v`); **never** evaluate formulas or resolve external hyperlinked workbooks.
 - **Output**: Raw cell matrix representation.
 

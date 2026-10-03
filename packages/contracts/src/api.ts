@@ -1,15 +1,15 @@
 import { z } from 'zod';
-import { SafeIdentifierSchema, TitleSchema, IsoDateTimeSchema } from './common.js';
-import { ColumnProfileSchema } from './profile.js';
+import { SafeIdentifierSchema, SafeUrlSchema, TitleSchema, IsoDateTimeSchema } from './common.js';
+import { LLMColumnProfileSchema } from './profile.js';
 import { DashboardSpecSchema, WidgetSpecSchema } from './spec.js';
-import { QueryPlanSchema } from './query.js';
+import { QueryPlanSchema, SafeSqlQuerySchema } from './query.js';
 
 /**
  * 1. Spec Refinement Payloads (LLM Natural Language Spec Editing)
  */
 
 export const ChatMessageSchema = z.object({
-  role: z.enum(['user', 'assistant', 'system']),
+  role: z.enum(['user', 'assistant']),
   content: z.string().min(1).max(2000),
 });
 
@@ -18,7 +18,7 @@ export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 export const SpecRefinementRequestSchema = z.object({
   prompt: z.string().min(1, 'Prompt cannot be empty').max(2000, 'Prompt exceeds 2000 characters'),
   currentSpec: DashboardSpecSchema,
-  profiles: z.array(ColumnProfileSchema).min(1, 'Must include at least one column profile'),
+  profiles: z.array(LLMColumnProfileSchema).min(1, 'Must include at least one column profile'),
   history: z.array(ChatMessageSchema).max(20).optional(),
 });
 
@@ -62,7 +62,7 @@ export type CreateShareLinkRequest = z.infer<typeof CreateShareLinkRequestSchema
 
 export const CreateShareLinkResponseSchema = z.object({
   shareToken: ShareTokenSchema,
-  shareUrl: z.string().url(),
+  shareUrl: SafeUrlSchema,
   expiresAt: IsoDateTimeSchema.optional(),
 });
 
@@ -86,7 +86,7 @@ export type GetShareLinkResponse = z.infer<typeof GetShareLinkResponseSchema>;
 export const AskYourDataRequestSchema = z.object({
   question: z.string().min(1, 'Question cannot be empty').max(1000, 'Question exceeds 1000 characters'),
   sheetName: z.string().min(1).max(128),
-  profiles: z.array(ColumnProfileSchema).min(1, 'At least one column profile is required'),
+  profiles: z.array(LLMColumnProfileSchema).min(1, 'At least one column profile is required'),
 });
 
 export type AskYourDataRequest = z.infer<typeof AskYourDataRequestSchema>;
@@ -96,7 +96,7 @@ export const AskYourDataResponseSchema = z.object({
   interpretedIntent: z.string().max(500),
   queryPlan: QueryPlanSchema.optional(),
   suggestedWidget: WidgetSpecSchema.optional(),
-  sql: z.string().max(4000).optional(),
+  sql: SafeSqlQuerySchema.optional(),
   explanation: z.string().max(2000),
   error: z.string().max(500).optional(),
 });

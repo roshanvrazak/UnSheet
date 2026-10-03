@@ -22,11 +22,11 @@ Every threat identified in the system is directly addressed by one or more of th
 - **Threat Addressed**: Denial of Service (DoS), browser memory exhaustion, tab crashes from decompression bombs.
 - **Attack Vector**: Specially crafted compressed `.xlsx` files with extreme compression ratios (e.g. 42KB decompressing to 10GB of null bytes or repeated XML entities).
 - **Technical Controls**:
-  - File size cap: Maximum 50 MB raw upload buffer.
-  - Uncompressed stream cap: Maximum 200 MB uncompressed buffer limit during ZIP decompression.
+  - File size cap: Maximum 10 MB raw upload buffer (`MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024`).
+  - Uncompressed stream cap: Maximum 200 MB uncompressed buffer limit during ZIP decompression (`MAX_UNCOMPRESSED_BYTES = 200 * 1024 * 1024`).
   - Compression ratio check: Abort decompression if `uncompressed_bytes / compressed_bytes > 100`.
-  - Sheet count cap: Maximum 50 sheets per workbook.
-  - Cell bounds check: Maximum 1,000,000 total cells, 100,000 rows, and 200 columns per sheet.
+  - Sheet count cap: Maximum 20 sheets per workbook (`MAX_SHEETS = 20`).
+  - Cell bounds check: Maximum 200,000 rows (`MAX_ROWS = 200_000`) and 200 columns (`MAX_COLUMNS = 200`) per sheet.
   - Fail-closed behavior: Any breach immediately aborts ingestion with a clear user alert.
 
 ### Mitigation 2: XML Entity Expansion & Billion Laughs Neutralization
@@ -158,7 +158,7 @@ Every threat identified in the system is directly addressed by one or more of th
 
 | Threat ID | STRIDE Category | Threat Description & Attack Vector | Impact | Target Component | Mitigations Applied | Status |
 |---|---|---|---|---|---|---|
-| **THREAT-01** | Denial of Service | Malicious `.xlsx` file designed as a zip bomb to crash browser tab | High (Tab crash / OOM) | Ingest Parser (`@unsheet/engine`) | **Mitigation 1**: 50MB file cap, 200MB uncompressed cap, 100:1 ratio cap, row/col bounds | ENFORCED |
+| **THREAT-01** | Denial of Service | Malicious `.xlsx` file designed as a zip bomb to crash browser tab | High (Tab crash / OOM) | Ingest Parser (`@unsheet/engine`) | **Mitigation 1**: 10MB file cap, 200MB uncompressed cap, 100:1 ratio cap, row/col bounds | ENFORCED |
 | **THREAT-02** | Denial of Service / XXE | Billion laughs entity expansion attack embedded in sheet XML | High (CPU/Memory exhaustion) | Ingest Parser (`@unsheet/engine`) | **Mitigation 2**: External DTD & entity expansion disabled | ENFORCED |
 | **THREAT-03** | Tampering / RCE | Malicious spreadsheet formulas attempting execution or external linking | High (Arbitrary action) | Normalizer (`@unsheet/engine`) | **Mitigation 3**: Zero runtime formula execution; cached values only | ENFORCED |
 | **THREAT-04** | Elevation of Privilege | Prototype pollution via `__proto__`, `constructor`, `prototype` in headers | High (RCE / State corruption) | Normalizer & Contracts | **Mitigation 4**: SafeIdentifier sanitization & prototype key rejection | ENFORCED |

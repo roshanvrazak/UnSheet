@@ -21,14 +21,29 @@ export const SafeIdentifierSchema = z
 export type SafeIdentifier = z.infer<typeof SafeIdentifierSchema>;
 
 /**
+ * Safe alphanumeric/hyphen/underscore entity ID schema that forbids prototype pollution keys.
+ */
+export const SafeEntityIdSchema = z
+  .string()
+  .min(1, 'Entity ID must not be empty')
+  .max(64, 'Entity ID exceeds maximum length of 64 characters')
+  .regex(/^[a-zA-Z0-9_-]+$/, 'Entity ID must contain only alphanumeric characters, underscores, and hyphens')
+  .refine(
+    (val) => !FORBIDDEN_OBJECT_KEYS.includes(val as typeof FORBIDDEN_OBJECT_KEYS[number]),
+    { message: 'Entity ID cannot match prototype properties (__proto__, constructor, prototype)' }
+  );
+
+export type SafeEntityId = z.infer<typeof SafeEntityIdSchema>;
+
+/**
  * Sample value string: capped at 40 characters, sanitized against formula injection.
  */
 export const SampleValueSchema = z
   .string()
   .max(40, 'Sample value exceeds maximum length of 40 characters')
   .refine(
-    (val) => !/^[=+\-@\t\r]/.test(val),
-    { message: 'Sample value must not start with formula trigger characters (=, +, -, @, \\t, \\r)' }
+    (val) => !/^[=+\-@\t\r\n|]/.test(val) && !/^[=+\-@\t\r\n|]/.test(val.trimStart()),
+    { message: 'Sample value must not start with formula trigger characters (=, +, -, @, \\t, \\r, \\n, |) even when preceded by whitespace' }
   );
 
 export type SampleValue = z.infer<typeof SampleValueSchema>;
@@ -84,3 +99,23 @@ export const VersionSchema = z.object({
 });
 
 export type Version = z.infer<typeof VersionSchema>;
+
+/**
+ * Validates URLs ensuring the protocol is strictly http: or https: (preventing javascript:, data:, file:).
+ */
+export const SafeUrlSchema = z
+  .string()
+  .url('Must be a valid URL')
+  .refine(
+    (url) => {
+      try {
+        const parsed = new URL(url);
+        return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+      } catch {
+        return false;
+      }
+    },
+    { message: 'URL protocol must be http: or https:' }
+  );
+
+export type SafeUrl = z.infer<typeof SafeUrlSchema>;

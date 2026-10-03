@@ -1,5 +1,14 @@
 import { z } from 'zod';
-import { SafeIdentifierSchema, IsoDateTimeSchema } from './common.js';
+import { SafeIdentifierSchema, SafeEntityIdSchema, IsoDateTimeSchema } from './common.js';
+
+/**
+ * Ingestion limit safety constants.
+ */
+export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+export const MAX_UNCOMPRESSED_BYTES = 200 * 1024 * 1024; // 200 MB
+export const MAX_ROWS = 200_000;
+export const MAX_COLUMNS = 200;
+export const MAX_SHEETS = 20;
 
 /**
  * Cell data types as recognized by the normalization engine.
@@ -69,13 +78,13 @@ export type SheetBounds = z.infer<typeof SheetBoundsSchema>;
  * Normalized sheet structure containing clean tabular records and metadata.
  */
 export const SheetModelSchema = z.object({
-  id: z.string().min(1).max(64),
+  id: SafeEntityIdSchema,
   name: z.string().min(1).max(128),
   headers: HeaderMetadataSchema,
-  columns: z.array(ColumnMetadataSchema).min(1, 'Sheet must contain at least one column'),
-  rows: z.array(z.record(SafeIdentifierSchema, z.unknown())),
-  rowCount: z.number().int().nonnegative(),
-  columnCount: z.number().int().nonnegative(),
+  columns: z.array(ColumnMetadataSchema).min(1, 'Sheet must contain at least one column').max(MAX_COLUMNS, `Sheet exceeds maximum ${MAX_COLUMNS} columns`),
+  rows: z.array(z.record(SafeIdentifierSchema, z.unknown())).max(MAX_ROWS, `Sheet exceeds maximum ${MAX_ROWS} rows`),
+  rowCount: z.number().int().nonnegative().max(MAX_ROWS, `rowCount exceeds maximum ${MAX_ROWS}`),
+  columnCount: z.number().int().nonnegative().max(MAX_COLUMNS, `columnCount exceeds maximum ${MAX_COLUMNS}`),
   rawBounds: SheetBoundsSchema.optional(),
 });
 
@@ -92,7 +101,7 @@ export type FileType = z.infer<typeof FileTypeSchema>;
  */
 export const WorkbookMetadataSchema = z.object({
   createdAt: IsoDateTimeSchema.optional(),
-  sheetCount: z.number().int().positive(),
+  sheetCount: z.number().int().positive().max(MAX_SHEETS, `sheetCount exceeds maximum ${MAX_SHEETS}`),
   fileType: FileTypeSchema,
   sourceHash: z.string().regex(/^[a-f0-9]{64}$/, 'Must be a 64-character SHA-256 hex digest').optional(),
 });
@@ -103,10 +112,10 @@ export type WorkbookMetadata = z.infer<typeof WorkbookMetadataSchema>;
  * Normalized workbook model representing a complete spreadsheet document.
  */
 export const WorkbookModelSchema = z.object({
-  id: z.string().min(1).max(64),
+  id: SafeEntityIdSchema,
   filename: z.string().min(1).max(256),
-  fileSize: z.number().int().positive(),
-  sheets: z.array(SheetModelSchema).min(1, 'Workbook must contain at least one sheet').max(50, 'Workbook exceeds maximum 50 sheets'),
+  fileSize: z.number().int().positive().max(MAX_FILE_SIZE_BYTES, `File size exceeds maximum ${MAX_FILE_SIZE_BYTES} bytes`),
+  sheets: z.array(SheetModelSchema).min(1, 'Workbook must contain at least one sheet').max(MAX_SHEETS, `Workbook exceeds maximum ${MAX_SHEETS} sheets`),
   activeSheetIndex: z.number().int().nonnegative(),
   metadata: WorkbookMetadataSchema.optional(),
 });

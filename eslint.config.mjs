@@ -25,12 +25,16 @@ export default tseslint.config(
           message: 'dangerouslySetInnerHTML is strictly prohibited due to XSS risk.'
         },
         {
-          selector: "AssignmentExpression[left.property.name='innerHTML']",
+          selector: "AssignmentExpression[left.property.name='innerHTML'], AssignmentExpression[left.property.value='innerHTML']",
           message: 'Assigning to innerHTML is strictly prohibited due to XSS risk.'
         },
         {
-          selector: "AssignmentExpression[left.property.name='outerHTML']",
+          selector: "AssignmentExpression[left.property.name='outerHTML'], AssignmentExpression[left.property.value='outerHTML']",
           message: 'Assigning to outerHTML is strictly prohibited due to XSS risk.'
+        },
+        {
+          selector: "CallExpression[callee.property.name='insertAdjacentHTML'], CallExpression[callee.property.value='insertAdjacentHTML']",
+          message: 'insertAdjacentHTML is strictly prohibited due to XSS risk.'
         }
       ],
       'no-eval': 'error',

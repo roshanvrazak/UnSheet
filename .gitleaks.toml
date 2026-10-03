@@ -32,3 +32,28 @@ regex = '''-----BEGIN (?:RSA|OPENSSH|DSA|EC|PGP)? PRIVATE KEY-----'''
 keywords = [
   "-----BEGIN"
 ]
+
+[[rules]]
+id = "anthropic-api-key"
+description = "Anthropic API Key"
+regex = '''\bsk-ant-[A-Za-z0-9_\-]{20,}'''
+keywords = [
+  "sk-ant-"
+]
+
+[[rules]]
+id = "openai-api-key"
+description = "OpenAI API Key"
+regex = '''\bsk-[A-Za-z0-9_\-]{20,}'''
+keywords = [
+  "sk-"
+]
+
+[[rules]]
+id = "supabase-service-key"
+description = "Supabase Service Key"
+regex = '''\bsbp_[a-f0-9]{40}\b|eyJhbGciOi[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}'''
+keywords = [
+  "sbp_",
+  "eyJhbGciOi"
+]

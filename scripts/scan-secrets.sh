@@ -36,7 +36,10 @@ const SECRET_PATTERNS = [
   { name: 'Generic API Key / Secret', regex: /(?:api[_-]?key|client[_-]?secret|auth[_-]?token|app[_-]?secret)\s*[:=]\s*["']([A-Za-z0-9_\-\.]{20,80})["']/i },
   { name: 'AWS Access Key ID', regex: /(?:A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}/ },
   { name: 'GitHub Personal Access Token', regex: /gh[pousr]_[A-Za-z0-9_]{36,255}/ },
-  { name: 'Slack Token', regex: /xox[baprs]-[0-9]{10,13}-[0-9]{10,13}[a-zA-Z0-9-]*/ }
+  { name: 'Slack Token', regex: /xox[baprs]-[0-9]{10,13}-[0-9]{10,13}[a-zA-Z0-9-]*/ },
+  { name: 'Anthropic API Key', regex: /\bsk-ant-[A-Za-z0-9_\-]{20,}/ },
+  { name: 'OpenAI API Key', regex: /\bsk-[A-Za-z0-9_\-]{20,}/ },
+  { name: 'Supabase Service Key', regex: /\bsbp_[a-f0-9]{40}\b|eyJhbGciOi[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}/ }
 ];
 
 let findings = 0;
@@ -62,12 +65,9 @@ function scanFile(filePath) {
     lines.forEach((line, idx) => {
       for (const pattern of SECRET_PATTERNS) {
         if (pattern.regex.test(line)) {
-          // Check if it's a test or comment/example
-          if (line.includes('sample') || line.includes('placeholder') || line.includes('example')) {
-            continue;
-          }
           console.error(`[SECRET SCAN ERROR] ${pattern.name} found in ${filePath}:${idx + 1}`);
           findings++;
+          break;
         }
       }
     });

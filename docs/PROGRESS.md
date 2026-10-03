@@ -15,3 +15,4 @@
 
 ## Log Entries
 - **Phase 0 initialized**: Created sub-agent definitions in `.claude/agents/*.md`, initialized `docs/DECISIONS.md`, `docs/PROGRESS.md`.
+- **Phase 0 Architect completed**: Authored `docs/SPEC.md`, `docs/ARCHITECTURE.md`, `docs/THREAT_MODEL.md` (STRIDE + 14 mitigations), authoritative `@unsheet/contracts` with Zod schemas and strict types, full test suite passing in `packages/contracts/test/contracts.test.ts`, and handoff at `docs/handoffs/phase0-architect.md`.

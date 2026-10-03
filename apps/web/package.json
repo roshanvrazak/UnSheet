@@ -1,0 +1,16 @@
+{
+  "name": "@unsheet/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@unsheet/contracts": "workspace:*",
+    "@unsheet/engine": "workspace:*",
+    "@unsheet/fixtures": "workspace:*"
+  }
+}

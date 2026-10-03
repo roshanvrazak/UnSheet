@@ -1,0 +1,24 @@
+{
+  "name": "unsheet-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "pnpm -r exec tsc --noEmit",
+    "test": "vitest run",
+    "build": "pnpm -r run build",
+    "scan-secrets": "bash scripts/scan-secrets.sh",
+    "audit": "pnpm audit --audit-level high",
+    "verify": "bash scripts/verify.sh"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@types/node": "^22.13.9",
+    "eslint": "^9.21.0",
+    "eslint-plugin-security": "^3.0.1",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.25.0",
+    "vitest": "^3.0.7"
+  }
+}

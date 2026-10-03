@@ -3,6 +3,7 @@ import {
   FORBIDDEN_OBJECT_KEYS,
   type SafeIdentifier,
 } from '@unsheet/contracts';
+import { safeToString } from './cell.js';
 
 const FORBIDDEN_SET = new Set<string>(FORBIDDEN_OBJECT_KEYS);
 
@@ -10,7 +11,7 @@ const FORBIDDEN_SET = new Set<string>(FORBIDDEN_OBJECT_KEYS);
  * Sanitises a raw column header string into a single valid SafeIdentifier candidate.
  */
 export function sanitiseHeaderToken(raw: unknown, columnIndex: number): string {
-  const rawStr = (raw !== null && raw !== undefined ? String(raw) : '').trim();
+  const rawStr = safeToString(raw).trim();
 
   if (rawStr === '') {
     return `col_${columnIndex + 1}`;

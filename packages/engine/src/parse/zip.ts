@@ -1,5 +1,10 @@
 import { MAX_UNCOMPRESSED_BYTES } from '@unsheet/contracts';
-import { MacroNotAllowedError, ZipBombError, CorruptedFileError } from './errors.js';
+import {
+  MacroNotAllowedError,
+  ZipBombError,
+  CorruptedFileError,
+  UploadGuardError,
+} from './errors.js';
 
 export const MAX_COMPRESSION_RATIO = 100;
 
@@ -19,8 +24,10 @@ export interface ZipInspectionResult {
 const MACRO_ENTRY_PATTERNS = [
   /vbaproject\.bin$/i,
   /vbaprojectsignature\.bin$/i,
-  /xl\/macros\//i,
+  /xl\/(?:macros|macroSheets)\//i,
+  /macroSheet/i,
   /macroenabled/i,
+  /xl\/workbook\.bin$/i,
 ];
 
 /**
@@ -81,8 +88,10 @@ export function inspectZipArchive(buffer: Uint8Array): ZipInspectionResult {
 
       const sig = view.getUint32(cursor, true);
       if (sig !== 0x02014b50) {
-        // "PK\x01\x02"
-        break;
+        // SEC-P1-07 / ADV-P1-11: Fail closed on corrupted Central Directory entry signature
+        throw new UploadGuardError(
+          `Corrupted Central Directory entry signature (0x${sig.toString(16)}) at offset ${cursor}`
+        );
       }
 
       const compressedSize = view.getUint32(cursor + 20, true);
@@ -96,7 +105,16 @@ export function inspectZipArchive(buffer: Uint8Array): ZipInspectionResult {
       }
 
       const filenameBytes = buffer.subarray(cursor + 46, cursor + 46 + filenameLength);
-      const filename = decoder.decode(filenameBytes);
+      const rawFilename = decoder.decode(filenameBytes);
+      // Normalize backslashes for cross-platform security checking
+      const filename = rawFilename.replace(/\\/g, '/');
+
+      // SEC-P1-02 / ADV-P1-04: Catch zero compressed bytes expanding into non-zero uncompressed size
+      if (uncompressedSize > 0 && compressedSize === 0) {
+        throw new ZipBombError(
+          `Entry "${filename}" specifies 0 compressed bytes with non-zero uncompressed size (${uncompressedSize} bytes)`
+        );
+      }
 
       // Check for macros
       for (const pattern of MACRO_ENTRY_PATTERNS) {
@@ -157,7 +175,15 @@ export function inspectZipArchive(buffer: Uint8Array): ZipInspectionResult {
       }
 
       const filenameBytes = buffer.subarray(cursor + 30, cursor + 30 + filenameLength);
-      const filename = decoder.decode(filenameBytes);
+      const rawFilename = decoder.decode(filenameBytes);
+      const filename = rawFilename.replace(/\\/g, '/');
+
+      // SEC-P1-02: Zero compressed bytes with non-zero uncompressed size
+      if (uncompressedSize > 0 && compressedSize === 0) {
+        throw new ZipBombError(
+          `Entry "${filename}" specifies 0 compressed bytes with non-zero uncompressed size (${uncompressedSize} bytes)`
+        );
+      }
 
       for (const pattern of MACRO_ENTRY_PATTERNS) {
         if (pattern.test(filename)) {
@@ -199,6 +225,13 @@ export function inspectZipArchive(buffer: Uint8Array): ZipInspectionResult {
       }
       cursor = nextOffset;
     }
+  }
+
+  // SEC-P1-02: Total uncompressed > 0 with total compressed === 0
+  if (totalUncompressedSize > 0 && totalCompressedSize === 0) {
+    throw new ZipBombError(
+      `ZIP archive specifies 0 compressed bytes with non-zero uncompressed size (${totalUncompressedSize} bytes)`
+    );
   }
 
   // Check overall compression ratio

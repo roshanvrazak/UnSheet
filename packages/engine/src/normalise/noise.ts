@@ -1,5 +1,7 @@
+import { safeToString } from './cell.js';
+
 const SUBTOTAL_PATTERN =
-  /^\s*(?:total|subtotal|sub-total|grand\s*total|sum|average|avg)\b/i;
+  /(?:^|\s)(?:total|subtotal|sub-total|grand\s*total|sum|average|avg)\b/i;
 
 const FOOTNOTE_PATTERN =
   /^\s*(?:\*|note[s]?:|source:|confidential|copyright|unaudited|disclaimer:)/i;
@@ -18,20 +20,20 @@ export function isEmptySpacerRow(row: unknown[] | undefined): boolean {
 
 /**
  * Checks if a row represents a subtotal, total, sum, or average aggregation line.
+ * Scans across all cells in the row to catch category-prefixed subtotals (e.g. "Engineering Subtotal").
  */
 export function isSubtotalRow(row: unknown[] | undefined): boolean {
   if (!row || row.length === 0) return false;
 
   for (const cell of row) {
     if (cell === null || cell === undefined) continue;
-    const str = String(cell).trim();
+    const str = safeToString(cell).trim();
     if (str === '') continue;
 
-    if (SUBTOTAL_PATTERN.test(str)) {
+    // Check if cell contains a subtotal marker (limit to < 60 chars to avoid matching paragraphs)
+    if (str.length < 60 && SUBTOTAL_PATTERN.test(str)) {
       return true;
     }
-    // If the first non-empty text cell is not a subtotal marker, this is not a subtotal row
-    break;
   }
 
   return false;
@@ -39,25 +41,32 @@ export function isSubtotalRow(row: unknown[] | undefined): boolean {
 
 /**
  * Checks if a row is a footnote, comment, or attribution line.
+ * For narrow tables (1-2 columns), requires an explicit footnote indicator pattern.
  */
 export function isFootnoteRow(row: unknown[] | undefined, totalColumns: number): boolean {
   if (!row || row.length === 0) return false;
 
   const filledCells = row.filter((c) => {
     if (c === null || c === undefined) return false;
-    if (typeof c === 'string' && c.trim() === '') return false;
-    return true;
+    const str = safeToString(c).trim();
+    return str !== '';
   });
 
   if (filledCells.length === 0) return false;
 
+  const firstText = safeToString(filledCells[0]).trim();
+
+  // REV-P1-10: In narrow tables (1-2 columns), only flag if matching explicit footnote markers
+  if (totalColumns <= 2) {
+    return FOOTNOTE_PATTERN.test(firstText);
+  }
+
   // Footnotes typically span 1 or at most 2 cells in multi-column tables
   const fillRatio = filledCells.length / Math.max(totalColumns, 1);
-  if (fillRatio > 0.4 && totalColumns > 2) {
+  if (fillRatio > 0.4) {
     return false;
   }
 
-  const firstText = String(filledCells[0]).trim();
   if (FOOTNOTE_PATTERN.test(firstText)) {
     return true;
   }

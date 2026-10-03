@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SafeIdentifierSchema, SafeEntityIdSchema, SampleValuesArraySchema } from './common.js';
+import { SafeIdentifierSchema, SafeEntityIdSchema, SampleValuesArraySchema, FORBIDDEN_OBJECT_KEYS } from './common.js';
 
 /**
  * Inferred data types for spreadsheet columns.
@@ -102,7 +102,14 @@ export type LLMColumnProfile = z.infer<typeof LLMColumnProfileSchema>;
  */
 export const SheetProfileSchema = z.object({
   sheetId: SafeEntityIdSchema,
-  sheetName: z.string().min(1).max(128),
+  sheetName: z
+    .string()
+    .min(1, 'Sheet name must not be empty')
+    .max(128, 'Sheet name exceeds maximum length of 128 characters')
+    .refine(
+      (val) => !FORBIDDEN_OBJECT_KEYS.includes(val.trim().toLowerCase() as (typeof FORBIDDEN_OBJECT_KEYS)[number]),
+      { message: 'Sheet name cannot match prototype properties (__proto__, constructor, prototype)' }
+    ),
   rowCount: z.number().int().nonnegative(),
   columnProfiles: z.array(ColumnProfileSchema).min(1, 'Sheet profile must have at least one column profile'),
   primaryKeyCandidate: SafeIdentifierSchema.optional(),
@@ -112,3 +119,28 @@ export const SheetProfileSchema = z.object({
 });
 
 export type SheetProfile = z.infer<typeof SheetProfileSchema>;
+
+/**
+ * Inferred foreign-key or cross-sheet join candidate.
+ */
+export const JoinCandidateSchema = z.object({
+  sourceSheet: z.string().min(1).max(128),
+  sourceColumn: SafeIdentifierSchema,
+  targetSheet: z.string().min(1).max(128),
+  targetColumn: SafeIdentifierSchema,
+  confidence: z.number().min(0).max(1),
+  overlapRatio: z.number().min(0).max(1),
+  sampleMatches: z.array(z.string().max(64)).max(10),
+});
+
+export type JoinCandidate = z.infer<typeof JoinCandidateSchema>;
+
+/**
+ * Workbook-level profile combining multi-sheet profiles and detected cross-sheet relationships.
+ */
+export const WorkbookProfileSchema = z.object({
+  sheets: z.array(SheetProfileSchema),
+  crossSheetJoins: z.array(JoinCandidateSchema),
+});
+
+export type WorkbookProfile = z.infer<typeof WorkbookProfileSchema>;

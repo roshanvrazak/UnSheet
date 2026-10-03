@@ -35,5 +35,7 @@ describe('@unsheet/contracts exports', () => {
     expect(Contracts.ExportTableSchema).toBeDefined();
     expect(Contracts.ExportFormatSchema).toBeDefined();
     expect(Contracts.ExportOptionsSchema).toBeDefined();
+    expect(Contracts.JoinCandidateSchema).toBeDefined();
+    expect(Contracts.WorkbookProfileSchema).toBeDefined();
   });
 });

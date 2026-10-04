@@ -6,7 +6,7 @@
 | **Phase 1** | Parse & Normalise | **COMPLETED** | fixtures-engineer, ingest-engineer, architect, security-reviewer, code-reviewer, adversarial-tester | `331f1bc` | 0 blocking (all 12 adversarial + 16 security + 15 code review findings remediated) | 398/398 tests passing; 94.78% lines / 91.95% branch coverage; 28 fixtures; clean verify gate |
 | **Phase 2** | Profile & Generate Spec | **COMPLETED** | profiling-engineer, architect, security-reviewer, code-reviewer, adversarial-tester | `cee156c` | 0 blocking (all 11 adversarial + 9 security + 9 code review findings remediated) | 460/460 tests passing; 100% column inference accuracy (341/341 columns across 28 fixtures); clean verify gate |
 | **Phase 3** | Query & Render (MVP) | **COMPLETED** | query-engineer, devops-engineer, frontend-engineer, architect, security-reviewer, code-reviewer, adversarial-tester | `df66fd1` | 0 blocking (all 12 security + 10 code review + 7 adversarial findings remediated) | 585/585 tests passing across 36 test files; Next.js 15 App Router production build; DuckDB-WASM + in-memory fallback; Total Renderer 12-column grid; 100% WCAG AA a11y companion tables; clean verify gate |
-| **Phase 4** | Editor, Templates, Drift | PENDING | frontend-engineer, backend-engineer, profiling-engineer | - | - | - |
+| **Phase 4** | Editor, Templates, Drift | **COMPLETED** | frontend-engineer, profiling-engineer, devops-engineer, security-reviewer, code-reviewer, adversarial-tester | `1c17f23` | 0 blocking (all 4 security + 4 code review + 7 adversarial findings remediated) | 604/604 tests passing across 42 test files; Visual Editor; Template storage with 1MB bounds; Schema Drift UI with remappings; clean verify gate |
 | **Phase 5** | LLM Features | PENDING | backend-engineer, query-engineer | - | - | - |
 | **Phase 6** | Share & Export | PENDING | backend-engineer, frontend-engineer | - | - | - |
 | **Phase 7** | Hardening & Release | PENDING | all reviewers, devops-engineer, docs-writer | - | - | - |
@@ -116,5 +116,33 @@
   - Monorepo tests: **36 test files, 585/585 tests passing (100%)**.
   - Strict TypeScript: `noUncheckedIndexedAccess: true`, zero `any`, zero type errors.
   - `pnpm verify`: 6/6 stages passing 100% (lint, typecheck, tests, build, secret scan, audit).
+
+---
+
+## Phase 4 Closure Summary
+- **Visual Dashboard Editor (`apps/web/components/editor/`)**:
+  - Interactive Edit Mode: `WidgetConfigModal` enabling adding/editing widgets across all 6 widget types (`kpi`, `line`, `bar`, `donut`, `table`, `pivot`).
+  - Column and aggregation selectors: measure and dimension pickers filtered from `SheetProfile`, format selection (currency, percent, suffix, decimals).
+  - 12-column grid coordinate enforcement: strict boundary clamping `x + w <= 12` to prevent layout overflow.
+  - Global Filter configuration: `FilterConfigModal` for categorical select, multi-select, date range, numeric range, and search.
+  - Per-widget actions toolbar: `WidgetActionsToolbar` with quick edit, duplicate, move, and remove controls.
+- **Template Management & Schema Fingerprinting (`packages/engine/src/template/`, `apps/web/lib/template/storage.ts`)**:
+  - `computeSchemaFingerprint`: deterministic SHA-256 fingerprint generated from sorted column definitions.
+  - `createTemplate`: packaging `DashboardSpec` and `SchemaFingerprint` into validated `Template` contract.
+  - In-browser local storage persistence (`saveLocalTemplate`, `loadLocalTemplates`, `deleteLocalTemplate`) with strict `TemplateSchema.safeParse` validation discarding corrupted entries.
+  - JSON import/export: `importTemplateJson` enforcing a 1MB file size cap and strict schema parsing; download/export of `.unsheet.json` template files.
+  - 3 pre-packaged built-in starter templates for domain datasets (Project Pipeline, BOQ Quotes, Supplier Lead Times).
+- **Interactive Schema Drift UI & Spec Remapping (`packages/engine/src/drift/`, `apps/web/components/drift/`)**:
+  - `applyRemappings`: pure engine function substituting column keys across all 6 widget types, filters, and bindings with prototype pollution defense (`__proto__`, `constructor`, `prototype` rejection).
+  - `DriftResolutionModal`: visual report displaying overall match confidence, breaking changes alert, matched columns with green checks, and dropdown remapping selectors for missing columns.
+  - "Apply Remapped Dashboard" workflow: user-confirmed remappings are compiled and applied to update the active dashboard.
+- **Review Gate & Remediations**:
+  - Audited by `security-reviewer` (4 findings: 1 High, 2 Med, 1 Low), `code-reviewer` (4 findings: 2 High, 1 Med, 1 Low), and `adversarial-tester` (7 vectors tested).
+  - 100% remediated across prototype defense in `applyRemappings`, 1MB bounds & Zod parsing in storage, dialog WCAG AA attributes, and HTML input length constraints.
+- **Verification Metrics**:
+  - Monorepo tests: **42 test files, 604/604 tests passing (100%)**.
+  - Strict TypeScript: `noUncheckedIndexedAccess: true`, zero `any`, zero type errors.
+  - `pnpm verify`: 6/6 stages passing 100% (lint, typecheck, tests, build, secret scan, audit).
+
 
 

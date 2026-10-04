@@ -44,3 +44,14 @@ This document records architectural, technical, and trade-off decisions made dur
 - **Decision**: Orchestrator dynamically tiers subagent dispatch to lightweight models (`flash_lite`), which operate under generous quota boundaries while providing exceptional speed and adherence to strict structured tasks.
 - **Consequences**: Uninterrupted multi-agent continuous execution across extensive multi-phase projects.
 
+## ADR-009: In-Browser Template Persistence & 1MB Import Boundary
+- **Context**: Users need to save custom dashboard layouts and apply them to new spreadsheets without relying on server databases. Uploaded template JSON files could be weaponized with zip-bombs or prototype pollution.
+- **Decision**: Persist templates locally using localStorage with strict runtime `TemplateSchema.safeParse` validation that gracefully discards corrupted items. Enforce a hard 1MB file size ceiling (`jsonString.length <= 1_048_576`) on imported `.unsheet.json` template files.
+- **Consequences**: Fast, zero-dependency offline template storage with strong DoS and injection protections.
+
+## ADR-010: Pure Engine Spec Remapping with Prototype Pollution Hardening
+- **Context**: Schema drift requires substituting column keys across all widget measures, dimensions, table columns, and filter bindings. Adversarial remappings could inject prototype keys (`__proto__`, `constructor`, `prototype`).
+- **Decision**: Implement `applyRemappings` in `@unsheet/engine/drift` with an explicit forbidden keys denylist and `Object.prototype.hasOwnProperty` guards. Re-validate the remapped spec using `DashboardSpecSchema.parse` before returning.
+- **Consequences**: Safe, total spec remapping that never pollutes global JavaScript prototypes and guarantees structural validity.
+
+

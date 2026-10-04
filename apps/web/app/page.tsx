@@ -28,6 +28,8 @@ import {
 import { DashboardRenderer } from '@/components/dashboard/DashboardRenderer';
 import { AskYourDataDrawer } from '@/components/chat/AskYourDataDrawer';
 import { SpecRefineBar } from '@/components/chat/SpecRefineBar';
+import { ExportDropdown } from '@/components/export/ExportDropdown';
+import { ShareModal } from '@/components/share/ShareModal';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Bot } from 'lucide-react';
@@ -52,6 +54,7 @@ export default function HomePage() {
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isAskDrawerOpen, setIsAskDrawerOpen] = useState<boolean>(false);
   const [isSpecRefineOpen, setIsSpecRefineOpen] = useState<boolean>(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
 
   const pipelineRunId = useRef<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -544,6 +547,15 @@ export default function HomePage() {
                   <Bot className="w-3.5 h-3.5 mr-1.5" />
                   Ask Data
                 </Button>
+                <ExportDropdown sheet={activeSheet} />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsShareModalOpen(true)}
+                  className="text-xs font-medium"
+                >
+                  Share
+                </Button>
               </div>
             </div>
 
@@ -572,6 +584,14 @@ export default function HomePage() {
               onAddWidget={(widget) => {
                 setSpec((prev) => (prev ? { ...prev, widgets: [...prev.widgets, widget] } : prev));
               }}
+            />
+
+            {/* Share Modal */}
+            <ShareModal
+              isOpen={isShareModalOpen}
+              onClose={() => setIsShareModalOpen(false)}
+              spec={spec}
+              sheet={activeSheet}
             />
           </div>
         ) : null}

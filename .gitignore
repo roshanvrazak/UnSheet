@@ -1,48 +1,128 @@
+# ==========================================
 # Dependencies
+# ==========================================
 node_modules/
+npm-packages-offline-cache/
 .pnpm-store/
+.npm/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
 
-# Build outputs
+# ==========================================
+# Environment & Secrets (NEVER COMMIT)
+# ==========================================
+.env
+.env.*
+.env*.local
+*.env
+*.env.*
+!.env.example
+!.env.*.example
+!.env.template
+
+# Keys, Certificates & Credentials
+*.pem
+*.key
+*.cert
+*.cer
+*.crt
+*.pfx
+*.p12
+*.pkcs12
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+*credentials*.json
+*service-account*.json
+*serviceAccount*.json
+*client_secret*.json
+oauth-keys.json
+firebase-adminsdk*.json
+.npmrc
+.yarnrc
+.netrc
+
+# ==========================================
+# Build Outputs & Bundlers
+# ==========================================
 dist/
 build/
 out/
 .next/
 .turbo/
+.cache/
+.parcel-cache/
+.swc/
+*.tsbuildinfo
+*.buildinfo
 
-# Test & Coverage
+# ==========================================
+# Test, Coverage & Mutation Testing
+# ==========================================
 coverage/
+*.lcov
 .nyc_output/
+.vitest/
+.stryker-tmp/
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
+reports/
 
-# Environment & Secrets
-.env
-.env.local
-.env.production
-.env.development
-*.env
-!.env.example
-
-# Logs
+# ==========================================
+# Logs & Process Outputs
+# ==========================================
+*.log
+logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-*.log
+lerna-debug.log*
 
-# OS & Editor
+# ==========================================
+# OS & File System Artifacts
+# ==========================================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
-.vscode/*
-!.vscode/settings.json
-!.vscode/extensions.json
+Desktop.ini
+
+# ==========================================
+# IDE & Editor Artifacts
+# ==========================================
 .idea/
 *.swp
 *.swo
+*~
+*.bak
+*.tmp
+*.temp
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
 
-# Vitest
-.vitest/
-*.tsbuildinfo
-
-# Playwright
-playwright-report/
-test-results/
-
+# ==========================================
+# Databases, Local State & Caches
+# ==========================================
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+.supabase/local/
+.supabase/.temp/
+.eslintcache

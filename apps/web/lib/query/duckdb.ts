@@ -40,7 +40,7 @@ function mapArrowType(dataType: arrow.DataType): string {
  * Initializes or retrieves the active DuckDB-WASM singleton in a browser environment.
  */
 export async function getDuckDB(): Promise<{ db: AsyncDuckDB; conn: AsyncDuckDBConnection }> {
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || typeof Worker === 'undefined') {
     throw new Error('DuckDB-WASM can only be initialized in a browser environment');
   }
 

@@ -36,7 +36,7 @@ export function TemplateSaveModal({
         hash: '0000000000000000000000000000000000000000000000000000000000000000',
         version: '1.0',
         columnCount: dashboardSpec.widgets.length,
-        columns: dashboardSpec.widgets.map(w => ({ key: 'col1', name: 'Column 1', inferredType: 'number' as const, required: true }))
+        columns: dashboardSpec.widgets.map(() => ({ key: 'col1', name: 'Column 1', inferredType: 'number' as const, required: true }))
       },
       isBuiltIn: false,
       createdAt: new Date().toISOString(),
@@ -58,7 +58,7 @@ export function TemplateSaveModal({
         hash: '0000000000000000000000000000000000000000000000000000000000000000',
         version: '1.0',
         columnCount: dashboardSpec.widgets.length,
-        columns: dashboardSpec.widgets.map(w => ({ key: 'col1', name: 'Column 1', inferredType: 'number' as const, required: true }))
+        columns: dashboardSpec.widgets.map(() => ({ key: 'col1', name: 'Column 1', inferredType: 'number' as const, required: true }))
       },
       isBuiltIn: false,
       createdAt: new Date().toISOString(),

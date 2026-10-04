@@ -89,26 +89,41 @@ export async function POST(req: NextRequest) {
     }
 
     // 6. Check that referenced columns exist in provided profiles (allowlist check)
+    // Extract table names present after FROM / JOIN
+    const fromMatches = sqlResult.match(/\b(?:from|join)\s+"([^"]+)"/gi) || [];
+    const tableNamesInSql = new Set([
+      sheetName.toLowerCase(),
+      sheetName.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase(),
+      ...fromMatches.map((m) => m.replace(/\b(?:from|join)\s+"/i, '').replace(/"$/, '').toLowerCase()),
+    ]);
+
     // Extract quoted identifiers or words matching column keys
     const referencedMatches = sqlResult.match(/"([^"]+)"/g) || [];
     for (const match of referencedMatches) {
       const colName = match.replace(/"/g, '');
-      // If it's not the sheetName and not a standard SQL function/alias (like COUNT, SUM, etc.), verify
-      if (colName.toLowerCase() !== sheetName.toLowerCase()) {
-        // Check if it exists in profiles or is an alias generated in query
-        const isProfileCol = allowlistedColumns.has(colName.toLowerCase());
-        const isCommonAlias = ['total_', 'avg_', 'sum_', 'count_', 'min_', 'max_'].some((prefix) => colName.toLowerCase().startsWith(prefix));
-        if (!isProfileCol && !isCommonAlias) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: `SQL references un-allowlisted column: "${colName}"`,
-              interpretedIntent: intentResult,
-              explanation: 'Query rejected because it references columns not present in the provided schema profile.',
-            },
-            { status: 400 }
-          );
-        }
+      const lowerCol = colName.toLowerCase();
+      // If it's a table name in the query, skip column check
+      if (tableNamesInSql.has(lowerCol)) {
+        continue;
+      }
+
+      // Check if it exists in profiles or is an alias generated in query
+      const isProfileCol = allowlistedColumns.has(lowerCol);
+      const isCommonAlias = [
+        'total_', 'avg_', 'sum_', 'count_', 'min_', 'max_',
+        'total', 'avg', 'sum', 'count', 'min', 'max', 'records', 'val', 'value', 'label'
+      ].some((prefix) => lowerCol === prefix || lowerCol.startsWith(prefix));
+
+      if (!isProfileCol && !isCommonAlias) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `SQL references un-allowlisted column: "${colName}"`,
+            interpretedIntent: intentResult,
+            explanation: 'Query rejected because it references columns not present in the provided schema profile.',
+          },
+          { status: 400 }
+        );
       }
     }
 

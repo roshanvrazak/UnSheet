@@ -97,7 +97,7 @@ export function SpecRefineBar({
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Refine dashboard with AI (e.g. 'Add a KPI for total revenue', 'Change bar chart to donut')..."
           disabled={isRefining}
-          className="flex-1 bg-white dark:bg-slate-900 text-sm"
+          className="flex-1 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 border border-slate-300 dark:border-slate-700 text-sm"
         />
         <Button
           type="submit"

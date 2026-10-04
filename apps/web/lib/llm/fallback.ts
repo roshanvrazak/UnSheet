@@ -37,6 +37,68 @@ export function deterministicRefineSpec(
     appliedChanges.push(`Added KPI widget for column "${targetCol}"`);
   }
 
+  // Convert chart types (e.g. "change bar chart to donut", "make it a donut", "convert to line chart")
+  if (lower.includes('donut') || lower.includes('pie')) {
+    const targetIdx = spec.widgets.findIndex((w) => w.type === 'bar' || w.type === 'line');
+    if (targetIdx !== -1) {
+      const oldW = spec.widgets[targetIdx] as unknown as Record<string, unknown>;
+      const dim = (typeof oldW.dimension === 'string' ? oldW.dimension : undefined) || profiles.find((p) => p.semanticRole === 'dimension')?.columnKey || profiles[0]?.columnKey || 'category';
+      const meas = (Array.isArray(oldW.measures) && typeof oldW.measures[0] === 'string' ? oldW.measures[0] : undefined) || (typeof oldW.measure === 'string' ? oldW.measure : undefined) || profiles.find((p) => p.semanticRole === 'measure')?.columnKey || 'id';
+      spec.widgets[targetIdx] = {
+        id: typeof oldW.id === 'string' ? oldW.id : `donut_${Date.now()}`,
+        type: 'donut',
+        title: typeof oldW.title === 'string' ? oldW.title.replace(/chart|bar|line/gi, 'Breakdown') : 'Category Breakdown',
+        description: typeof oldW.description === 'string' ? oldW.description : undefined,
+        grid: (oldW.grid as { x: number; y: number; w: number; h: number }) || { x: 0, y: 0, w: 6, h: 6 },
+        dimension: dim,
+        measure: meas,
+        aggregation: (typeof oldW.aggregation === 'string' ? oldW.aggregation : 'sum') as 'sum' | 'avg' | 'count' | 'min' | 'max',
+        innerRadius: 0.6,
+        showLegend: true,
+      };
+      appliedChanges.push(`Converted widget to donut chart for "${dim}" by "${meas}"`);
+    }
+  } else if (lower.includes('bar')) {
+    const targetIdx = spec.widgets.findIndex((w) => w.type === 'donut' || w.type === 'line');
+    if (targetIdx !== -1) {
+      const oldW = spec.widgets[targetIdx] as unknown as Record<string, unknown>;
+      const dim = (typeof oldW.dimension === 'string' ? oldW.dimension : undefined) || profiles.find((p) => p.semanticRole === 'dimension')?.columnKey || profiles[0]?.columnKey || 'category';
+      const meas = (typeof oldW.measure === 'string' ? oldW.measure : undefined) || (Array.isArray(oldW.measures) && typeof oldW.measures[0] === 'string' ? oldW.measures[0] : undefined) || profiles.find((p) => p.semanticRole === 'measure')?.columnKey || 'id';
+      spec.widgets[targetIdx] = {
+        id: typeof oldW.id === 'string' ? oldW.id : `bar_${Date.now()}`,
+        type: 'bar',
+        title: typeof oldW.title === 'string' ? oldW.title.replace(/donut|pie|line/gi, 'Bar Chart') : 'Metric Bar Chart',
+        description: typeof oldW.description === 'string' ? oldW.description : undefined,
+        grid: (oldW.grid as { x: number; y: number; w: number; h: number }) || { x: 0, y: 0, w: 6, h: 6 },
+        dimension: dim,
+        measures: [meas],
+        aggregation: (typeof oldW.aggregation === 'string' ? oldW.aggregation : 'sum') as 'sum' | 'avg' | 'count' | 'min' | 'max',
+        orientation: 'vertical',
+      };
+      appliedChanges.push(`Converted widget to bar chart for "${dim}" by "${meas}"`);
+    }
+  } else if (lower.includes('line') || lower.includes('trend')) {
+    const targetIdx = spec.widgets.findIndex((w) => w.type === 'bar' || w.type === 'donut');
+    if (targetIdx !== -1) {
+      const oldW = spec.widgets[targetIdx] as unknown as Record<string, unknown>;
+      const timeCol = profiles.find((p) => p.semanticRole === 'time' || p.inferredType === 'date')?.columnKey || (typeof oldW.dimension === 'string' ? oldW.dimension : undefined) || profiles[0]?.columnKey || 'date';
+      const meas = (Array.isArray(oldW.measures) && typeof oldW.measures[0] === 'string' ? oldW.measures[0] : undefined) || (typeof oldW.measure === 'string' ? oldW.measure : undefined) || profiles.find((p) => p.semanticRole === 'measure')?.columnKey || 'id';
+      spec.widgets[targetIdx] = {
+        id: typeof oldW.id === 'string' ? oldW.id : `line_${Date.now()}`,
+        type: 'line',
+        title: typeof oldW.title === 'string' ? oldW.title.replace(/bar|donut/gi, 'Trend') : 'Metric Trend',
+        description: typeof oldW.description === 'string' ? oldW.description : undefined,
+        grid: (oldW.grid as { x: number; y: number; w: number; h: number }) || { x: 0, y: 0, w: 8, h: 6 },
+        timeDimension: timeCol,
+        measures: [meas],
+        aggregation: (typeof oldW.aggregation === 'string' ? oldW.aggregation : 'sum') as 'sum' | 'avg' | 'count' | 'min' | 'max',
+        showGrid: true,
+        showLegend: true,
+      };
+      appliedChanges.push(`Converted widget to line trend chart for "${meas}" across "${timeCol}"`);
+    }
+  }
+
   if (appliedChanges.length === 0) {
     if (lower.includes('dark') || lower.includes('night')) {
       spec.theme = 'dark';

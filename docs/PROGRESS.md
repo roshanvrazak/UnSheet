@@ -7,7 +7,7 @@
 | **Phase 2** | Profile & Generate Spec | **COMPLETED** | profiling-engineer, architect, security-reviewer, code-reviewer, adversarial-tester | `cee156c` | 0 blocking (all 11 adversarial + 9 security + 9 code review findings remediated) | 460/460 tests passing; 100% column inference accuracy (341/341 columns across 28 fixtures); clean verify gate |
 | **Phase 3** | Query & Render (MVP) | **COMPLETED** | query-engineer, devops-engineer, frontend-engineer, architect, security-reviewer, code-reviewer, adversarial-tester | `df66fd1` | 0 blocking (all 12 security + 10 code review + 7 adversarial findings remediated) | 585/585 tests passing across 36 test files; Next.js 15 App Router production build; DuckDB-WASM + in-memory fallback; Total Renderer 12-column grid; 100% WCAG AA a11y companion tables; clean verify gate |
 | **Phase 4** | Editor, Templates, Drift | **COMPLETED** | frontend-engineer, profiling-engineer, devops-engineer, security-reviewer, code-reviewer, adversarial-tester | `1c17f23` | 0 blocking (all 4 security + 4 code review + 7 adversarial findings remediated) | 604/604 tests passing across 42 test files; Visual Editor; Template storage with 1MB bounds; Schema Drift UI with remappings; clean verify gate |
-| **Phase 5** | LLM Features | PENDING | backend-engineer, query-engineer | - | - | - |
+| **Phase 5** | LLM Features | **COMPLETED** | backend-engineer, frontend-engineer, test-engineer, devops-engineer, security-reviewer, code-reviewer, adversarial-tester | `7e03ed5` | 0 blocking (all findings remediated, 100% review approval) | 614/614 tests passing across 44 test files; Ask-Your-Data; Spec Refinement; sliding-window rate limiters; 15-vector prompt injection corpus; 100% data privacy (zero raw row egress); clean verify gate |
 | **Phase 6** | Share & Export | PENDING | backend-engineer, frontend-engineer | - | - | - |
 | **Phase 7** | Hardening & Release | PENDING | all reviewers, devops-engineer, docs-writer | - | - | - |
 
@@ -141,6 +141,33 @@
   - 100% remediated across prototype defense in `applyRemappings`, 1MB bounds & Zod parsing in storage, dialog WCAG AA attributes, and HTML input length constraints.
 - **Verification Metrics**:
   - Monorepo tests: **42 test files, 604/604 tests passing (100%)**.
+  - Strict TypeScript: `noUncheckedIndexedAccess: true`, zero `any`, zero type errors.
+  - `pnpm verify`: 6/6 stages passing 100% (lint, typecheck, tests, build, secret scan, audit).
+
+---
+
+## Phase 5 Closure Summary (LLM Features & Ask-Your-Data)
+- **Vercel AI SDK Integration & Backend Endpoints (`apps/web/app/api/`)**:
+  - `/api/query/ask`: Natural language spreadsheet question to single-statement SQL SELECT and widget recommendation conforming to `AskYourDataResponseSchema`.
+  - `/api/spec/refine`: Natural language dashboard spec refiner modifying widgets and layout dynamically within 12-column grid bounds conforming to `SpecRefinementResponseSchema`.
+  - Sliding-window IP rate limiters (`apps/web/lib/llm/rate-limit.ts`) enforcing 30 req/min for Ask queries and 20 req/min for Spec Refinement with standard `429 Too Many Requests` and `Retry-After` headers.
+  - Deterministic heuristics fallback (`apps/web/lib/llm/fallback.ts`) ensuring 100% uptime and offline test capability without external API dependencies.
+- **Client-Side Privacy Boundary & Prompt Injection Defense (`apps/web/lib/llm/prompts.ts`)**:
+  - Zero raw row data egress: only `LLMColumnProfile` metadata and <=5 sample values truncated to 40 characters are transmitted.
+  - Structural XML encapsulation inside `<schema_metadata>` with strict system instructions forbidding the model from executing instructions embedded in column names or sample values.
+  - Mathematical SQL injection defense: LLM output validated via AST parser against `SafeSqlQuerySchema` (prohibiting DDL/DML, `ATTACH`, `COPY`, file functions) with column allowlisting against active sheet profiles.
+- **Conversational UI & Dashboard Refinement (`apps/web/components/chat/`)**:
+  - `AskYourDataDrawer`: Accessible slide-out panel (`role="dialog"`, `aria-modal="true"`) with dynamic sample chips, natural language input, SQL query preview with `aria-expanded` toggle, and one-click "Add to Dashboard" button.
+  - `SpecRefineBar`: Natural language refinement bar with applied change tags and full instant "Undo" support.
+  - Integration into `apps/web/app/page.tsx` with dedicated action toolbar triggers and sheet profile memoization.
+- **Evaluation Suite & Prompt Injection Corpus (`evals/`)**:
+  - `evals/prompt_injection.json`: 15 adversarial attack vectors (system overrides, jailbreaks, delimiter breakouts, SQL injections, DuckDB file reads, markdown exfiltrations, prototype pollution, oversized strings).
+  - `evals/prompt_injection.test.ts`: Automated evaluation suite verifying 100% schema compliance, zero DDL/DML, zero prompt breakouts, and zero unallowlisted columns across all adversarial vectors.
+- **Review Gate & Remediations**:
+  - Audited by `security-reviewer` (`docs/reviews/security-phase5.md` - APPROVED, 0 Critical/High), `code-reviewer` (`docs/reviews/code-review-phase5.md` - APPROVED, Low Risk), and `adversarial-tester` (`docs/reviews/adversarial-phase5.md` - APPROVED).
+  - Accessibility finding remediated: `aria-expanded` and `aria-label` added to SQL query toggle in `AskYourDataDrawer`.
+- **Verification Metrics**:
+  - Monorepo tests: **44 test files, 614/614 tests passing (100%)**.
   - Strict TypeScript: `noUncheckedIndexedAccess: true`, zero `any`, zero type errors.
   - `pnpm verify`: 6/6 stages passing 100% (lint, typecheck, tests, build, secret scan, audit).
 

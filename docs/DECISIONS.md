@@ -52,6 +52,14 @@ This document records architectural, technical, and trade-off decisions made dur
 ## ADR-010: Pure Engine Spec Remapping with Prototype Pollution Hardening
 - **Context**: Schema drift requires substituting column keys across all widget measures, dimensions, table columns, and filter bindings. Adversarial remappings could inject prototype keys (`__proto__`, `constructor`, `prototype`).
 - **Decision**: Implement `applyRemappings` in `@unsheet/engine/drift` with an explicit forbidden keys denylist and `Object.prototype.hasOwnProperty` guards. Re-validate the remapped spec using `DashboardSpecSchema.parse` before returning.
-- **Consequences**: Safe, total spec remapping that never pollutes global JavaScript prototypes and guarantees structural validity.
+## ADR-011: Prompt Boundary Isolation and Metadata-Only Egress
+- **Context**: Sending full spreadsheet rows or untrusted cell values to third-party LLMs introduces severe privacy leaks and opens critical prompt injection attack vectors (e.g. system instructions hidden in cell values).
+- **Decision**: Restrict all LLM communications to `LLMColumnProfile`, containing only column names, inferred types, aggregate statistical bounds, and at most 5 sampled values truncated to 40 characters (`formatSchemaMetadata`). Wrap metadata inside structural `<schema_metadata>` delimiters and mandate that all content inside is untrusted data.
+- **Consequences**: Zero raw row data egress, strong defense-in-depth against prompt injection and data exfiltration, strict adherence to Unsheet's headline privacy guarantee.
+
+## ADR-012: Single-Statement Allowlisted SQL Generation with Deterministic Fallbacks
+- **Context**: Ask-Your-Data requires translating user questions into DuckDB SQL queries. Malicious or hallucinated queries could execute DDL/DML, access the filesystem (`read_csv`, `read_parquet`), or attach external databases.
+- **Decision**: Generated queries must strictly validate against `SafeSqlQuerySchema` (enforcing single-statement `SELECT` with allowlisted DuckDB functions and no DDL/DML). The API route enforces that all quoted column names map to allowlisted columns in the active worksheet profile. A deterministic rule-based query compiler (`deterministicAskQuery`) and spec refiner (`deterministicRefineSpec`) provide 100% offline uptime when API keys are absent or requests exceed rate limits (30 req/min for ask, 20 req/min for refine).
+- **Consequences**: Mathematical prevention of SQL injection, zero arbitrary code/file execution in the DuckDB sandbox, and resilient offline capability.
 
 

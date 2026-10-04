@@ -4,27 +4,20 @@ import {
   CategoryFrequencySchema,
   DashboardSpecSchema,
   SheetProfileSchema,
-  DriftReportSchema,
   type SheetModel,
   type SheetProfile,
-  type DashboardSpec,
-  type ColumnProfile,
 } from '@unsheet/contracts';
 import {
   inferColumnType,
   computeColumnStats,
   sanitizeCategoryValue,
   sanitizeSampleValue,
-  parseNumericValue,
   profileSheet,
-  profileWorkbook,
   generateDashboardSpec,
   formatTitle,
   findJoinCandidates,
   detectDrift,
-  calculateColumnSimilarity,
   levenshteinDistance,
-  isCoercible,
 } from '../../src/index.js';
 
 describe('Adversarial Red-Team Suite: Phase 2 Engines (Profiling, SpecGen, Drift)', () => {
@@ -114,21 +107,15 @@ describe('Adversarial Red-Team Suite: Phase 2 Engines (Profiling, SpecGen, Drift
   // ATTACK VECTOR 2: Pathological Distributions & Type Inference Anomaly
   // =========================================================================
   describe('Vector 2: Pathological Distributions & Math Anomalies', () => {
-    it('ADV-P2-04: Exposes "Infinity" string bypass in inferColumnType causing false numeric inference', () => {
-      // In inference.ts line 348: `!Number.isNaN(Number(cleaned))`
-      // In JS: Number("Infinity") is Infinity, and Number.isNaN(Infinity) is FALSE!
-      // Thus, strings "Infinity" and "-Infinity" are inferred as 'number' with 0.95 confidence!
+    it('ADV-P2-04: Rejects non-finite "Infinity" strings from false numeric inference', () => {
+      // In JS: Number("Infinity") is Infinity, and Number.isNaN(Infinity) is FALSE.
+      // With Number.isFinite() guard, strings "Infinity" and "-Infinity" are NOT inferred as 'number'.
       const values = ['Infinity', '-Infinity', 'Infinity'];
       const inference = inferColumnType(values, { key: 'non_finite_col' });
 
-      // Security / Logic Gap: String "Infinity" values are classified as a valid numeric column!
-      expect(inference.inferredType).toBe('number');
-      expect(inference.confidence).toBe(0.95);
-
-      // But when computeColumnStats runs, parseNumericValue checks Number.isFinite and discards them:
-      const stats = computeColumnStats(values, inference.inferredType);
-      // Result: Column has numeric type but stats is completely undefined!
-      expect(stats.stats).toBeUndefined();
+      // Guarded: Non-finite strings are not classified as numeric
+      expect(inference.inferredType).not.toBe('number');
+      expect(['category', 'text']).toContain(inference.inferredType);
     });
 
     it('ADV-P2-05: Number.MAX_VALUE arithmetic overflow results in null stats without throwing', () => {
@@ -158,19 +145,17 @@ describe('Adversarial Red-Team Suite: Phase 2 Engines (Profiling, SpecGen, Drift
       expect(stats.sampleValues).toEqual([]);
     });
 
-    it('ADV-P2-07: Exposes overzealous date inference on numeric columns named with "planned"', () => {
-      // In inference.ts line 320: `name.includes('planned')` combined with values in [23000..65000].
-      // A financial column like "planned_budget" or "planned_units" with values around 30,000-50,000
-      // is misclassified as 'date' with 0.95 confidence!
+    it('ADV-P2-07: Prevents false date inference on numeric columns named with planned budget/cost', () => {
+      // Numeric columns with "budget" or "cost" in their name are guarded against serial date inference
       const plannedBudgets = [25000, 32000, 48000, 51000];
       const inference = inferColumnType(plannedBudgets, {
         key: 'planned_budget',
         originalName: 'Planned Budget',
       });
 
-      // Flaw: A monetary/quantitative column is misclassified as a date!
-      expect(inference.inferredType).toBe('date');
-      expect(inference.confidence).toBe(0.95);
+      // Correctly classified as currency/measure rather than date
+      expect(inference.inferredType).not.toBe('date');
+      expect(inference.inferredType).toBe('currency');
     });
   });
 
@@ -178,29 +163,22 @@ describe('Adversarial Red-Team Suite: Phase 2 Engines (Profiling, SpecGen, Drift
   // ATTACK VECTOR 3: Prototype Pollution Injection & Crash Invariants
   // =========================================================================
   describe('Vector 3: Prototype Pollution & Crash Invariants', () => {
-    it('ADV-P2-08: Exposes unhandled TypeError crash on Object.create(null) cells across Phase 2 engines', () => {
-      // Calling String(Object.create(null)) throws unhandled TypeError in inference, stats, and joins
+    it('ADV-P2-08: Gracefully handles Object.create(null) cells without throwing TypeError across Phase 2 engines', () => {
+      // safeToString handles Object.create(null) without throwing TypeError
       const nullProtoObj = Object.create(null);
 
-      // 1. Crash in inferColumnType
-      expect(() => inferColumnType([nullProtoObj], { key: 'col_a' })).toThrow(
-        /Cannot convert object to primitive value/
-      );
+      // 1. Safe in inferColumnType
+      expect(() => inferColumnType([nullProtoObj], { key: 'col_a' })).not.toThrow();
 
-      // 2. Crash in computeColumnStats
-      expect(() => computeColumnStats([nullProtoObj], 'text')).toThrow(
-        /Cannot convert object to primitive value/
-      );
+      // 2. Safe in computeColumnStats
+      expect(() => computeColumnStats([nullProtoObj], 'text')).not.toThrow();
 
-      // 3. Crash in sanitizeCategoryValue
-      expect(() => sanitizeCategoryValue(nullProtoObj)).toThrow(
-        /Cannot convert object to primitive value/
-      );
+      // 3. Safe in sanitizeCategoryValue
+      expect(() => sanitizeCategoryValue(nullProtoObj)).not.toThrow();
+      expect(sanitizeCategoryValue(nullProtoObj)).toBe('(empty)');
     });
 
-    it('ADV-P2-09: Exposes prototype pollution acceptance in SheetProfile.sheetName (__proto__, constructor)', () => {
-      // While sheetId enforces SafeEntityIdSchema, sheetName is constrained only by z.string().min(1).max(128).
-      // SheetProfileSchema accepts '__proto__' without error.
+    it('ADV-P2-09: SheetProfile strictly rejects prototype keys in sheetName (__proto__, constructor, prototype)', () => {
       const mockSheet: SheetModel = {
         id: 'sheet_01',
         name: '__proto__',
@@ -216,9 +194,10 @@ describe('Adversarial Red-Team Suite: Phase 2 Engines (Profiling, SpecGen, Drift
         rows: [{ col1: 'val1' }],
       };
 
-      const profile = profileSheet(mockSheet);
-      expect(profile.sheetName).toBe('__proto__');
-      expect(() => SheetProfileSchema.parse(profile)).not.toThrow();
+      // Rejects prototype property names in sheetName
+      expect(() => profileSheet(mockSheet)).toThrow(
+        /Sheet name cannot match prototype properties/
+      );
     });
 
     it('ADV-P2-10: ColumnProfile strictly rejects prototype keys in columnKey via SafeIdentifierSchema', () => {
@@ -246,7 +225,7 @@ describe('Adversarial Red-Team Suite: Phase 2 Engines (Profiling, SpecGen, Drift
   // ATTACK VECTOR 4: ReDoS, CPU Exhaustion, & Algorithmic Complexity
   // =========================================================================
   describe('Vector 4: ReDoS, CPU Exhaustion, & Algorithmic Complexity', () => {
-    it('ADV-P2-11: Measures Levenshtein quadratic complexity on long identifier strings', () => {
+    it('ADV-P2-11: Mitigates Levenshtein quadratic complexity by clamping strings to 128 characters', () => {
       const strA = 'a'.repeat(2000);
       const strB = 'b'.repeat(2000);
 
@@ -254,9 +233,9 @@ describe('Adversarial Red-Team Suite: Phase 2 Engines (Profiling, SpecGen, Drift
       const dist = levenshteinDistance(strA, strB);
       const elapsed = performance.now() - start;
 
-      expect(dist).toBe(2000);
-      // Confirms Levenshtein distance executes 2000 * 2000 = 4,000,000 iterations
-      expect(elapsed).toBeGreaterThanOrEqual(0);
+      // Inputs are truncated to 128 characters, yielding 128 substitutions max
+      expect(dist).toBe(128);
+      expect(elapsed).toBeLessThan(100);
     });
 
     it('ADV-P2-12: Join candidate detection performs multiple Set allocations for multi-column workbooks', () => {
@@ -297,9 +276,9 @@ describe('Adversarial Red-Team Suite: Phase 2 Engines (Profiling, SpecGen, Drift
   // ATTACK VECTOR 5: Spec Integrity Breaking & Contract Violations
   // =========================================================================
   describe('Vector 5: Spec Integrity Breaking & Contract Violations', () => {
-    it('ADV-P2-13: Exposes contract violation in generateDashboardSpec when column key length exceeds 120 chars', () => {
+    it('ADV-P2-13: Clamps widget and filter identifiers to <= 128 characters without contract violation', () => {
       // SafeIdentifierSchema permits keys up to 128 characters.
-      // Suppose a column key is 125 characters (perfectly valid SafeIdentifier).
+      // When column key is 125 characters, unclamped `kpi_${longKey}` would exceed 128.
       const longKey = 'a'.repeat(125);
 
       const mockProfile: SheetProfile = {
@@ -325,16 +304,16 @@ describe('Adversarial Red-Team Suite: Phase 2 Engines (Profiling, SpecGen, Drift
         recommendedMeasures: [longKey],
       };
 
-      // In specgen.ts line 135: `id: \`kpi_${mKey}\``
-      // Length becomes: 'kpi_'.length + 125 = 4 + 125 = 129 characters!
-      // In WidgetSpecSchema: id is constrained to SafeIdentifierSchema (max 128 chars).
-      // Security / Contract Violation: generateDashboardSpec crashes when validating the generated spec!
-      expect(() => generateDashboardSpec(mockProfile)).toThrow(
-        /Identifier exceeds maximum length of 128 characters/
-      );
+      // Successfully generates and validates DashboardSpec without length overflow crash
+      const spec = generateDashboardSpec(mockProfile);
+      expect(spec).toBeDefined();
+      const kpi = spec.widgets.find((w) => w.type === 'kpi');
+      expect(kpi).toBeDefined();
+      expect(kpi!.id.length).toBeLessThanOrEqual(128);
+      expect(() => DashboardSpecSchema.parse(spec)).not.toThrow();
     });
 
-    it('ADV-P2-14: Exposes contract violation when options.title is whitespace-only string', () => {
+    it('ADV-P2-14: Gracefully falls back when options.title is whitespace-only string', () => {
       const mockProfile: SheetProfile = {
         sheetId: 'sheet_title_01',
         sheetName: 'Sales Data',
@@ -357,16 +336,14 @@ describe('Adversarial Red-Team Suite: Phase 2 Engines (Profiling, SpecGen, Drift
         recommendedMeasures: ['revenue'],
       };
 
-      // options.title is '   ' (truthy in JS, but TitleSchema requires min(1) after trim).
-      // specgen line 57 uses `options?.title || ...`, passing '   ' directly into TitleSchema.
-      // Contract Violation: generateDashboardSpec crashes on whitespace-only title!
-      expect(() => generateDashboardSpec(mockProfile, { title: '   ' })).toThrow(
-        /Title must not be empty/
-      );
+      // options.title is '   ' -> trimmed to empty -> falls back to default title
+      const spec = generateDashboardSpec(mockProfile, { title: '   ' });
+      expect(spec.title).toBe('Sales Data Dashboard');
+      expect(() => DashboardSpecSchema.parse(spec)).not.toThrow();
     });
 
-    it('ADV-P2-15: Exposes duplicate widget IDs when recommendedMeasures contains duplicate keys', () => {
-      // If a profile contains duplicate measure recommendations:
+    it('ADV-P2-15: Deduplicates recommended measures and dimensions preventing widget ID collisions', () => {
+      // Profile contains duplicate measure recommendations
       const mockProfile: SheetProfile = {
         sheetId: 'sheet_dup_01',
         sheetName: 'Dup Measures',
@@ -392,11 +369,10 @@ describe('Adversarial Red-Team Suite: Phase 2 Engines (Profiling, SpecGen, Drift
       const spec = generateDashboardSpec(mockProfile);
       const kpis = spec.widgets.filter((w) => w.type === 'kpi');
 
-      // Both KPI widgets receive identical ID: 'kpi_sales'!
-      expect(kpis).toHaveLength(2);
+      // Deduplicated: only 1 KPI widget is generated
+      expect(kpis).toHaveLength(1);
       expect(kpis[0]?.id).toBe('kpi_sales');
-      expect(kpis[1]?.id).toBe('kpi_sales');
-      expect(kpis[0]?.id).toBe(kpis[1]?.id); // ID collision in dashboard spec!
+      expect(() => DashboardSpecSchema.parse(spec)).not.toThrow();
     });
 
     it('ADV-P2-16: Prompt injection in sheetName directly contaminates DashboardSpec title and description', () => {

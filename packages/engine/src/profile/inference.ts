@@ -1,4 +1,5 @@
 import type { InferredDataType } from '@unsheet/contracts';
+import { safeToString } from '../normalise/cell.js';
 
 export interface ColumnInferenceResult {
   inferredType: InferredDataType;
@@ -289,11 +290,14 @@ export function inferColumnType(
     name.includes('discount_rate') ||
     name.includes('tax_rate')
   ) {
-    const allNumericOrPct = nonNull.every(
-      (v) =>
-        typeof v === 'number' ||
-        (typeof v === 'string' && !Number.isNaN(Number(v.replace('%', '').trim())))
-    );
+    const allNumericOrPct = nonNull.every((v) => {
+      if (typeof v === 'number') return Number.isFinite(v);
+      if (typeof v === 'string') {
+        const cleaned = v.replace('%', '').trim();
+        return cleaned !== '' && Number.isFinite(Number(cleaned));
+      }
+      return false;
+    });
     if (allNumericOrPct) {
       return { inferredType: 'percent', confidence: 0.95, formatPattern: '0.0%' };
     }
@@ -318,11 +322,17 @@ export function inferColumnType(
 
   // Serial dates (1900 & 1904 epochs)
   const isSerialDateCol =
-    name.includes('serial') ||
-    name.includes('date') ||
-    name.includes('timestamp') ||
-    name.includes('launch') ||
-    name.includes('planned');
+    (name.includes('serial') ||
+      name.includes('date') ||
+      name.includes('timestamp') ||
+      name.includes('epoch') ||
+      name.includes('launch') ||
+      (name.includes('planned') &&
+        !name.includes('budget') &&
+        !name.includes('cost') &&
+        !name.includes('unit'))) &&
+    !CURRENCY_KEYWORDS.some((k) => name.includes(k)) &&
+    !NUMBER_EXCLUSION_KEYWORDS.some((k) => name.includes(k));
   if (isSerialDateCol && nonNull.every(isExcelSerialDate)) {
     return { inferredType: 'date', confidence: 0.95, formatPattern: 'YYYY-MM-DD' };
   }
@@ -345,7 +355,7 @@ export function inferColumnType(
     if (typeof v === 'number') return Number.isFinite(v);
     if (typeof v === 'string') {
       const cleaned = v.replace(/[$€£¥₹,]/g, '').trim();
-      return cleaned !== '' && !Number.isNaN(Number(cleaned));
+      return cleaned !== '' && Number.isFinite(Number(cleaned));
     }
     return false;
   });
@@ -392,7 +402,7 @@ export function inferColumnType(
   }
 
   // 8. ID vs Text vs Category
-  const distinct = new Set(nonNull.map((v) => String(v).trim()));
+  const distinct = new Set(nonNull.map((v) => safeToString(v).trim()));
   const uniqueness = distinct.size / nonNull.length;
 
   const hasIdKeyword = ID_KEYWORDS.some(

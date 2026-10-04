@@ -5,6 +5,11 @@ import { normaliseWorkbook } from './normalise/index.js';
 export * from './parse/index.js';
 export * from './normalise/index.js';
 export * from './profile/index.js';
+export {
+  toLLMColumnProfile,
+  toLLMSheetProfile,
+  type LLMSheetProfile,
+} from './profile/llm.js';
 export * from './specgen/index.js';
 export * from './drift/index.js';
 

@@ -155,16 +155,16 @@ describe('Profiling Engine Accuracy Benchmarks', () => {
 
     const customerJoin = joins.find(
       (j) =>
-        (j.fromSheet === 'customers' && j.toSheet === 'orders' && j.fromColumn === 'customer_id') ||
-        (j.fromSheet === 'orders' && j.toSheet === 'customers' && j.fromColumn === 'customer_id')
+        (j.sourceSheet === 'customers' && j.targetSheet === 'orders' && j.sourceColumn === 'customer_id') ||
+        (j.sourceSheet === 'orders' && j.targetSheet === 'customers' && j.sourceColumn === 'customer_id')
     );
     expect(customerJoin).toBeDefined();
     expect(customerJoin!.overlapRatio).toBeGreaterThan(0.5);
 
     const orderJoin = joins.find(
       (j) =>
-        (j.fromSheet === 'orders' && j.toSheet === 'order_items' && j.fromColumn === 'order_id') ||
-        (j.fromSheet === 'order_items' && j.toSheet === 'orders' && j.fromColumn === 'order_id')
+        (j.sourceSheet === 'orders' && j.targetSheet === 'order_items' && j.sourceColumn === 'order_id') ||
+        (j.sourceSheet === 'order_items' && j.targetSheet === 'orders' && j.sourceColumn === 'order_id')
     );
     expect(orderJoin).toBeDefined();
     expect(orderJoin!.overlapRatio).toBeGreaterThan(0.5);

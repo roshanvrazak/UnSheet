@@ -2,8 +2,10 @@
  * Computes Levenshtein edit distance between two strings.
  */
 export function levenshteinDistance(a: string, b: string): number {
-  const m = a.length;
-  const n = b.length;
+  const sA = a.slice(0, 128);
+  const sB = b.slice(0, 128);
+  const m = sA.length;
+  const n = sB.length;
 
   if (m === 0) return n;
   if (n === 0) return m;
@@ -17,10 +19,10 @@ export function levenshteinDistance(a: string, b: string): number {
 
   for (let i = 1; i <= m; i++) {
     currRow[0] = i;
-    const charA = a.charCodeAt(i - 1);
+    const charA = sA.charCodeAt(i - 1);
 
     for (let j = 1; j <= n; j++) {
-      const charB = b.charCodeAt(j - 1);
+      const charB = sB.charCodeAt(j - 1);
       const cost = charA === charB ? 0 : 1;
       currRow[j] = Math.min(
         currRow[j - 1]! + 1, // insertion
@@ -91,8 +93,8 @@ export function tokenJaccardSimilarity(a: string, b: string): number {
  * blending Levenshtein character distance and token set overlap.
  */
 export function calculateColumnSimilarity(a: string, b: string): number {
-  const cleanA = a.toLowerCase().trim();
-  const cleanB = b.toLowerCase().trim();
+  const cleanA = a.slice(0, 128).toLowerCase().trim();
+  const cleanB = b.slice(0, 128).toLowerCase().trim();
 
   if (cleanA === cleanB) return 1.0;
 

@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { prompt, currentSpec, profiles, history } = parseResult.data;
+    const { prompt, currentSpec, profiles } = parseResult.data;
     const schemaMetadataStr = formatSchemaMetadata(profiles);
 
     const apiKey = process.env.OPENAI_API_KEY;
@@ -69,12 +69,13 @@ export async function POST(req: NextRequest) {
 
     const validatedResponse = SpecRefinementResponseSchema.parse(responsePayload);
     return NextResponse.json(validatedResponse);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in /api/spec/refine:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
       {
         success: false,
-        error: error.message || 'Internal server error',
+        error: errorMessage,
         explanation: 'Failed to process spec refinement request.',
       },
       { status: 500 }

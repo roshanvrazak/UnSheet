@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AskYourDataRequestSchema, AskYourDataResponseSchema, SafeSqlQuerySchema } from '@unsheet/contracts';
+import { AskYourDataRequestSchema, AskYourDataResponseSchema, SafeSqlQuerySchema, QueryPlan, WidgetSpec } from '@unsheet/contracts';
 import { checkRateLimit, rateLimitResponse } from '@/lib/llm/rate-limit';
 import { formatSchemaMetadata, ASK_YOUR_DATA_SYSTEM_INSTRUCTION } from '@/lib/llm/prompts';
 import { deterministicAskQuery } from '@/lib/llm/fallback';
@@ -37,8 +37,8 @@ export async function POST(req: NextRequest) {
 
     let sqlResult = '';
     let intentResult = '';
-    let queryPlanResult: any = undefined;
-    let widgetResult: any = undefined;
+    let queryPlanResult: QueryPlan | undefined = undefined;
+    let widgetResult: WidgetSpec | undefined = undefined;
     let explanationResult = '';
 
     // 3. Check if OpenAI API key is present
@@ -123,12 +123,13 @@ export async function POST(req: NextRequest) {
 
     const validatedResponse = AskYourDataResponseSchema.parse(responsePayload);
     return NextResponse.json(validatedResponse);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in /api/query/ask:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
       {
         success: false,
-        error: error.message || 'Internal server error',
+        error: errorMessage,
         interpretedIntent: '',
         explanation: 'Failed to process ask-your-data request.',
       },

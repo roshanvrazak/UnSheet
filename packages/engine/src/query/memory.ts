@@ -11,6 +11,21 @@ import { QueryResultSchema } from '@unsheet/contracts';
 import { validateQueryPlanAgainstSheet } from './validation.js';
 
 /**
+ * Safely converts an unknown value to a string without throwing on Object.create(null).
+ */
+function safeToString(val: unknown): string {
+  if (val === null || val === undefined) return '';
+  if (typeof val === 'object' && val !== null && !('toString' in val)) {
+    try {
+      return JSON.stringify(val);
+    } catch {
+      return '[object Object]';
+    }
+  }
+  return String(val);
+}
+
+/**
  * Checks whether a single row satisfies a filter condition.
  */
 function matchesFilter(row: Record<string, unknown>, filter: QueryFilter): boolean {
@@ -26,7 +41,7 @@ function matchesFilter(row: Record<string, unknown>, filter: QueryFilter): boole
         return true;
       }
       if (cell !== null && cell !== undefined && target !== null && target !== undefined) {
-        return String(cell) === String(target);
+        return safeToString(cell) === safeToString(target);
       }
       return false;
     }
@@ -39,7 +54,7 @@ function matchesFilter(row: Record<string, unknown>, filter: QueryFilter): boole
         return false;
       }
       if (cell !== null && cell !== undefined && target !== null && target !== undefined) {
-        return String(cell) !== String(target);
+        return safeToString(cell) !== safeToString(target);
       }
       return true;
     }
@@ -51,7 +66,7 @@ function matchesFilter(row: Record<string, unknown>, filter: QueryFilter): boole
       if (!Number.isNaN(numCell) && !Number.isNaN(numTarget)) {
         return numCell > numTarget;
       }
-      return String(cell) > String(target);
+      return safeToString(cell) > safeToString(target);
     }
 
     case 'gte': {
@@ -61,7 +76,7 @@ function matchesFilter(row: Record<string, unknown>, filter: QueryFilter): boole
       if (!Number.isNaN(numCell) && !Number.isNaN(numTarget)) {
         return numCell >= numTarget;
       }
-      return String(cell) >= String(target);
+      return safeToString(cell) >= safeToString(target);
     }
 
     case 'lt': {
@@ -71,7 +86,7 @@ function matchesFilter(row: Record<string, unknown>, filter: QueryFilter): boole
       if (!Number.isNaN(numCell) && !Number.isNaN(numTarget)) {
         return numCell < numTarget;
       }
-      return String(cell) < String(target);
+      return safeToString(cell) < safeToString(target);
     }
 
     case 'lte': {
@@ -81,7 +96,7 @@ function matchesFilter(row: Record<string, unknown>, filter: QueryFilter): boole
       if (!Number.isNaN(numCell) && !Number.isNaN(numTarget)) {
         return numCell <= numTarget;
       }
-      return String(cell) <= String(target);
+      return safeToString(cell) <= safeToString(target);
     }
 
     case 'in': {
@@ -91,7 +106,7 @@ function matchesFilter(row: Record<string, unknown>, filter: QueryFilter): boole
       return target.some((item) => {
         if (item === cell) return true;
         if (cell !== null && cell !== undefined && item !== null && item !== undefined) {
-          return String(item) === String(cell);
+          return safeToString(item) === safeToString(cell);
         }
         return false;
       });
@@ -104,7 +119,7 @@ function matchesFilter(row: Record<string, unknown>, filter: QueryFilter): boole
       return !target.some((item) => {
         if (item === cell) return true;
         if (cell !== null && cell !== undefined && item !== null && item !== undefined) {
-          return String(item) === String(cell);
+          return safeToString(item) === safeToString(cell);
         }
         return false;
       });
@@ -120,23 +135,23 @@ function matchesFilter(row: Record<string, unknown>, filter: QueryFilter): boole
       if (!Number.isNaN(numCell) && !Number.isNaN(min) && !Number.isNaN(max)) {
         return numCell >= min && numCell <= max;
       }
-      const strCell = String(cell);
-      return strCell >= String(target[0]) && strCell <= String(target[1]);
+      const strCell = safeToString(cell);
+      return strCell >= safeToString(target[0]) && strCell <= safeToString(target[1]);
     }
 
     case 'contains': {
       if (cell === null || cell === undefined) return false;
-      return String(cell).toLowerCase().includes(String(target ?? '').toLowerCase());
+      return safeToString(cell).toLowerCase().includes(safeToString(target ?? '').toLowerCase());
     }
 
     case 'starts_with': {
       if (cell === null || cell === undefined) return false;
-      return String(cell).toLowerCase().startsWith(String(target ?? '').toLowerCase());
+      return safeToString(cell).toLowerCase().startsWith(safeToString(target ?? '').toLowerCase());
     }
 
     case 'ends_with': {
       if (cell === null || cell === undefined) return false;
-      return String(cell).toLowerCase().endsWith(String(target ?? '').toLowerCase());
+      return safeToString(cell).toLowerCase().endsWith(safeToString(target ?? '').toLowerCase());
     }
 
     case 'is_null':
@@ -168,7 +183,7 @@ function computeAggregation(
 
     case 'distinctCount': {
       const distinctSet = new Set(
-        rawValues.map((v) => (typeof v === 'object' ? JSON.stringify(v) : v))
+        rawValues.map((v) => (typeof v === 'object' && v !== null ? JSON.stringify(v) : v))
       );
       return distinctSet.size;
     }
@@ -197,7 +212,14 @@ function computeAggregation(
         if (rawValues.length === 0) return null;
         return rawValues.sort()[0] ?? null;
       }
-      return Math.min(...numValues);
+      let minVal = numValues[0]!;
+      for (let i = 1; i < numValues.length; i++) {
+        const val = numValues[i]!;
+        if (val < minVal) {
+          minVal = val;
+        }
+      }
+      return minVal;
     }
 
     case 'max': {
@@ -208,7 +230,14 @@ function computeAggregation(
         if (rawValues.length === 0) return null;
         return rawValues.sort()[rawValues.length - 1] ?? null;
       }
-      return Math.max(...numValues);
+      let maxVal = numValues[0]!;
+      for (let i = 1; i < numValues.length; i++) {
+        const val = numValues[i]!;
+        if (val > maxVal) {
+          maxVal = val;
+        }
+      }
+      return maxVal;
     }
 
     default:
@@ -254,9 +283,8 @@ export function executeQueryInMemory(
     >();
 
     for (const row of filteredRows) {
-      const key = plan.dimensions
-        .map((dim) => String(row[dim] ?? ''))
-        .join(':::');
+      const dimValues = plan.dimensions.map((dim) => row[dim] ?? '');
+      const key = JSON.stringify(dimValues);
       let grp = groupMap.get(key);
       if (!grp) {
         grp = { sample: row, rows: [] };

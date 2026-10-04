@@ -8,7 +8,7 @@ import {
   compileQueryPlanToSql,
   executeQueryInMemory,
 } from '@unsheet/engine';
-import { executeDuckDBQuery } from './duckdb.js';
+import { executeDuckDBQuery, registerSheetTable } from './duckdb.js';
 
 export interface ExecuteQueryOptions {
   activeFilters?: Record<string, unknown> | undefined;
@@ -34,6 +34,7 @@ export async function executeWidgetQuery(
   // 2. If DuckDB execution is requested and running in browser, attempt DuckDB query
   if (useDuckDB && typeof window !== 'undefined') {
     try {
+      await registerSheetTable(sheet);
       const sql = compileQueryPlanToSql(plan);
       return await executeDuckDBQuery(sql, { queryId: plan.id });
     } catch {

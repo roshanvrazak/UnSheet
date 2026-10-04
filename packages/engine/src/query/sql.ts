@@ -125,18 +125,30 @@ function compileFilter(filter: QueryFilter): string {
     }
 
     case 'contains': {
-      const sanitized = String(value ?? '').replace(/'/g, "''");
-      return `${col} LIKE '%${sanitized}%'`;
+      const sanitized = String(value ?? '')
+        .replace(/\\/g, '\\\\')
+        .replace(/%/g, '\\%')
+        .replace(/_/g, '\\_')
+        .replace(/'/g, "''");
+      return `${col} LIKE '%${sanitized}%' ESCAPE '\\'`;
     }
 
     case 'starts_with': {
-      const sanitized = String(value ?? '').replace(/'/g, "''");
-      return `${col} LIKE '${sanitized}%'`;
+      const sanitized = String(value ?? '')
+        .replace(/\\/g, '\\\\')
+        .replace(/%/g, '\\%')
+        .replace(/_/g, '\\_')
+        .replace(/'/g, "''");
+      return `${col} LIKE '${sanitized}%' ESCAPE '\\'`;
     }
 
     case 'ends_with': {
-      const sanitized = String(value ?? '').replace(/'/g, "''");
-      return `${col} LIKE '%${sanitized}'`;
+      const sanitized = String(value ?? '')
+        .replace(/\\/g, '\\\\')
+        .replace(/%/g, '\\%')
+        .replace(/_/g, '\\_')
+        .replace(/'/g, "''");
+      return `${col} LIKE '%${sanitized}' ESCAPE '\\'`;
     }
 
     case 'is_null':
@@ -192,7 +204,7 @@ export function compileQueryPlanToSql(plan: QueryPlan): SafeSqlQuery {
 
   if (plan.orderBy && plan.orderBy.length > 0) {
     const orderDirectives = plan.orderBy
-      .map((o) => `${quoteIdentifier(o.columnKey)} ${o.direction.toUpperCase()}`)
+      .map((o) => `${quoteIdentifier(o.columnKey)} ${o.direction?.toLowerCase() === 'desc' ? 'DESC' : 'ASC'}`)
       .join(', ');
     queryChunks.push(`ORDER BY ${orderDirectives}`);
   }

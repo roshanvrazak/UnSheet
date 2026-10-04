@@ -155,8 +155,26 @@ export interface DuckDBQueryOptions {
   queryId?: string;
 }
 
+// FIFO Mutex queue for serializing queries against DuckDB connection
+let queryQueueTail: Promise<unknown> = Promise.resolve();
+
+async function runWithDuckDBMutex<T>(fn: () => Promise<T>): Promise<T> {
+  const previousTail = queryQueueTail;
+  let release: () => void = () => {};
+  queryQueueTail = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+
+  await previousTail;
+  try {
+    return await fn();
+  } finally {
+    release();
+  }
+}
+
 /**
- * Executes a SafeSqlQuery against the DuckDB-WASM instance with an execution timeout.
+ * Executes a SafeSqlQuery against the DuckDB-WASM instance with an execution timeout and query serialization mutex.
  */
 export async function executeDuckDBQuery(
   sql: SafeSqlQuery,
@@ -166,31 +184,33 @@ export async function executeDuckDBQuery(
   const timeoutMs = options?.timeoutMs ?? 5000;
   const queryId = options?.queryId ?? `q_${Date.now()}`;
 
-  const { conn } = await getDuckDB();
+  return runWithDuckDBMutex(async () => {
+    const { conn } = await getDuckDB();
 
-  const startTime = performance.now();
+    const startTime = performance.now();
 
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => {
-      conn.cancelSent().catch(() => {});
-      reject(new Error(`DuckDB query execution timed out after ${timeoutMs}ms`));
-    }, timeoutMs);
-  });
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        conn.cancelSent().catch(() => {});
+        reject(new Error(`DuckDB query execution timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+    });
 
-  try {
-    const arrowTable = await Promise.race([
-      conn.query(validatedSql),
-      timeoutPromise,
-    ]);
+    try {
+      const arrowTable = await Promise.race([
+        conn.query(validatedSql),
+        timeoutPromise,
+      ]);
 
-    const executionTimeMs = Math.round((performance.now() - startTime) * 100) / 100;
-    return arrowTableToQueryResult(arrowTable, queryId, executionTimeMs);
-  } finally {
-    if (timer) {
-      clearTimeout(timer);
+      const executionTimeMs = Math.round((performance.now() - startTime) * 100) / 100;
+      return arrowTableToQueryResult(arrowTable, queryId, executionTimeMs);
+    } finally {
+      if (timer) {
+        clearTimeout(timer);
+      }
     }
-  }
+  });
 }
 
 /**

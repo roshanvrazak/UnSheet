@@ -6,13 +6,25 @@ const FORBIDDEN_SQL_KEYWORD_REGEX =
   /\b(DROP|INSERT|UPDATE|DELETE|ALTER|CREATE|COPY|ATTACH|DETACH|INSTALL|LOAD|PRAGMA)\b/i;
 
 const FORBIDDEN_SQL_FUNCTION_REGEX =
-  /\b(read_csv|read_csv_auto|read_parquet|read_json|read_json_auto|scan_parquet|parquet_scan|write_csv|to_csv|write_parquet|to_parquet|read_blob|read_text)\s*\(/i;
+  /(?:"|\b)(read_csv|read_csv_auto|read_parquet|read_json|read_json_auto|read_ndjson|read_ndjson_auto|scan_parquet|parquet_scan|scan_csv|scan_json|sniff_csv|write_csv|to_csv|write_parquet|to_parquet|read_blob|read_text|glob|getenv|current_setting|duckdb_secrets|duckdb_settings|duckdb_extensions|duckdb_tables|checkpoint|export_database|query_table)(?:"|\b)\s*\(/i;
 
+/**
+ * Masks string literals ('...') and double-quoted identifiers ("...") by replacing their
+ * contents with spaces, preserving character count and layout while preventing
+ * false-positive keyword/function matches and false-positive multi-statement detection
+ * on legitimate user data or quoted identifiers.
+ *
+ * Double-quoted identifiers followed by an opening parenthesis are excluded from masking
+ * to prevent evasion of forbidden function calls (e.g. "read_csv"(...)).
+ */
+export function maskSqlLiteralsAndIdentifiers(sql: string): string {
+  return sql.replace(/'(?:''|[^'])*'|"[^"]*"(?!\s*\()/g, (match) => ' '.repeat(match.length));
+}
 
 /**
  * Validates that an ad-hoc SQL query is a single, safe SELECT or WITH statement.
  * Strictly forbids DDL/DML, multi-statement queries, ATTACH/INSTALL/LOAD/PRAGMA,
- * and dangerous DuckDB file functions.
+ * and dangerous DuckDB file functions outside of string literals and quoted identifiers.
  */
 export const SafeSqlQuerySchema = z
   .string()
@@ -23,15 +35,24 @@ export const SafeSqlQuerySchema = z
     { message: 'Query must start with SELECT or WITH' }
   )
   .refine(
-    (sql) => !/;[\s\S]*\S/.test(sql.trim()),
+    (sql) => {
+      const masked = maskSqlLiteralsAndIdentifiers(sql);
+      return !/;[\s\S]*\S/.test(masked.trim());
+    },
     { message: 'Multi-statement SQL queries are strictly prohibited' }
   )
   .refine(
-    (sql) => !FORBIDDEN_SQL_KEYWORD_REGEX.test(sql),
+    (sql) => {
+      const masked = maskSqlLiteralsAndIdentifiers(sql);
+      return !FORBIDDEN_SQL_KEYWORD_REGEX.test(masked);
+    },
     { message: 'DDL, DML, administrative, and external database operations are strictly prohibited' }
   )
   .refine(
-    (sql) => !FORBIDDEN_SQL_FUNCTION_REGEX.test(sql),
+    (sql) => {
+      const masked = maskSqlLiteralsAndIdentifiers(sql);
+      return !FORBIDDEN_SQL_FUNCTION_REGEX.test(masked);
+    },
     { message: 'Dangerous file-access and external functions are strictly prohibited' }
   );
 

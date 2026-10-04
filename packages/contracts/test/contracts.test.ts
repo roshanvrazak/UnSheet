@@ -32,6 +32,7 @@ import {
   QueryPlanSchema,
   QueryResultSchema,
   SafeSqlQuerySchema,
+  maskSqlLiteralsAndIdentifiers,
   SpecRefinementRequestSchema,
   SpecRefinementResponseSchema,
   ChatMessageSchema,
@@ -883,12 +884,31 @@ describe('Safe SQL Query Contracts', () => {
     expect(SafeSqlQuerySchema.parse('  SELECT * FROM transactions LIMIT 10;  ')).toBeDefined();
   });
 
-  it('rejects multi-statement queries', () => {
-    expect(() => SafeSqlQuerySchema.parse('SELECT 1; SELECT 2;')).toThrow();
-    expect(() => SafeSqlQuerySchema.parse('SELECT * FROM users; DROP TABLE users;')).toThrow();
+  it('accepts queries with quoted column names matching SQL keywords (ADV-P3-09)', () => {
+    expect(SafeSqlQuerySchema.parse('SELECT "copy" FROM "t"')).toBeDefined();
+    expect(SafeSqlQuerySchema.parse('SELECT "copy", "alter" FROM "sales"')).toBeDefined();
+    expect(SafeSqlQuerySchema.parse('SELECT "create", "drop", "update", "delete", "load" FROM "data"')).toBeDefined();
+    expect(SafeSqlQuerySchema.parse('SELECT "read_csv" FROM "analytics"')).toBeDefined();
   });
 
-  it('rejects DDL, DML, administrative and external DB keywords', () => {
+  it('accepts queries with string literals matching SQL keywords and dangerous functions (SEC-P3-03)', () => {
+    expect(SafeSqlQuerySchema.parse('SELECT "id" FROM "items" WHERE "col" = \'create\'')).toBeDefined();
+    expect(SafeSqlQuerySchema.parse('SELECT "id" FROM "items" WHERE "status" = \'created\'')).toBeDefined();
+    expect(SafeSqlQuerySchema.parse('SELECT "id" FROM "items" WHERE "action" = \'drop\' AND "state" = \'alter\'')).toBeDefined();
+    expect(SafeSqlQuerySchema.parse('SELECT "id" FROM "items" WHERE "description" = \'Phase 1; Phase 2\'')).toBeDefined();
+    expect(SafeSqlQuerySchema.parse('SELECT "id" FROM "items" WHERE "note" = \'Don\'\'t drop the table\'')).toBeDefined();
+    expect(SafeSqlQuerySchema.parse('SELECT "id" FROM "logs" WHERE "msg" = \'called read_csv(file)\'')).toBeDefined();
+  });
+
+  it('rejects multi-statement queries outside of string literals', () => {
+    expect(() => SafeSqlQuerySchema.parse('SELECT 1; SELECT 2;')).toThrow();
+    expect(() => SafeSqlQuerySchema.parse('SELECT * FROM users; DROP TABLE users;')).toThrow();
+    expect(() => SafeSqlQuerySchema.parse('SELECT "copy" FROM "t"; DROP TABLE "t"')).toThrow();
+    expect(() => SafeSqlQuerySchema.parse('SELECT * FROM items WHERE status = \'create\'; DROP TABLE items')).toThrow();
+    expect(() => SafeSqlQuerySchema.parse('SELECT * FROM items WHERE note = \'Don\'\'t drop\'; DROP TABLE items;')).toThrow();
+  });
+
+  it('rejects actual DDL, DML, administrative and external DB operations', () => {
     const forbidden = [
       'DROP TABLE customers',
       'INSERT INTO logs VALUES (1)',
@@ -910,13 +930,29 @@ describe('Safe SQL Query Contracts', () => {
     }
   });
 
-  it('rejects dangerous DuckDB file functions', () => {
+  it('rejects dangerous DuckDB file functions and introspection functions', () => {
     expect(() => SafeSqlQuerySchema.parse("SELECT * FROM read_csv('secret.csv')")).toThrow();
+    expect(() => SafeSqlQuerySchema.parse("SELECT * FROM \"read_csv\"('secret.csv')")).toThrow();
     expect(() => SafeSqlQuerySchema.parse("SELECT * FROM read_csv_auto('secret.csv')")).toThrow();
     expect(() => SafeSqlQuerySchema.parse("SELECT * FROM read_parquet('data.parquet')")).toThrow();
     expect(() => SafeSqlQuerySchema.parse("SELECT * FROM scan_parquet('data.parquet')")).toThrow();
     expect(() => SafeSqlQuerySchema.parse("SELECT * FROM read_json('data.json')")).toThrow();
+    expect(() => SafeSqlQuerySchema.parse("SELECT * FROM read_ndjson('data.ndjson')")).toThrow();
     expect(() => SafeSqlQuerySchema.parse("SELECT * FROM read_text('/etc/passwd')")).toThrow();
+    expect(() => SafeSqlQuerySchema.parse("SELECT * FROM glob('/etc/*')")).toThrow();
+    expect(() => SafeSqlQuerySchema.parse("SELECT * FROM duckdb_secrets()")).toThrow();
+    expect(() => SafeSqlQuerySchema.parse("SELECT * FROM current_setting('access_mode')")).toThrow();
+  });
+
+  it('masks string literals and identifiers preserving layout with maskSqlLiteralsAndIdentifiers', () => {
+    const raw = `SELECT "copy", 'alter' FROM "sales" WHERE status = 'create; drop'`;
+    const masked = maskSqlLiteralsAndIdentifiers(raw);
+    expect(masked.length).toBe(raw.length);
+    expect(masked).not.toContain('copy');
+    expect(masked).not.toContain('alter');
+    expect(masked).not.toContain('create');
+    expect(masked).not.toContain('drop');
+    expect(masked).not.toContain(';');
   });
 });
 

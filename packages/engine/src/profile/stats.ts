@@ -8,6 +8,7 @@ import {
   SampleValuesArraySchema,
   SampleValueSchema,
 } from '@unsheet/contracts';
+import { safeToString } from '../normalise/cell.js';
 
 const FORMULA_TRIGGER_REGEX = /^[=+\-@\t\r\n|]/;
 
@@ -21,13 +22,13 @@ export function sanitizeCategoryValue(rawVal: unknown): string {
     return 'null';
   }
 
-  let str = String(rawVal).trim();
+  let str = safeToString(rawVal).trim();
   if (str === '') {
     return '(empty)';
   }
 
-  // If trimmed string starts with a formula trigger character, escape with single quote
-  if (FORMULA_TRIGGER_REGEX.test(str.trimStart())) {
+  // If value or trimmed string starts with a formula trigger character, escape with single quote
+  if (FORMULA_TRIGGER_REGEX.test(str) || FORMULA_TRIGGER_REGEX.test(str.trimStart())) {
     str = `'${str}`;
   }
 
@@ -37,7 +38,7 @@ export function sanitizeCategoryValue(rawVal: unknown): string {
   }
 
   // Safety fallback if single quote wasn't enough or trailing cut exposed trigger
-  while (FORMULA_TRIGGER_REGEX.test(str.trimStart()) && str.length > 0) {
+  while ((FORMULA_TRIGGER_REGEX.test(str) || FORMULA_TRIGGER_REGEX.test(str.trimStart())) && str.length > 0) {
     str = `'${str.trimStart().replace(FORMULA_TRIGGER_REGEX, '')}`;
   }
 
@@ -64,7 +65,7 @@ export function sanitizeSampleValue(rawVal: unknown): string {
     return '';
   }
 
-  let str = String(rawVal).trim();
+  let str = safeToString(rawVal).trim();
   if (str === '') {
     return '';
   }
@@ -171,7 +172,7 @@ export function computeColumnStats(
       nullCount++;
     } else {
       nonNullValues.push(v);
-      distinctSet.add(String(v));
+      distinctSet.add(safeToString(v));
     }
   }
 
@@ -241,7 +242,7 @@ export function computeColumnStats(
   ) {
     const freqMap = new Map<string, number>();
     for (const v of nonNullValues) {
-      const key = String(v);
+      const key = safeToString(v);
       freqMap.set(key, (freqMap.get(key) || 0) + 1);
     }
 

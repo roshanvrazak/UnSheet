@@ -1,26 +1,35 @@
-import type { SheetProfile, WorkbookModel } from '@unsheet/contracts';
-import { findJoinCandidates, type JoinCandidate } from './joins.js';
+import type {
+  SheetProfile,
+  WorkbookModel,
+  WorkbookProfile,
+} from '@unsheet/contracts';
+import { WorkbookProfileSchema } from '@unsheet/contracts';
+import { findJoinCandidates } from './joins.js';
 import { profileSheet } from './sheet.js';
 
-export interface WorkbookProfile {
-  workbookId: string;
-  filename: string;
-  sheets: SheetProfile[];
-  joinCandidates: JoinCandidate[];
-}
+export { type WorkbookProfile } from '@unsheet/contracts';
 
 /**
  * Profiles an entire WorkbookModel, producing sheet profiles for all normalized sheets
  * and identifying relational join candidate keys between sheet pairs.
+ * Validates output using WorkbookProfileSchema.
  */
 export function profileWorkbook(workbook: WorkbookModel): WorkbookProfile {
-  const sheetProfiles: SheetProfile[] = workbook.sheets.map((sheet) => profileSheet(sheet));
-  const joinCandidates = findJoinCandidates(workbook.sheets);
+  const sheets: SheetProfile[] = workbook.sheets.map((sheet) => profileSheet(sheet));
+  const crossSheetJoins = findJoinCandidates(workbook.sheets);
 
-  return {
-    workbookId: workbook.id,
-    filename: workbook.filename,
-    sheets: sheetProfiles,
-    joinCandidates,
+  const profile: WorkbookProfile = {
+    sheets,
+    crossSheetJoins,
   };
+
+  const parsed = WorkbookProfileSchema.parse(profile);
+  Object.defineProperty(parsed, 'joinCandidates', {
+    get() {
+      return this.crossSheetJoins;
+    },
+    enumerable: true,
+  });
+
+  return parsed as WorkbookProfile;
 }

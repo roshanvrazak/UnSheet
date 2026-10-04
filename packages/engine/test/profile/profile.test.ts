@@ -332,10 +332,10 @@ describe('Profile Module Unit Tests', () => {
 
       const wbProfile = profileWorkbook(workbook);
       expect(wbProfile.sheets.length).toBe(2);
-      expect(wbProfile.joinCandidates.length).toBeGreaterThanOrEqual(1);
+      expect(wbProfile.crossSheetJoins.length).toBeGreaterThanOrEqual(1);
 
-      const join = wbProfile.joinCandidates.find(
-        (j) => j.fromColumn === 'customer_id' && j.toColumn === 'customer_id'
+      const join = wbProfile.crossSheetJoins.find(
+        (j) => j.sourceColumn === 'customer_id' && j.targetColumn === 'customer_id'
       );
       expect(join).toBeDefined();
       expect(join!.overlapRatio).toBe(1.0);

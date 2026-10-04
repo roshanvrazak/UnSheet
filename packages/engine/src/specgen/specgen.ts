@@ -55,11 +55,11 @@ export function generateDashboardSpec(
   const rawDashId = `dash_${profile.sheetId.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
   const dashboardId = rawDashId.slice(0, 64);
   const title = (
-    options?.title ||
+    options?.title?.trim() ||
     `${formatTitle(profile.sheetName, 100)} Dashboard`
   ).slice(0, 120);
   const description = (
-    options?.description ||
+    options?.description?.trim() ||
     `Auto-generated analytical dashboard for ${profile.sheetName}`
   ).slice(0, 500);
 
@@ -68,25 +68,27 @@ export function generateDashboardSpec(
     profile.recommendedTimeColumn ||
     profile.columnProfiles.find((c) => c.semanticRole === 'time')?.columnKey;
 
-  const measures =
+  const rawMeasures =
     profile.recommendedMeasures.length > 0
       ? profile.recommendedMeasures
       : profile.columnProfiles
           .filter((c) => c.semanticRole === 'measure')
           .map((c) => c.columnKey);
+  const measures = Array.from(new Set(rawMeasures));
 
-  const dimensions =
+  const rawDimensions =
     profile.recommendedDimensions.length > 0
       ? profile.recommendedDimensions
       : profile.columnProfiles
           .filter((c) => c.semanticRole === 'dimension')
           .map((c) => c.columnKey);
+  const dimensions = Array.from(new Set(rawDimensions));
 
   // 2. Global Filters Generation
   if (timeCol) {
     const timeColProfile = profile.columnProfiles.find((c) => c.columnKey === timeCol);
     filters.push({
-      id: `filter_${timeCol}`,
+      id: `filter_${timeCol}`.slice(0, 128) as SafeIdentifier,
       columnKey: timeCol,
       label: formatTitle(timeColProfile?.originalName || timeCol, 40),
       type: 'date-range',
@@ -106,7 +108,7 @@ export function generateDashboardSpec(
       }));
 
     filters.push({
-      id: `filter_${dimKey}`,
+      id: `filter_${dimKey}`.slice(0, 128) as SafeIdentifier,
       columnKey: dimKey,
       label: formatTitle(dimProfile?.originalName || dimKey, 40),
       type: 'select',
@@ -132,7 +134,7 @@ export function generateDashboardSpec(
       const aggregation = isPercent ? 'avg' : 'sum';
 
       const kpi: KPIWidgetSpec = {
-        id: `kpi_${mKey}`,
+        id: `kpi_${mKey}`.slice(0, 128) as SafeIdentifier,
         type: 'kpi',
         title: `${isPercent ? 'Avg' : 'Total'} ${formatTitle(colProf?.originalName || mKey, 40)}`,
         description: `${aggregation.toUpperCase()} of ${colProf?.originalName || mKey}`,
@@ -203,7 +205,7 @@ export function generateDashboardSpec(
     // Both Line (w: 8) and Donut (w: 4) fit side-by-side on 12-column grid
     const lineMeasure = measures[0]!;
     const line: LineChartWidgetSpec = {
-      id: `line_trend_${lineMeasure}`,
+      id: `line_trend_${lineMeasure}`.slice(0, 128) as SafeIdentifier,
       type: 'line',
       title: `${formatTitle(lineMeasure, 30)} Over Time`,
       description: `Trend of ${lineMeasure} across ${timeCol}`,
@@ -225,7 +227,7 @@ export function generateDashboardSpec(
 
     const donutMeasure = measures[1] || measures[0]!;
     const donut: DonutChartWidgetSpec = {
-      id: `donut_breakdown_${donutDimCol.columnKey}`,
+      id: `donut_breakdown_${donutDimCol.columnKey}`.slice(0, 128) as SafeIdentifier,
       type: 'donut',
       title: `By ${formatTitle(donutDimCol.originalName || donutDimCol.columnKey, 30)}`,
       description: `Distribution of ${donutMeasure} by ${donutDimCol.columnKey}`,
@@ -248,7 +250,7 @@ export function generateDashboardSpec(
     // Only Line chart: full width 12
     const lineMeasure = measures[0]!;
     const line: LineChartWidgetSpec = {
-      id: `line_trend_${lineMeasure}`,
+      id: `line_trend_${lineMeasure}`.slice(0, 128) as SafeIdentifier,
       type: 'line',
       title: `${formatTitle(lineMeasure, 40)} Over Time`,
       description: `Trend of ${lineMeasure} across ${timeCol}`,
@@ -272,7 +274,7 @@ export function generateDashboardSpec(
     // Donut alone (w: 6) paired with Bar (w: 6) if a bar dimension exists
     const donutMeasure = measures[0] || (profile.primaryKeyCandidate || profile.columnProfiles[0]?.columnKey || 'id');
     const donut: DonutChartWidgetSpec = {
-      id: `donut_breakdown_${donutDimCol.columnKey}`,
+      id: `donut_breakdown_${donutDimCol.columnKey}`.slice(0, 128) as SafeIdentifier,
       type: 'donut',
       title: `By ${formatTitle(donutDimCol.originalName || donutDimCol.columnKey, 30)}`,
       description: `Distribution of ${donutMeasure} by ${donutDimCol.columnKey}`,
@@ -296,7 +298,7 @@ export function generateDashboardSpec(
     if (otherDim && measures.length > 0) {
       const barMeasure = measures[0]!;
       const bar: BarChartWidgetSpec = {
-        id: `bar_breakdown_${otherDim}`,
+        id: `bar_breakdown_${otherDim}`.slice(0, 128) as SafeIdentifier,
         type: 'bar',
         title: `${formatTitle(barMeasure, 25)} by ${formatTitle(otherDim, 25)}`,
         description: `Breakdown of ${barMeasure} across ${otherDim}`,
@@ -325,7 +327,7 @@ export function generateDashboardSpec(
     const barDim = dimensions[0]!;
     const barMeasure = measures[0]!;
     const bar: BarChartWidgetSpec = {
-      id: `bar_breakdown_${barDim}`,
+      id: `bar_breakdown_${barDim}`.slice(0, 128) as SafeIdentifier,
       type: 'bar',
       title: `${formatTitle(barMeasure, 30)} by ${formatTitle(barDim, 30)}`,
       description: `Categorical breakdown of ${barMeasure} by ${barDim}`,

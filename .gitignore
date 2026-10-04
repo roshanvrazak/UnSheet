@@ -41,3 +41,8 @@ Thumbs.db
 # Vitest
 .vitest/
 *.tsbuildinfo
+
+# Playwright
+playwright-report/
+test-results/
+

@@ -13,6 +13,7 @@ export default defineConfig({
         'src/profile/**',
         'src/specgen/**',
         'src/drift/**',
+        'src/query/**',
       ],
       all: true,
     },

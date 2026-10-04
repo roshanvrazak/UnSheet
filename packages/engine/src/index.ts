@@ -12,6 +12,7 @@ export {
 } from './profile/llm.js';
 export * from './specgen/index.js';
 export * from './drift/index.js';
+export * from './query/index.js';
 
 export function getEngineInfo(): Version {
   return {

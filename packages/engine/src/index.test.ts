@@ -12,4 +12,15 @@ describe('Engine index exports', () => {
     expect(typeof toLLMColumnProfile).toBe('function');
     expect(typeof toLLMSheetProfile).toBe('function');
   });
+
+  it('exports query engine functions', async () => {
+    const engine = await import('./index.js');
+    expect(typeof engine.buildWidgetQueryPlan).toBe('function');
+    expect(typeof engine.compileQueryPlanToSql).toBe('function');
+    expect(typeof engine.validateQueryPlanAgainstSheet).toBe('function');
+    expect(typeof engine.executeQueryInMemory).toBe('function');
+    expect(typeof engine.getSheetTableName).toBe('function');
+    expect(typeof engine.quoteIdentifier).toBe('function');
+    expect(typeof engine.escapeSqlLiteral).toBe('function');
+  });
 });

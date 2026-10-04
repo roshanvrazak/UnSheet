@@ -1,4 +1,4 @@
-import { DashboardSpec, LLMColumnProfile } from '@unsheet/contracts';
+import { DashboardSpec, LLMColumnProfile, WidgetSpec, QueryPlan } from '@unsheet/contracts';
 
 export function deterministicRefineSpec(
   prompt: string,
@@ -64,8 +64,8 @@ export function deterministicAskQuery(
 ): {
   interpretedIntent: string;
   sql: string;
-  queryPlan: any;
-  suggestedWidget: any;
+  queryPlan: QueryPlan | undefined;
+  suggestedWidget: WidgetSpec | undefined;
   explanation: string;
 } {
   const lower = question.toLowerCase();
@@ -78,7 +78,7 @@ export function deterministicAskQuery(
 
   let sql = '';
   let intent = '';
-  let widget: any = null;
+  let widget: WidgetSpec | null = null;
 
   if (lower.includes('top') || lower.includes('best') || lower.includes('highest')) {
     const limitMatch = lower.match(/(?:top|first)\s+(\d+)/);

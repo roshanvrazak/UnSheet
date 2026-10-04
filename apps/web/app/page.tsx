@@ -26,7 +26,11 @@ import {
   type SampleWorkbookMeta,
 } from '@/lib/sample-workbooks';
 import { DashboardRenderer } from '@/components/dashboard/DashboardRenderer';
+import { AskYourDataDrawer } from '@/components/chat/AskYourDataDrawer';
+import { SpecRefineBar } from '@/components/chat/SpecRefineBar';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Bot } from 'lucide-react';
 
 export interface PipelineTiming {
   parseMs: number;
@@ -46,6 +50,8 @@ export default function HomePage() {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [isAskDrawerOpen, setIsAskDrawerOpen] = useState<boolean>(false);
+  const [isSpecRefineOpen, setIsSpecRefineOpen] = useState<boolean>(false);
 
   const pipelineRunId = useRef<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -212,6 +218,21 @@ export default function HomePage() {
     workbook && workbook.sheets[activeSheetIndex]
       ? workbook.sheets[activeSheetIndex]!
       : null;
+
+  const currentProfile = React.useMemo(() => {
+    if (!activeSheet) {
+      return {
+        sheetId: 'default',
+        sheetName: 'default',
+        rowCount: 0,
+        columnCount: 0,
+        columnProfiles: [],
+        recommendedDimensions: [],
+        recommendedMeasures: [],
+      };
+    }
+    return profileSheet(activeSheet);
+  }, [activeSheet]);
 
   return (
     <main className="min-h-screen bg-slate-50/50 text-slate-900 pb-16">
@@ -494,12 +515,65 @@ export default function HomePage() {
             </p>
           </div>
         ) : spec && activeSheet ? (
-          <section className="rounded-2xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
-            <DashboardRenderer
-              spec={spec}
+          <div className="space-y-4">
+            {/* Dashboard Action Toolbar */}
+            <div className="flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 shadow-xs">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Sheet: {activeSheet.name}
+                </span>
+                <span className="text-xs text-slate-500">
+                  ({activeSheet.rowCount} rows, {activeSheet.columnCount} columns)
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsSpecRefineOpen((prev) => !prev)}
+                  className="text-xs font-medium border-indigo-200 hover:bg-indigo-50 text-indigo-700 dark:border-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-950/50"
+                >
+                  <Sparkles className="w-3.5 h-3.5 mr-1.5 text-indigo-600 dark:text-indigo-400" />
+                  {isSpecRefineOpen ? 'Hide AI Refine' : 'AI Refine'}
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => setIsAskDrawerOpen(true)}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium shadow-xs"
+                >
+                  <Bot className="w-3.5 h-3.5 mr-1.5" />
+                  Ask Data
+                </Button>
+              </div>
+            </div>
+
+            {/* Spec Refine Bar */}
+            {isSpecRefineOpen && (
+              <SpecRefineBar
+                currentSpec={spec}
+                profile={currentProfile}
+                onSpecUpdate={setSpec}
+              />
+            )}
+
+            <section className="rounded-2xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
+              <DashboardRenderer
+                spec={spec}
+                sheet={activeSheet}
+              />
+            </section>
+
+            {/* Ask Your Data Drawer */}
+            <AskYourDataDrawer
+              isOpen={isAskDrawerOpen}
+              onClose={() => setIsAskDrawerOpen(false)}
               sheet={activeSheet}
+              profile={currentProfile}
+              onAddWidget={(widget) => {
+                setSpec((prev) => (prev ? { ...prev, widgets: [...prev.widgets, widget] } : prev));
+              }}
             />
-          </section>
+          </div>
         ) : null}
       </div>
     </main>

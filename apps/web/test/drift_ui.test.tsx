@@ -31,7 +31,7 @@ const mockSpec: DashboardSpec = {
     }
   ],
   filters: []
-} as any;
+} as Record<string, unknown>;
 
 const mockProfile: SheetProfile = {
   sheetId: 's1',

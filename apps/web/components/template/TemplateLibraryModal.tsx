@@ -5,7 +5,7 @@ import { Template, DashboardSpec } from '@unsheet/engine';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { loadLocalTemplates, deleteLocalTemplate, importTemplateJson } from '@/lib/template/storage';
-import { Trash2, Download, Upload, Check } from 'lucide-react';
+import { Trash2, Upload } from 'lucide-react';
 
 interface TemplateLibraryModalProps {
   isOpen: boolean;
@@ -45,7 +45,7 @@ export function TemplateLibraryModal({
           setTemplates(loadLocalTemplates());
           setSelectedId(imported.id);
         }
-      } catch (err) {
+      } catch {
         alert('Failed to parse template JSON file.');
       }
     };

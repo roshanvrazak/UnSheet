@@ -65,7 +65,7 @@ export function WidgetConfigModal({
       measure,
       dimension: type !== 'kpi' ? dimension : undefined,
       aggregation,
-      formatting: style !== 'number' ? { style: style as any, currency } : undefined,
+      formatting: style !== 'number' ? { style: style as 'currency' | 'percent' | 'compact', currency } : undefined,
       layout: {
         x: initialWidget?.layout?.x || 0,
         y: initialWidget?.layout?.y || 0,
@@ -92,7 +92,7 @@ export function WidgetConfigModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Widget Type</Label>
-              <Select value={type} onValueChange={(v: any) => setType(v)}>
+              <Select value={type} onValueChange={(v: string) => setType(v as WidgetSpec['type'])}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -109,7 +109,7 @@ export function WidgetConfigModal({
 
             <div>
               <Label>Aggregation</Label>
-              <Select value={aggregation} onValueChange={(v: any) => setAggregation(v)}>
+              <Select value={aggregation} onValueChange={(v: string) => setAggregation(v as WidgetSpec['aggregation'])}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

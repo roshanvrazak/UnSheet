@@ -1,7 +1,4 @@
-import React from 'react';
-import { createPortal } from 'react-dom';
-
-export function Dialog({ open, onOpenChange, children }: { open: boolean; onOpenChange?: (open: boolean) => void; children: React.ReactNode }) {
+export function Dialog({ open, children }: { open: boolean; onOpenChange?: (open: boolean) => void; children: React.ReactNode }) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" role="dialog">

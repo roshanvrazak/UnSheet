@@ -253,6 +253,8 @@ export function AskYourDataDrawer({
                         <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-white dark:bg-slate-900">
                           <button
                             onClick={() => setShowSqlMap((prev) => ({ ...prev, [msg.id]: !prev[msg.id] }))}
+                            aria-expanded={Boolean(showSqlMap[msg.id])}
+                            aria-label="Toggle SQL query preview"
                             className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800/80 flex items-center justify-between text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                           >
                             <span className="flex items-center space-x-1">

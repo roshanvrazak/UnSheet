@@ -65,7 +65,7 @@ export function AccessibleDataTable({
             </>
           )}
         </button>
-        <span className="text-[11px] text-slate-400">
+        <span className="text-[11px] text-slate-600">
           {rows.length} {rows.length === 1 ? 'row' : 'rows'}
         </span>
       </div>

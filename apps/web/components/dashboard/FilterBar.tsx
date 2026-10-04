@@ -250,7 +250,7 @@ export function FilterBar({
                       className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-2 py-1.5 text-xs text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
-                  <span className="text-xs text-slate-400">to</span>
+                  <span className="text-xs text-slate-600">to</span>
                   <div className="relative flex-1">
                     <input
                       type="date"

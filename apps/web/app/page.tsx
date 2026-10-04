@@ -334,7 +334,7 @@ export default function HomePage() {
               </button>
             </div>
 
-            <div className="mt-2 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+            <div className="mt-2 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600">
               <span>Max 50MB</span>
               <span>Zero server upload</span>
             </div>
@@ -350,7 +350,7 @@ export default function HomePage() {
                     Try Pre-loaded Workbooks
                   </h2>
                 </div>
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-slate-600">
                   Instant one-click demo
                 </span>
               </div>
@@ -390,9 +390,9 @@ export default function HomePage() {
                       <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
                         {sample.description}
                       </p>
-                      <div className="mt-2.5 flex items-center justify-between w-full text-[10px] text-slate-400">
+                      <div className="mt-2.5 flex items-center justify-between w-full text-[10px] text-slate-600">
                         <span>{sample.domain}</span>
-                        <span className="font-mono text-slate-400">{sample.filename}</span>
+                        <span className="font-mono text-slate-600">{sample.filename}</span>
                       </div>
                     </button>
                   );
@@ -400,7 +400,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-400 flex items-center justify-between">
+            <div className="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-600 flex items-center justify-between">
               <span>Select any sample to re-run the end-to-end intelligence engine</span>
               <span>Domain datasets</span>
             </div>

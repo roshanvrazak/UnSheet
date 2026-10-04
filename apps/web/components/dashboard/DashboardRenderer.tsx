@@ -124,7 +124,7 @@ export function DashboardRenderer({
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">{validSpec.description}</p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-400">
+        <div className="flex items-center gap-2 text-xs text-slate-600">
           <span>Sheet: <strong className="text-slate-700">{sheet.name}</strong></span>
           <span>•</span>
           <span>{sheet.rowCount.toLocaleString()} rows</span>

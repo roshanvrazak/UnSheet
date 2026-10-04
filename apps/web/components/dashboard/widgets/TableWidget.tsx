@@ -139,7 +139,7 @@ export function TableWidget({ spec, queryResult }: TableWidgetProps) {
         </div>
 
         {/* Table Content */}
-        <div className="overflow-x-auto rounded-lg border border-slate-200">
+        <div tabIndex={0} role="region" aria-label="Data table scrollable view" className="overflow-x-auto rounded-lg border border-slate-200">
           <table className="w-full text-left text-xs text-slate-700">
             <thead className="bg-slate-50 border-b border-slate-200 font-semibold text-slate-800">
               <tr>
@@ -175,7 +175,7 @@ export function TableWidget({ spec, queryResult }: TableWidgetProps) {
                       >
                         <span>{col.header}</span>
                         {spec.sortable !== false && (
-                          <span className="text-slate-400">
+                          <span className="text-slate-600">
                             {isSorted ? (
                               sortDir === 'asc' ? (
                                 <ArrowUp className="h-3 w-3 text-blue-600" aria-hidden="true" />

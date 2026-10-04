@@ -86,7 +86,7 @@ export function PivotTableWidget({ spec, queryResult }: PivotTableWidgetProps) {
         </div>
 
         {/* Pivot Matrix Table */}
-        <div className="overflow-x-auto rounded-lg border border-slate-200">
+        <div tabIndex={0} role="region" aria-label="Pivot table scrollable view" className="overflow-x-auto rounded-lg border border-slate-200">
           <table className="w-full text-left text-xs text-slate-700">
             <thead className="bg-slate-50 border-b border-slate-200 font-semibold text-slate-800">
               <tr>
@@ -177,7 +177,7 @@ export function PivotTableWidget({ spec, queryResult }: PivotTableWidgetProps) {
         </div>
       </div>
 
-      <div className="mt-3 flex items-center justify-between text-[11px] text-slate-400">
+      <div className="mt-3 flex items-center justify-between text-[11px] text-slate-600">
         <span>Measure: {primaryMeasure.label || measureKey}</span>
         <span>
           {rowValues.length} rows × {colValues.length} columns

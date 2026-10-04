@@ -59,7 +59,7 @@ export function LineChartWidget({ spec, queryResult }: LineChartWidgetProps) {
         </div>
 
         {/* Visual Chart */}
-        <div className="mt-4 h-64 w-full" aria-hidden="true">
+        <div className="mt-4 h-64 w-full">
           {rows.length === 0 ? (
             <div className="flex h-full items-center justify-center text-xs text-slate-400">
               No data available for selected filters

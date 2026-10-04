@@ -99,7 +99,7 @@ export function KPIWidget({ spec, queryResult }: KPIWidgetProps) {
       <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
         <span className="line-clamp-1">{spec.description}</span>
         {changeBadge?.label && (
-          <span className="text-[11px] text-slate-400 shrink-0">
+          <span className="text-[11px] text-slate-600 shrink-0">
             {changeBadge.label}
           </span>
         )}

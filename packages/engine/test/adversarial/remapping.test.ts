@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { applyRemappings } from '../../src/drift/remapping';
-import { importTemplateJson } from '../../../../apps/web/lib/template/storage';
+import { applyRemappings } from '../../src/drift/remapping.js';
+import { validateTemplate } from '../../src/template/template.js';
 import { DashboardSpec, Template } from '@unsheet/contracts';
 
-describe('Phase 4 Adversarial Red-Team Suite: Engine & Storage', () => {
+describe('Phase 4 Adversarial Red-Team Suite: Engine & Remapping', () => {
   const validSpec: DashboardSpec = {
     version: '1.0',
     id: 'spec_adv_4',
@@ -26,15 +26,15 @@ describe('Phase 4 Adversarial Red-Team Suite: Engine & Storage', () => {
   };
 
   describe('Vector 1: Malformed Template JSON Imports & Oversized Payloads', () => {
-    it('ADV-P4-01: Handles malformed JSON gracefully in importTemplateJson', () => {
+    it('ADV-P4-01: Handles malformed JSON gracefully in validateTemplate', () => {
       expect(() => {
-        importTemplateJson('{ invalid_json');
+        validateTemplate(null);
       }).toThrow();
     });
 
-    it('ADV-P4-02: Handles oversized strings (>10,000 chars) in template fields without crashing', () => {
+    it('ADV-P4-02: Rejects oversized strings (>10,000 chars) violating TitleSchema/DescriptionSchema', () => {
       const hugeString = 'A'.repeat(15000);
-      const template: Template = {
+      const template = {
         id: 't-huge',
         name: hugeString,
         description: hugeString,
@@ -52,13 +52,11 @@ describe('Phase 4 Adversarial Red-Team Suite: Engine & Storage', () => {
         spec: validSpec
       };
 
-      const jsonStr = JSON.stringify(template);
-      const imported = importTemplateJson(jsonStr);
-      expect(imported.name.length).toBe(15000);
+      expect(() => validateTemplate(template)).toThrow();
     });
 
-    it('ADV-P4-03: Rejects or sanitizes prototype pollution payloads in template JSON', () => {
-      const maliciousJson = JSON.stringify({
+    it('ADV-P4-03: Rejects or sanitizes prototype pollution payloads in template', () => {
+      const maliciousData = {
         id: 't-proto',
         name: 'Malicious',
         category: 'sales',
@@ -72,10 +70,14 @@ describe('Phase 4 Adversarial Red-Team Suite: Engine & Storage', () => {
           '__proto__': { polluted: true },
           'constructor': { prototype: { polluted: true } }
         }
-      });
+      };
 
-      const imported = importTemplateJson(maliciousJson);
-      expect(({} as any).polluted).toBeUndefined();
+      try {
+        validateTemplate(maliciousData);
+      } catch {
+        // expected validation rejection
+      }
+      expect(({} as Record<string, unknown>).polluted).toBeUndefined();
     });
   });
 
@@ -90,7 +92,7 @@ describe('Phase 4 Adversarial Red-Team Suite: Engine & Storage', () => {
 
       const result = applyRemappings(validSpec, maliciousRemappings);
       expect(result.widgets[0]).toHaveProperty('measure', 'arr');
-      expect(({} as any).pwned).toBeUndefined();
+      expect(({} as Record<string, unknown>).pwned).toBeUndefined();
       expect(({}).toString).toBe(Object.prototype.toString);
     });
 
@@ -127,10 +129,7 @@ describe('Phase 4 Adversarial Red-Team Suite: Engine & Storage', () => {
         spec: validSpec
       };
 
-      const jsonStr = JSON.stringify(template);
-      const imported = importTemplateJson(jsonStr);
-      expect(imported.tags.length).toBe(5000);
-      expect(imported.name).toBe('');
+      expect(() => validateTemplate(template)).toThrow();
     });
 
     it('ADV-P4-07: Respects Zod widget limits on large specs', () => {

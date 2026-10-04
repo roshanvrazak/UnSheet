@@ -70,13 +70,13 @@ export function importTemplateJson(jsonString: string): Template {
   let parsed: unknown;
   try {
     parsed = JSON.parse(jsonString);
-  } catch (e: any) {
-    throw new Error('Invalid JSON: ' + (e?.message || 'Failed to parse JSON'));
+  } catch (e: unknown) {
+    throw new Error('Invalid JSON: ' + (e instanceof Error ? e.message : 'Failed to parse JSON'));
   }
-  if (parsed && typeof parsed === 'object' && parsed !== null && 'spec' in parsed) {
-    const spec = (parsed as any).spec;
-    if (spec && !spec.globalFilters) {
-      spec.globalFilters = [];
+  if (parsed && typeof parsed === 'object' && 'spec' in parsed) {
+    const spec = (parsed as { spec?: Record<string, unknown> }).spec;
+    if (spec && !spec.filters) {
+      spec.filters = [];
     }
   }
   const result = TemplateSchema.safeParse(parsed);

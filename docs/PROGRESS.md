@@ -8,7 +8,7 @@
 | **Phase 3** | Query & Render (MVP) | **COMPLETED** | query-engineer, devops-engineer, frontend-engineer, architect, security-reviewer, code-reviewer, adversarial-tester | `df66fd1` | 0 blocking (all 12 security + 10 code review + 7 adversarial findings remediated) | 585/585 tests passing across 36 test files; Next.js 15 App Router production build; DuckDB-WASM + in-memory fallback; Total Renderer 12-column grid; 100% WCAG AA a11y companion tables; clean verify gate |
 | **Phase 4** | Editor, Templates, Drift | **COMPLETED** | frontend-engineer, profiling-engineer, devops-engineer, security-reviewer, code-reviewer, adversarial-tester | `1c17f23` | 0 blocking (all 4 security + 4 code review + 7 adversarial findings remediated) | 604/604 tests passing across 42 test files; Visual Editor; Template storage with 1MB bounds; Schema Drift UI with remappings; clean verify gate |
 | **Phase 5** | LLM Features | **COMPLETED** | backend-engineer, frontend-engineer, test-engineer, devops-engineer, security-reviewer, code-reviewer, adversarial-tester | `7e03ed5` | 0 blocking (all findings remediated, 100% review approval) | 614/614 tests passing across 44 test files; Ask-Your-Data; Spec Refinement; sliding-window rate limiters; 15-vector prompt injection corpus; 100% data privacy (zero raw row egress); clean verify gate |
-| **Phase 6** | Share & Export | PENDING | backend-engineer, frontend-engineer | - | - | - |
+| **Phase 6** | Share & Export | **COMPLETED** | backend-engineer, ingest-engineer, frontend-engineer, security-reviewer, code-reviewer, adversarial-tester | `1004591` | 0 blocking (all 3 reviews approved; 0 critical/high findings) | 634/634 tests passing across 50 test files; 128-bit unguessable share tokens; Supabase Postgres RLS deny-by-default; timing-safe 404 responses; safe CSV/XLSX/JSON export with formula neutralization; clean verify gate |
 | **Phase 7** | Hardening & Release | PENDING | all reviewers, devops-engineer, docs-writer | - | - | - |
 
 ---
@@ -168,6 +168,36 @@
   - Accessibility finding remediated: `aria-expanded` and `aria-label` added to SQL query toggle in `AskYourDataDrawer`.
 - **Verification Metrics**:
   - Monorepo tests: **44 test files, 614/614 tests passing (100%)**.
+  - Strict TypeScript: `noUncheckedIndexedAccess: true`, zero `any`, zero type errors.
+  - `pnpm verify`: 6/6 stages passing 100% (lint, typecheck, tests, build, secret scan, audit).
+
+---
+
+## Phase 6 Closure Summary (Share Links, Supabase RLS & Safe Export)
+- **Supabase Postgres Persistence & RLS (`supabase/migrations/`)**:
+  - `templates` and `share_links` tables created with UUID keys, foreign key cascading/set-null, JSONB specs/fingerprints/snapshots, and timestamps.
+  - Row Level Security (RLS) enabled on all tables with deny-by-default isolation (`auth.uid() = user_id`) proving user A cannot access or modify user B's templates.
+  - Public read policies for active unexpired share links (`is_revoked = false AND (expires_at IS NULL OR expires_at > now())`).
+- **Cryptographic Share Links & Enumeration Defense (`apps/web/app/api/share/`)**:
+  - Token generation: 128 bits of cryptographic entropy (`crypto.randomBytes(16).toString('base64url')`), producing 22 URL-safe characters conforming to `ShareTokenSchema`.
+  - Rate limiting: sliding-window limiter enforcing 60 lookups/min per IP to prevent brute-force token enumeration.
+  - Enumeration oracle prevention: `GET /api/share/[token]` returns an IDENTICAL HTTP 404 response (`{ error: 'Share link not found or expired' }`) for missing, expired, revoked, or malformed tokens, eliminating timing and status oracles.
+  - Data privacy: snapshots are strictly capped at 10,000 rows and only stored when the user explicitly opts in.
+- **Safe Export Engine (`packages/engine/src/export/`)**:
+  - `exportToCsv`: RFC 4180 compliant CSV serialization with automatic formula neutralization on all string cells and headers starting with `=`, `+`, `-`, `@`, `\t`, `\r`, `\n`, or `|` prepending `'`.
+  - `exportToXlsx`: SheetJS Excel workbook generator enforcing string literal cell types (`cell.t = 's'`) with formula neutralization to prevent formula execution in spreadsheet applications.
+  - `exportToJson`: Safe formatted JSON serialization with formula neutralization.
+  - Property-based testing with `fast-check` verifying zero unescaped formula triggers in exported outputs.
+- **Frontend Sharing & Export UI (`apps/web/components/`, `apps/web/app/share/`)**:
+  - `ShareModal`: Accessible modal (`role="dialog"`, `aria-modal="true"`) to configure link expiry (24h, 7d, 30d, never), optional export permission, and optional data snapshot with clear privacy warning.
+  - `ExportDropdown`: Header dropdown with one-click safe downloads for CSV, XLSX, and JSON with formula neutralization.
+  - `/share/[token]`: Public view-only page rendering `DashboardRenderer` in read-only mode with data snapshot fallback.
+- **Review Gate & Remediations**:
+  - Audited and approved by `security-reviewer` (`docs/reviews/security-phase6.md` - PASSED, 0 Critical, 0 High, 0 Medium, 0 Low).
+  - Audited and approved by `code-reviewer` (`docs/reviews/code-review-phase6.md` - APPROVED).
+  - Audited and tested by `adversarial-tester` (`docs/reviews/adversarial-phase6.md` - APPROVED with automated test suites in `export_adversarial.test.ts` and `share_adversarial.test.ts`).
+- **Verification Metrics**:
+  - Monorepo tests: **50 test files, 634/634 tests passing (100%)**.
   - Strict TypeScript: `noUncheckedIndexedAccess: true`, zero `any`, zero type errors.
   - `pnpm verify`: 6/6 stages passing 100% (lint, typecheck, tests, build, secret scan, audit).
 

@@ -62,4 +62,14 @@ This document records architectural, technical, and trade-off decisions made dur
 - **Decision**: Generated queries must strictly validate against `SafeSqlQuerySchema` (enforcing single-statement `SELECT` with allowlisted DuckDB functions and no DDL/DML). The API route enforces that all quoted column names map to allowlisted columns in the active worksheet profile. A deterministic rule-based query compiler (`deterministicAskQuery`) and spec refiner (`deterministicRefineSpec`) provide 100% offline uptime when API keys are absent or requests exceed rate limits (30 req/min for ask, 20 req/min for refine).
 - **Consequences**: Mathematical prevention of SQL injection, zero arbitrary code/file execution in the DuckDB sandbox, and resilient offline capability.
 
+## ADR-013: Formula Neutralization for CSV and Spreadsheet Exports
+- **Context**: Exported CSV and XLSX files downloaded by users could contain untrusted cell values starting with formula trigger characters (`=`, `+`, `-`, `@`, `\t`, `\r`, `\n`, `|`), which spreadsheet applications evaluate as dynamic formulas or DDE execution triggers.
+- **Decision**: In `exportToCsv`, `exportToJson`, and `exportToXlsx`, all cell values and headers starting with formula triggers are automatically prepended with a single apostrophe (`'`) using `neutralizeFormula`. In XLSX workbooks, cells are explicitly configured as literal string type (`cell.t = 's'`).
+- **Consequences**: Complete neutralization of spreadsheet injection (CSV injection) while preserving accurate human-readable text.
+
+## ADR-014: 128-Bit Cryptographic Share Tokens & Timing-Safe 404 Enumeration Defense
+- **Context**: Shared dashboards must be accessible via public links without authentication, but protected against token enumeration, brute-forcing, and account enumeration.
+- **Decision**: Tokens are generated with 128 bits of cryptographic entropy (`crypto.randomBytes(16).toString('base64url')`), producing 22 URL-safe characters. Token lookups are rate-limited to 60/min per IP. If a token is missing, expired, revoked, or malformed, `GET /api/share/[token]` returns an identical HTTP 404 response (`{ error: 'Share link not found or expired' }`) to eliminate timing and status oracles.
+- **Consequences**: Immune to token brute-forcing and enumeration attacks.
+
 

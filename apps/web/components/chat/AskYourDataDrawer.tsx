@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { SheetModel, SheetProfile, WidgetSpec } from '@unsheet/contracts';
-import { toLLMColumnProfile } from '@unsheet/engine';
+import { toLLMColumnProfile, getSheetTableName } from '@unsheet/engine';
 import { X, Send, Sparkles, Database, Plus, Check, AlertCircle, ChevronDown, ChevronUp, Bot, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,6 +44,13 @@ export function AskYourDataDrawer({
   const drawerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Reset conversation when active sheet changes
+  useEffect(() => {
+    setMessages([]);
+    setAddedWidgetIds({});
+    setShowSqlMap({});
+  }, [sheet.id]);
+
   // Focus trap & Escape key handling
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -61,21 +68,32 @@ export function AskYourDataDrawer({
     }
   }, [isOpen]);
 
-  // Generate dynamic sample prompt suggestions based on profile columns
+  // Generate dynamic sample prompt suggestions based on actual profile columns
   const generatePromptSuggestions = () => {
     const cols = profile.columnProfiles;
-    const measures = cols.filter((c) => c.inferredType === 'number' || c.inferredType === 'currency' || c.semanticRole === 'measure');
-    const dimensions = cols.filter((c) => c.inferredType === 'category' || c.inferredType === 'text' || c.semanticRole === 'dimension');
+    const measures = cols.filter(
+      (c) => c.inferredType === 'number' || c.inferredType === 'currency' || c.semanticRole === 'measure'
+    );
+    const dimensions = cols.filter(
+      (c) => c.inferredType === 'category' || c.inferredType === 'text' || c.semanticRole === 'dimension'
+    );
 
-    const mName = measures[0]?.columnKey || cols[0]?.columnKey || 'revenue';
-    const dName = dimensions[0]?.columnKey || cols[1]?.columnKey || cols[0]?.columnKey || 'region';
+    const mName = measures[0]?.columnKey;
+    const dName = dimensions[0]?.columnKey || cols[0]?.columnKey;
 
-    return [
-      `Total ${mName} by ${dName}`,
-      `Top 5 ${dName} by ${mName}`,
-      `Average ${mName}`,
-      `Show all records in ${sheet.name}`,
-    ];
+    const suggestions: string[] = [];
+    if (mName && dName && mName !== dName) {
+      suggestions.push(`Total ${mName} by ${dName}`);
+      suggestions.push(`Top 5 ${dName} by ${mName}`);
+      suggestions.push(`Average ${mName}`);
+    } else if (mName) {
+      suggestions.push(`Total ${mName}`);
+      suggestions.push(`Average ${mName}`);
+    } else if (dName) {
+      suggestions.push(`Count records by ${dName}`);
+    }
+    suggestions.push(`Show all records in ${sheet.name}`);
+    return suggestions.slice(0, 4);
   };
 
   const samplePrompts = generatePromptSuggestions();
@@ -98,12 +116,13 @@ export function AskYourDataDrawer({
 
     try {
       const llmProfiles = profile.columnProfiles.map(toLLMColumnProfile);
+      const tableName = getSheetTableName(sheet);
       const res = await fetch('/api/query/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           question: queryText,
-          sheetName: sheet.name,
+          sheetName: tableName,
           profiles: llmProfiles,
         }),
       });

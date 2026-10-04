@@ -20,7 +20,7 @@ export function deterministicRefineSpec(
   if (kpiMatch && kpiMatch[1]) {
     const colKey = kpiMatch[1].trim();
     const matchingProfile = profiles.find((p) => p.columnKey.toLowerCase() === colKey.toLowerCase());
-    const fallbackMeasure = profiles.find((p) => p.semanticRole === 'measure')?.columnKey || profiles[0]?.columnKey || 'revenue';
+    const fallbackMeasure = profiles.find((p) => p.semanticRole === 'measure')?.columnKey || profiles[0]?.columnKey || 'id';
     const targetCol = matchingProfile ? matchingProfile.columnKey : fallbackMeasure;
 
     const maxY = spec.widgets.reduce((max, w) => Math.max(max, w.grid.y + w.grid.h), 0);
@@ -70,17 +70,48 @@ export function deterministicAskQuery(
 } {
   const lower = question.toLowerCase();
 
-  const measures = profiles.filter((p) => p.semanticRole === 'measure' || p.inferredType === 'number' || p.inferredType === 'currency');
-  const dimensions = profiles.filter((p) => p.semanticRole === 'dimension' || p.inferredType === 'category' || p.inferredType === 'text');
+  // Find if user specifically mentioned any column in their question
+  const mentionedCols = profiles.filter((p) => {
+    const key = p.columnKey.toLowerCase().replace(/_/g, ' ');
+    const orig = (p.originalName || '').toLowerCase();
+    return (
+      lower.includes(key) ||
+      (orig.length > 2 && lower.includes(orig)) ||
+      (p.columnKey.length > 2 && lower.includes(p.columnKey.toLowerCase()))
+    );
+  });
 
-  const defaultMeasure = measures[0]?.columnKey || profiles[0]?.columnKey || 'revenue';
-  const defaultDim = dimensions[0]?.columnKey || profiles[1]?.columnKey || profiles[0]?.columnKey || 'category';
+  const measures = profiles.filter(
+    (p) => p.semanticRole === 'measure' || p.inferredType === 'number' || p.inferredType === 'currency'
+  );
+  const dimensions = profiles.filter(
+    (p) => p.semanticRole === 'dimension' || p.inferredType === 'category' || p.inferredType === 'text'
+  );
+
+  // Preferred measure: mentioned measure, or first measure in schema
+  const mentionedMeasure = mentionedCols.find((p) =>
+    measures.some((m) => m.columnKey === p.columnKey)
+  );
+  const defaultMeasure = mentionedMeasure?.columnKey || measures[0]?.columnKey;
+
+  // Preferred dimension: mentioned dimension, or first dimension in schema
+  const mentionedDim = mentionedCols.find((p) =>
+    dimensions.some((d) => d.columnKey === p.columnKey)
+  );
+  const defaultDim =
+    mentionedDim?.columnKey ||
+    dimensions[0]?.columnKey ||
+    profiles.find((p) => p.columnKey !== defaultMeasure)?.columnKey ||
+    profiles[0]?.columnKey;
 
   let sql = '';
   let intent = '';
   let widget: WidgetSpec | null = null;
+  const isTop = lower.includes('top') || lower.includes('best') || lower.includes('highest');
+  const isAvg = lower.includes('average') || lower.includes('avg') || lower.includes('mean');
+  const isTotal = lower.includes('total') || lower.includes('sum');
 
-  if (lower.includes('top') || lower.includes('best') || lower.includes('highest')) {
+  if (isTop && defaultMeasure && defaultDim && defaultMeasure !== defaultDim) {
     const limitMatch = lower.match(/(?:top|first)\s+(\d+)/);
     const limit = limitMatch && limitMatch[1] ? parseInt(limitMatch[1], 10) : 5;
     intent = `Top ${limit} records grouped by ${defaultDim} ordered by ${defaultMeasure} descending`;
@@ -95,57 +126,99 @@ export function deterministicAskQuery(
       aggregation: 'sum',
       orientation: 'vertical',
     };
-  } else if (lower.includes('average') || lower.includes('avg')) {
-    intent = `Average of ${defaultMeasure} grouped by ${defaultDim}`;
-    sql = `SELECT "${defaultDim}", AVG("${defaultMeasure}") AS "avg_${defaultMeasure}" FROM "${sheetName}" GROUP BY "${defaultDim}" LIMIT 20;`;
+  } else if (isAvg && defaultMeasure) {
+    if (defaultDim && defaultDim !== defaultMeasure) {
+      intent = `Average of ${defaultMeasure} grouped by ${defaultDim}`;
+      sql = `SELECT "${defaultDim}", AVG("${defaultMeasure}") AS "avg_${defaultMeasure}" FROM "${sheetName}" GROUP BY "${defaultDim}" LIMIT 20;`;
+      widget = {
+        id: `bar_${Date.now()}`,
+        type: 'bar',
+        title: `Average ${defaultMeasure} by ${defaultDim}`,
+        grid: { x: 0, y: 0, w: 6, h: 6 },
+        dimension: defaultDim,
+        measures: [defaultMeasure],
+        aggregation: 'avg',
+        orientation: 'vertical',
+      };
+    } else {
+      intent = `Average of ${defaultMeasure}`;
+      sql = `SELECT AVG("${defaultMeasure}") AS "avg_${defaultMeasure}" FROM "${sheetName}";`;
+      widget = {
+        id: `kpi_${Date.now()}`,
+        type: 'kpi',
+        title: `Average ${defaultMeasure}`,
+        grid: { x: 0, y: 0, w: 4, h: 4 },
+        measure: defaultMeasure,
+        aggregation: 'avg',
+      };
+    }
+  } else if (isTotal && defaultMeasure) {
+    if (defaultDim && defaultDim !== defaultMeasure && (lower.includes('by') || lower.includes('per') || mentionedDim)) {
+      intent = `Total sum of ${defaultMeasure} grouped by ${defaultDim}`;
+      sql = `SELECT "${defaultDim}", SUM("${defaultMeasure}") AS "total_${defaultMeasure}" FROM "${sheetName}" GROUP BY "${defaultDim}" LIMIT 20;`;
+      widget = {
+        id: `bar_${Date.now()}`,
+        type: 'bar',
+        title: `Total ${defaultMeasure} by ${defaultDim}`,
+        grid: { x: 0, y: 0, w: 6, h: 6 },
+        dimension: defaultDim,
+        measures: [defaultMeasure],
+        aggregation: 'sum',
+        orientation: 'vertical',
+      };
+    } else {
+      intent = `Total sum of ${defaultMeasure}`;
+      sql = `SELECT SUM("${defaultMeasure}") AS "total_${defaultMeasure}" FROM "${sheetName}";`;
+      widget = {
+        id: `kpi_${Date.now()}`,
+        type: 'kpi',
+        title: `Total ${defaultMeasure}`,
+        grid: { x: 0, y: 0, w: 4, h: 4 },
+        measure: defaultMeasure,
+        aggregation: 'sum',
+      };
+    }
+  } else if ((lower.includes('count') || lower.includes('how many')) && defaultDim) {
+    intent = `Count of records grouped by ${defaultDim}`;
+    sql = `SELECT "${defaultDim}", COUNT("${defaultDim}") AS "count_records" FROM "${sheetName}" GROUP BY "${defaultDim}" LIMIT 20;`;
     widget = {
       id: `bar_${Date.now()}`,
       type: 'bar',
-      title: `Average ${defaultMeasure} by ${defaultDim}`,
+      title: `Count by ${defaultDim}`,
       grid: { x: 0, y: 0, w: 6, h: 6 },
       dimension: defaultDim,
-      measures: [defaultMeasure],
-      aggregation: 'avg',
+      measures: [defaultDim],
+      aggregation: 'count',
       orientation: 'vertical',
     };
-  } else if (lower.includes('total') || lower.includes('sum')) {
-    intent = `Total sum of ${defaultMeasure} grouped by ${defaultDim}`;
-    sql = `SELECT "${defaultDim}", SUM("${defaultMeasure}") AS "total_${defaultMeasure}" FROM "${sheetName}" GROUP BY "${defaultDim}" LIMIT 20;`;
-    widget = {
-      id: `kpi_${Date.now()}`,
-      type: 'kpi',
-      title: `Total ${defaultMeasure}`,
-      grid: { x: 0, y: 0, w: 4, h: 4 },
-      measure: defaultMeasure,
-      aggregation: 'sum',
-    };
   } else {
-    intent = `Select all columns from ${sheetName}`;
-    const cols = profiles.slice(0, 5).map((p) => `"${p.columnKey}"`).join(', ');
-    sql = `SELECT ${cols} FROM "${sheetName}" LIMIT 50;`;
+    intent = `Select records from ${sheetName}`;
+    const selectedProfiles = profiles.slice(0, 6);
+    const cols = selectedProfiles.map((p) => `"${p.columnKey}"`).join(', ');
+    sql = `SELECT ${cols || '*'} FROM "${sheetName}" LIMIT 50;`;
     widget = {
       id: `table_${Date.now()}`,
       type: 'table',
-      title: `Data Table for ${sheetName}`,
+      title: `Data Table (${sheetName})`,
       grid: { x: 0, y: 0, w: 12, h: 8 },
-      columns: profiles.slice(0, 5).map((p) => ({ columnKey: p.columnKey, header: p.columnKey })),
+      columns: selectedProfiles.map((p) => ({ columnKey: p.columnKey, header: p.originalName || p.columnKey })),
       pageSize: 10,
     };
   }
 
-  const queryPlan = {
+  const queryPlan: QueryPlan | undefined = defaultMeasure && defaultDim ? {
     id: `plan_${Date.now()}`,
     table: sheetName,
     dimensions: [defaultDim],
     aggregations: [{ columnKey: defaultMeasure, function: 'sum' as const, alias: `sum_${defaultMeasure}` }],
     limit: 50,
-  };
+  } : undefined;
 
   return {
     interpretedIntent: intent,
     sql,
     queryPlan,
-    suggestedWidget: widget,
-    explanation: `Generated rule-based SQL query and widget suggestion for question: "${question}".`,
+    suggestedWidget: widget || undefined,
+    explanation: `Generated query and visualization for: "${question}".`,
   };
 }

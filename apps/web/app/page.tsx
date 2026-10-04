@@ -89,8 +89,17 @@ export default function HomePage() {
         throw new Error('Workbook contains no readable sheets with tabular data.');
       }
 
-      // Step 3: Profile Active Sheet
-      const sheetIndex = 0;
+      // Step 3: Profile Active Sheet (default to sheet with most tabular data)
+      let bestSheetIndex = 0;
+      let maxRows = -1;
+      for (let i = 0; i < normalisedWorkbook.sheets.length; i++) {
+        const s = normalisedWorkbook.sheets[i]!;
+        if (s.rowCount > maxRows) {
+          maxRows = s.rowCount;
+          bestSheetIndex = i;
+        }
+      }
+      const sheetIndex = bestSheetIndex;
       const targetSheet = normalisedWorkbook.sheets[sheetIndex]!;
       const t2 = performance.now();
       const profile = profileSheet(targetSheet);
@@ -191,7 +200,8 @@ export default function HomePage() {
   const handleFileUpload = async (file: File) => {
     try {
       let bytes: Uint8Array;
-      if (file.name.endsWith('.csv') && typeof file.text === 'function') {
+      const lower = file.name.toLowerCase();
+      if ((lower.endsWith('.csv') || lower.endsWith('.tsv')) && typeof file.text === 'function') {
         const text = await file.text();
         bytes = new TextEncoder().encode(text);
       } else if (typeof file.arrayBuffer === 'function') {
@@ -203,7 +213,7 @@ export default function HomePage() {
       } else {
         throw new Error('Unable to read uploaded file format in this browser');
       }
-      processSpreadsheetBytes(bytes, file.name);
+      await processSpreadsheetBytes(bytes, file.name);
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : 'Error reading uploaded file');
     }
@@ -302,9 +312,12 @@ export default function HomePage() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".xlsx,.csv"
+                accept=".xlsx,.xls,.csv,.tsv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,text/tab-separated-values"
                 data-testid="file-upload-input"
                 className="hidden"
+                onClick={(e) => {
+                  (e.target as HTMLInputElement).value = '';
+                }}
                 onChange={(e) => {
                   const eventTarget = e.target as HTMLInputElement;
                   const files =
@@ -315,6 +328,7 @@ export default function HomePage() {
                   if (file) {
                     handleFileUpload(file);
                   }
+                  eventTarget.value = '';
                 }}
               />
               <div className="h-12 w-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-3 shadow-inner">
@@ -570,6 +584,7 @@ export default function HomePage() {
 
             <section className="rounded-2xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
               <DashboardRenderer
+                key={`${workbook?.id || 'wb'}_${activeSheet.id}_${spec.id}`}
                 spec={spec}
                 sheet={activeSheet}
               />

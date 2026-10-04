@@ -32,7 +32,7 @@ const nextConfig = {
       },
     ];
   },
-  webpack: (config) => {
+  webpack: (config, options) => {
     config.experiments = {
       ...config.experiments,
       asyncWebAssembly: true,
@@ -44,7 +44,27 @@ const nextConfig = {
         '.js': ['.ts', '.tsx', '.js'],
         '.mjs': ['.mts', '.mjs'],
       },
+      fallback: {
+        ...config.resolve?.fallback,
+        crypto: false,
+        fs: false,
+        path: false,
+      },
+      alias: {
+        ...config.resolve?.alias,
+        'node:crypto': false,
+        'node:fs': false,
+        'node:path': false,
+      },
     };
+    if (options?.webpack?.NormalModuleReplacementPlugin) {
+      config.plugins = config.plugins || [];
+      config.plugins.push(
+        new options.webpack.NormalModuleReplacementPlugin(/^node:/, (resource) => {
+          resource.request = resource.request.replace(/^node:/, '');
+        })
+      );
+    }
     return config;
   },
 };

@@ -7,7 +7,7 @@ const SelectContext = createContext<{ value: string; onValueChange: (v: string) 
 });
 
 export function Select({ value, onValueChange, children }: { value: string; onValueChange: (v: string) => void; children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
+  const [, setOpen] = useState(false);
   return (
     <SelectContext.Provider value={{ value, onValueChange, setOpen }}>
       <div className="relative inline-block w-full">{children}</div>
@@ -16,7 +16,7 @@ export function Select({ value, onValueChange, children }: { value: string; onVa
 }
 
 export function SelectTrigger({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  const { setOpen, value } = useContext(SelectContext);
+  const { setOpen } = useContext(SelectContext);
   return (
     <button
       type="button"
@@ -34,7 +34,6 @@ export function SelectValue({ placeholder = '' }: { placeholder?: string }) {
 }
 
 export function SelectContent({ children }: { children: React.ReactNode }) {
-  const { setOpen } = useContext(SelectContext);
   return (
     <div className="absolute top-full mt-1 z-50 w-full rounded-md border bg-popover text-popover-foreground shadow-md p-1 bg-white">
       {children}

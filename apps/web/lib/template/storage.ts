@@ -1,7 +1,7 @@
-import { Template, DashboardSpec, SheetProfile, TemplateCategory } from '@unsheet/engine';
+import { Template, TemplateCategory } from '@unsheet/engine';
 
 const LOCAL_STORAGE_KEY = 'unsheet_templates_v1';
-let memoryStorage: Record<string, string> = {};
+const memoryStorage: Record<string, string> = {};
 
 export function loadLocalTemplates(): Template[] {
   try {
@@ -31,7 +31,7 @@ export function saveLocalTemplate(template: Template): void {
   if (typeof window !== 'undefined' && window.localStorage) {
     try {
       window.localStorage.setItem(LOCAL_STORAGE_KEY, serialized);
-    } catch (e) {
+    } catch {
       // ignore
     }
   }
@@ -45,7 +45,7 @@ export function deleteLocalTemplate(id: string): void {
   if (typeof window !== 'undefined' && window.localStorage) {
     try {
       window.localStorage.setItem(LOCAL_STORAGE_KEY, serialized);
-    } catch (e) {
+    } catch {
       // ignore
     }
   }

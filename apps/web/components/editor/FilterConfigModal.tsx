@@ -66,7 +66,7 @@ export function FilterConfigModal({
 
           <div>
             <Label>Filter Type</Label>
-            <Select value={filterType} onValueChange={(v: any) => setFilterType(v)}>
+            <Select value={filterType} onValueChange={(v: string) => setFilterType(v as 'select' | 'range' | 'search')}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

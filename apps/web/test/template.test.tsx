@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { TemplateSaveModal } from '../components/template/TemplateSaveModal';
 import { TemplateLibraryModal } from '../components/template/TemplateLibraryModal';
 import { loadLocalTemplates, saveLocalTemplate, exportTemplateJson, importTemplateJson } from '../lib/template/storage';

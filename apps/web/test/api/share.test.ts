@@ -145,7 +145,12 @@ describe('Phase 6 Share Links & Templates API & Security', () => {
   });
 
   it('Test 6: SQL migration syntax and RLS policy verification', () => {
-    const migrationPath = path.resolve(process.cwd(), '../../supabase/migrations/20261004000000_phase6_shares_and_templates.sql');
+    const possiblePaths = [
+      path.resolve(process.cwd(), 'supabase/migrations/20261004000000_phase6_shares_and_templates.sql'),
+      path.resolve(process.cwd(), '../../supabase/migrations/20261004000000_phase6_shares_and_templates.sql'),
+      path.resolve(__dirname, '../../../../supabase/migrations/20261004000000_phase6_shares_and_templates.sql'),
+    ];
+    const migrationPath = possiblePaths.find((p) => fs.existsSync(p)) ?? possiblePaths[0]!;
     expect(fs.existsSync(migrationPath)).toBe(true);
 
     const migrationSql = fs.readFileSync(migrationPath, 'utf8');

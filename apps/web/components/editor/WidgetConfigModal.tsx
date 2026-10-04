@@ -97,11 +97,14 @@ export function WidgetConfigModal({
 
   const handleSave = () => {
     const id = initialWidget?.id || `w-${Math.random().toString(36).substring(2, 9)}`;
+    const clampedW = Math.min(12, Math.max(1, Number(w) || 4));
+    const rawX = initialWidget?.grid?.x ?? 0;
+    const clampedX = Math.min(12 - clampedW, Math.max(0, rawX));
     const grid = {
-      x: initialWidget?.grid?.x || 0,
+      x: clampedX,
       y: initialWidget?.grid?.y || 0,
-      w: Number(w),
-      h: Number(h)
+      w: clampedW,
+      h: Number(h) || 2
     };
 
     let widget: WidgetSpec;

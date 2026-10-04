@@ -14,7 +14,7 @@ const mockSpec: DashboardSpec = {
   layout: { columns: 12, gap: 16, padding: 16 },
   widgets: [
     {
-      id: 'w-1',
+      id: 'w1',
       type: 'kpi',
       title: 'Total Revenue',
       measure: 'revenue',

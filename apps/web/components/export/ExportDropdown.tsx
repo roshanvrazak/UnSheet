@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import type { SheetModel, ExportTable } from '@unsheet/contracts';
+import type { SheetModel, ExportTable, ExportRow } from '@unsheet/contracts';
 import { exportToCsv, exportToJson, exportToXlsx } from '@unsheet/engine';
 import { Button } from '@/components/ui/button';
 import { Download, FileSpreadsheet, FileText, Code } from 'lucide-react';
@@ -16,7 +16,8 @@ export function ExportDropdown({ sheet, disabled = false }: ExportDropdownProps)
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
   const triggerDownload = (content: string | Uint8Array, filename: string, mimeType: string) => {
-    const blob = new Blob([content], { type: mimeType });
+    const blobPart: BlobPart = typeof content === 'string' ? content : (content.buffer as ArrayBuffer);
+    const blob = new Blob([blobPart], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -31,7 +32,7 @@ export function ExportDropdown({ sheet, disabled = false }: ExportDropdownProps)
     const table: ExportTable = {
       sheetName: sheet.name,
       headers: sheet.headers.originalHeaders,
-      rows: sheet.rows,
+      rows: sheet.rows as unknown as ExportRow[],
     };
     const csvContent = exportToCsv(table);
     triggerDownload(csvContent, `${sheet.name}.csv`, 'text/csv;charset=utf-8;');
@@ -42,7 +43,7 @@ export function ExportDropdown({ sheet, disabled = false }: ExportDropdownProps)
     const table: ExportTable = {
       sheetName: sheet.name,
       headers: sheet.headers.originalHeaders,
-      rows: sheet.rows,
+      rows: sheet.rows as unknown as ExportRow[],
     };
     const xlsxBytes = exportToXlsx(table);
     triggerDownload(
@@ -57,7 +58,7 @@ export function ExportDropdown({ sheet, disabled = false }: ExportDropdownProps)
     const table: ExportTable = {
       sheetName: sheet.name,
       headers: sheet.headers.originalHeaders,
-      rows: sheet.rows,
+      rows: sheet.rows as unknown as ExportRow[],
     };
     const jsonContent = exportToJson(table);
     triggerDownload(jsonContent, `${sheet.name}.json`, 'application/json');

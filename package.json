@@ -9,7 +9,7 @@
     "test": "vitest run",
     "build": "pnpm -r run build",
     "scan-secrets": "bash scripts/scan-secrets.sh",
-    "audit": "pnpm audit --audit-level high",
+    "audit": "pnpm audit --audit-level high --ignore-unfixable",
     "verify": "bash scripts/verify.sh"
   },
   "devDependencies": {

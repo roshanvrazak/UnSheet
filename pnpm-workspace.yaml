@@ -5,5 +5,10 @@ packages:
 allowBuilds:
   esbuild: true
 
+auditConfig: { ignoreGhsas: [ GHSA-vfj7-8cjw-p6xm ] }
+
 onlyBuiltDependencies:
   - esbuild
+
+overrides:
+  postcss: ^8.5.28

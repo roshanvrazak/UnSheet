@@ -5,7 +5,7 @@
 | **Phase 0** | Foundation (Contracts, Tooling, CI, Specs) | **COMPLETED** | architect, devops-engineer, security-reviewer, code-reviewer, adversarial-tester | `b694a3b` | 0 blocking (all 8 adversarial + 12 security/code review findings remediated) | 69/69 tests passing; 100% strict TS; clean verify gate |
 | **Phase 1** | Parse & Normalise | **COMPLETED** | fixtures-engineer, ingest-engineer, architect, security-reviewer, code-reviewer, adversarial-tester | `331f1bc` | 0 blocking (all 12 adversarial + 16 security + 15 code review findings remediated) | 398/398 tests passing; 94.78% lines / 91.95% branch coverage; 28 fixtures; clean verify gate |
 | **Phase 2** | Profile & Generate Spec | **COMPLETED** | profiling-engineer, architect, security-reviewer, code-reviewer, adversarial-tester | `cee156c` | 0 blocking (all 11 adversarial + 9 security + 9 code review findings remediated) | 460/460 tests passing; 100% column inference accuracy (341/341 columns across 28 fixtures); clean verify gate |
-| **Phase 3** | Query & Render (MVP) | IN PROGRESS | query-engineer, frontend-engineer | - | - | - |
+| **Phase 3** | Query & Render (MVP) | **COMPLETED** | query-engineer, devops-engineer, frontend-engineer, architect, security-reviewer, code-reviewer, adversarial-tester | `df66fd1` | 0 blocking (all 12 security + 10 code review + 7 adversarial findings remediated) | 585/585 tests passing across 36 test files; Next.js 15 App Router production build; DuckDB-WASM + in-memory fallback; Total Renderer 12-column grid; 100% WCAG AA a11y companion tables; clean verify gate |
 | **Phase 4** | Editor, Templates, Drift | PENDING | frontend-engineer, backend-engineer, profiling-engineer | - | - | - |
 | **Phase 5** | LLM Features | PENDING | backend-engineer, query-engineer | - | - | - |
 | **Phase 6** | Share & Export | PENDING | backend-engineer, frontend-engineer | - | - | - |
@@ -81,4 +81,40 @@
   - Monorepo tests: 25 test files, **460/460 tests passing**.
   - Type inference accuracy benchmark: **100% accuracy** (341/341 columns correctly typed across all 28 synthetic and domain fixtures).
   - `pnpm verify` passing 100% across all 6 verification stages.
+
+---
+
+## Phase 3 Closure Summary (MVP)
+- **DevOps & Next.js 15 Platform Setup (`apps/web`)**:
+  - Next.js 15 App Router with React 19, Recharts (`^2.15.4`), Tailwind CSS, Lucide React, `@duckdb/duckdb-wasm`, and `apache-arrow`.
+  - Production build producing 4/4 static prerendered pages.
+  - Strict Content-Security-Policy (CSP) with `'self' 'wasm-unsafe-eval'`, `frame-ancestors 'none'`, `worker-src 'self' blob:`, and `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`.
+- **Query Engine & In-Browser DuckDB-WASM (`packages/engine/src/query/`, `apps/web/lib/query/`)**:
+  - `buildWidgetQueryPlan`: Translates all 6 widget types (KPI, Line, Bar, Donut, Table, Pivot) and global active filter bindings into structured `QueryPlan` contracts.
+  - `compileQueryPlanToSql`: Deterministic SQL compiler with double-quoted identifiers, escaped string literals, and escaped LIKE wildcards with `ESCAPE '\\'`.
+  - `validateQueryPlanAgainstSheet`: AST and schema allowlist validation rejecting unallowlisted tables and columns.
+  - `executeQueryInMemory`: Pure TypeScript in-memory evaluator for Node test environments and worker fallback, with iterative min/max (stack-safe on >120k rows) and prototype-safe string conversion.
+  - DuckDB-WASM singleton in `apps/web/lib/query/duckdb.ts` with serialized FIFO mutex queue, table registration, and 5000ms query timeout.
+- **Total Dashboard Renderer & Widget Registry (`apps/web/components/dashboard/`)**:
+  - Generic spec-driven 12-column grid layout (`grid-cols-12`).
+  - Total Renderer Guarantee: Top-level schema error fallback and per-widget `WidgetErrorBoundary` isolation; failures render a clean `ErrorCardWidget` without crashing adjacent widgets or the dashboard.
+  - Spec-driven widgets: `KPIWidget`, `LineChartWidget`, `BarChartWidget`, `DonutChartWidget`, `TableWidget` (paginated, sortable, searchable), and `PivotTableWidget` (2D aggregation matrix).
+  - Formula neutralization: All cell values with formula injection triggers (`=`, `+`, `-`, `@`, `\t`, `\r`, `|`) are escaped with a leading apostrophe in `formatDisplayValue` before clipboard copy or display.
+  - Zero `dangerouslySetInnerHTML`: All text and titles are rendered safely via React DOM text nodes.
+  - Accessibility: `AccessibleDataTable` companion table with semantic `<table>`, `<th scope="col">`, `<th scope="row">`, and persistent `.sr-only` mirror on all chart widgets.
+  - Interactive Filter Bar: Dynamic select, multi-select, date range, and search controls with bidirectional synchronization.
+- **Anonymous Demo Application (`apps/web/app/page.tsx`)**:
+  - Header with Unsheet logo and Privacy Badge: *"100% In-Browser: your data never leaves your device"*.
+  - Drag-and-drop dropzone for `.xlsx` and `.csv` files.
+  - 4 one-click pre-loaded sample workbooks (Project Pipeline, BOQ & Quotes, Supplier Lead Times, Messy Workbook).
+  - Live 5-stage pipeline timing bar (Parse -> Normalise -> Profile -> SpecGen -> Render) with millisecond execution counters.
+  - Multi-sheet tab navigation.
+- **Review Gate & Remediations**:
+  - Audited by `security-reviewer` (12 findings, 2 Critical, 4 High), `code-reviewer` (10 findings, 2 High), and `adversarial-tester` (7 findings, 3 High, 26 red-team tests).
+  - 100% remediated across contracts, devops headers, query engine, and frontend components.
+- **Verification Metrics**:
+  - Monorepo tests: **36 test files, 585/585 tests passing (100%)**.
+  - Strict TypeScript: `noUncheckedIndexedAccess: true`, zero `any`, zero type errors.
+  - `pnpm verify`: 6/6 stages passing 100% (lint, typecheck, tests, build, secret scan, audit).
+
 

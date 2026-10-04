@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "pnpm --filter @unsheet/web dev",
+    "start": "pnpm --filter @unsheet/web start",
     "lint": "eslint .",
     "typecheck": "pnpm -r exec tsc --noEmit",
     "test": "vitest run",

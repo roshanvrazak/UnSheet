@@ -1,11 +1,10 @@
 // @vitest-environment happy-dom
 import React from 'react';
 import { describe, it, expect, beforeAll } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { DashboardSpec, SheetModel, WidgetSpec, TableWidgetSpec } from '@unsheet/contracts';
 import { DashboardRenderer } from '../components/dashboard/DashboardRenderer';
 import { FilterBar } from '../components/dashboard/FilterBar';
-import { TableWidget } from '../components/dashboard/widgets/TableWidget';
 import { PivotTableWidget } from '../components/dashboard/widgets/PivotTableWidget';
 import { WidgetContainer } from '../components/dashboard/WidgetContainer';
 
@@ -68,10 +67,10 @@ describe('Adversarial Red-Team Suite: Phase 3 Dashboard Renderer & Web Component
           },
           {
             id: 'broken_radar',
-            type: 'radar' as any,
+            type: 'radar' as unknown as 'kpi',
             title: 'Unsupported Radar Widget',
             grid: { x: 6, y: 0, w: 6, h: 4 },
-          } as any,
+          } as unknown as WidgetSpec,
         ],
       };
 

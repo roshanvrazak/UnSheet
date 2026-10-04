@@ -4,12 +4,10 @@ import type {
   WidgetSpec,
   QueryPlan,
   BarChartWidgetSpec,
-  PivotTableWidgetSpec,
   KPIWidgetSpec,
 } from '@unsheet/contracts';
 import {
   SafeSqlQuerySchema,
-  QueryPlanSchema,
 } from '@unsheet/contracts';
 import {
   buildWidgetQueryPlan,

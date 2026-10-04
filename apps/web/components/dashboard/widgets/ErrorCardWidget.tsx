@@ -27,8 +27,11 @@ export function ErrorCardWidget({
       ? error.message
       : 'Failed to render widget component.';
 
-  // Strip file paths, memory addresses, or stack trace artifacts for safety
+  // Strip file paths, Windows paths, home directories, memory addresses, or stack trace artifacts for safety
   const safeMessage = rawMessage
+    .replace(/[A-Za-z]:\\[^"'\s]+/g, '[path]')
+    .replace(/\/home\/[^/\s]+/g, '[path]')
+    .replace(/\/Users\/[^/\s]+/g, '[path]')
     .replace(/(?:\/[a-zA-Z0-9_.-]+)+/g, '[path]')
     .slice(0, 200);
 

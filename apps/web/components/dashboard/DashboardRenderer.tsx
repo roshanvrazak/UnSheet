@@ -75,11 +75,12 @@ export function DashboardRenderer({
   ) {
     // If top-level has valid title and widgets array, allow individual widgets to be validated per-container!
     const rawSpec = spec as Record<string, unknown>;
+    const rawWidgets = rawSpec.widgets as unknown[];
     validSpec = {
       title: rawSpec.title as string,
       description: typeof rawSpec.description === 'string' ? rawSpec.description : '',
       filters: Array.isArray(rawSpec.filters) ? (rawSpec.filters as FilterSpec[]) : [],
-      widgets: rawSpec.widgets as unknown[],
+      widgets: rawWidgets.slice(0, 50),
       layout:
         typeof rawSpec.layout === 'object' && rawSpec.layout !== null
           ? (rawSpec.layout as { columns: number; gap: number; padding: number })

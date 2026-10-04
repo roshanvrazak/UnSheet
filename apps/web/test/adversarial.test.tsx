@@ -228,9 +228,9 @@ describe('Adversarial Red-Team Suite: Phase 3 Dashboard Renderer & Web Component
       render(<DashboardRenderer spec={spec} sheet={formulaSheet} />);
 
       await waitFor(() => {
-        expect(screen.getByText("=cmd|'/C calc'!A0")).toBeDefined();
-        expect(screen.getByText('+HYPERLINK("http://evil.com")')).toBeDefined();
-        expect(screen.getByText('@SUM(1+1)')).toBeDefined();
+        expect(screen.getByText("'=cmd|'/C calc'!A0")).toBeDefined();
+        expect(screen.getByText("'+HYPERLINK(\"http://evil.com\")")).toBeDefined();
+        expect(screen.getByText("'@SUM(1+1)")).toBeDefined();
       });
     });
   });
@@ -275,15 +275,9 @@ describe('Adversarial Red-Team Suite: Phase 3 Dashboard Renderer & Web Component
       // Verify that the table rendered
       expect(screen.getByText('Proto Pivot')).toBeDefined();
 
-      // Look for corrupted total cell containing function source code representation:
-      // "(cTotals['toString'] ?? 0) + 50" -> "function toString() { [native code] }50"
-      const allCells = screen.getAllByRole('cell');
-      const corruptedCell = allCells.find((cell) =>
-        cell.textContent?.includes('function toString') || cell.textContent?.includes('[native code]')
-      );
-
-      // Flaw: Total was corrupted into native code string
-      expect(corruptedCell).toBeDefined();
+      // Verify that prototype collisions are prevented and totals render correctly as numbers (50 and 75)
+      expect(screen.getAllByText('50').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('75').length).toBeGreaterThan(0);
     });
 
     it('ADV-P3-W07: TableWidget search and sort crash on Object.create(null) cells, isolated by WidgetErrorBoundary', async () => {
@@ -372,11 +366,9 @@ describe('Adversarial Red-Team Suite: Phase 3 Dashboard Renderer & Web Component
         />
       );
 
-      // Flaw in FilterBar.tsx:
-      // const rangeVal = Array.isArray(currentValue) ? currentValue : [];
-      // Because activeFilters.filter_amount is an Object, rangeVal is [], wiping out Min input value!
+      // Verify that input value is preserved after rerender with { operator, value } structure
       const minInputAfterRerender = screen.getByLabelText('Amount Range minimum') as HTMLInputElement;
-      expect(minInputAfterRerender.value).toBe('');
+      expect(minInputAfterRerender.value).toBe('100');
     });
 
     it('ADV-P3-W09: Schema drift (widget referencing deleted column) renders isolated ErrorCardWidget while sibling renders', async () => {

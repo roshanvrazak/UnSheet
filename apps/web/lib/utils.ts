@@ -36,8 +36,26 @@ export function getChartColor(index: number): string {
 }
 
 /**
+ * Safely converts any value to a string representation, guarding against
+ * Object.create(null) objects that lack toString().
+ */
+export function safeToString(val: unknown): string {
+  if (val === null || val === undefined) {
+    return '';
+  }
+  if (typeof val === 'object' && val !== null && !('toString' in val)) {
+    return '[object Object]';
+  }
+  try {
+    return String(val);
+  } catch {
+    return '[object Object]';
+  }
+}
+
+/**
  * Safely formats any cell value or aggregated measure based on a DisplayFormat specification.
- * Fully injection-safe: returns plain string, zero innerHTML used anywhere.
+ * Fully injection-safe: neutralizes formula prefixes and returns plain string.
  */
 export function formatDisplayValue(
   value: unknown,
@@ -60,6 +78,8 @@ export function formatDisplayValue(
   // Handle numbers / numeric strings
   const num = typeof value === 'number' ? value : Number(value);
   const isNumeric = typeof value === 'number' || (typeof value === 'string' && value.trim() !== '' && !Number.isNaN(num));
+
+  let rawFormatted: string;
 
   if (isNumeric && Number.isFinite(num)) {
     const precision = format?.precision ?? (Number.isInteger(num) ? 0 : 2);
@@ -98,12 +118,28 @@ export function formatDisplayValue(
 
     const prefix = format?.prefix ?? '';
     const suffix = format?.suffix ?? '';
-    return `${prefix}${formattedNumber}${suffix}`;
+    rawFormatted = `${prefix}${formattedNumber}${suffix}`;
+  } else {
+    // Fallback to string representation
+    const str = safeToString(value);
+    const prefix = format?.prefix ?? '';
+    const suffix = format?.suffix ?? '';
+    rawFormatted = `${prefix}${str}${suffix}`;
   }
 
-  // Fallback to string representation
-  const str = String(value);
-  const prefix = format?.prefix ?? '';
-  const suffix = format?.suffix ?? '';
-  return `${prefix}${str}${suffix}`;
+  // SEC-P3-07: Neutralize formula prefixes (=, +, -, @, \t, \r, |)
+  const trimmed = rawFormatted.trimStart();
+  if (
+    trimmed.startsWith('=') ||
+    trimmed.startsWith('+') ||
+    trimmed.startsWith('-') ||
+    trimmed.startsWith('@') ||
+    trimmed.startsWith('\t') ||
+    trimmed.startsWith('\r') ||
+    trimmed.startsWith('|')
+  ) {
+    return `'${rawFormatted}`;
+  }
+
+  return rawFormatted;
 }

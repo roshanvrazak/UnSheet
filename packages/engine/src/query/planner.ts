@@ -78,6 +78,10 @@ function normalizeFilterEntry(
   }
   const columnKey = validCol.data;
 
+  if (allowedColKeys.size > 0 && !allowedColKeys.has(columnKey)) {
+    return null;
+  }
+
   // 2. Resolve operator and value
   let operator: QueryFilterOperator = 'eq';
   let value: unknown = filterValue;
@@ -326,7 +330,8 @@ function buildDonutPlan(
 function buildTablePlan(
   tableName: SafeIdentifier,
   widget: TableWidgetSpec,
-  filters: QueryFilter[]
+  filters: QueryFilter[],
+  sheet: SheetModel | SheetProfile
 ): QueryPlan {
   const select = widget.columns.map((c) => c.columnKey);
 
@@ -340,13 +345,15 @@ function buildTablePlan(
     ];
   }
 
+  const defaultLimit = 'rows' in sheet ? Math.min(sheet.rows?.length || 10000, 10000) : 10000;
+
   const plan: QueryPlan = {
     id: `plan_${widget.id}`.slice(0, 64) as SafeEntityId,
     table: tableName,
     select,
     filters: filters.length > 0 ? filters : undefined,
     orderBy,
-    limit: widget.pageSize ?? 50,
+    limit: widget.pageSize ?? defaultLimit,
     offset: 0,
   };
   return QueryPlanSchema.parse(plan);
@@ -416,7 +423,7 @@ export function buildWidgetQueryPlan(
     case 'donut':
       return buildDonutPlan(tableName, widget, mergedFilters);
     case 'table':
-      return buildTablePlan(tableName, widget, mergedFilters);
+      return buildTablePlan(tableName, widget, mergedFilters, sheet);
     case 'pivot':
       return buildPivotPlan(tableName, widget, mergedFilters);
     default: {

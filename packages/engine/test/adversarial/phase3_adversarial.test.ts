@@ -141,8 +141,6 @@ describe('Adversarial Red-Team Suite: Phase 3 Query Engine & Planner', () => {
     });
 
     it('ADV-P3-06: SQL Injection attempt via unvalidated orderBy[].direction in compileQueryPlanToSql', () => {
-      // In compileQueryPlanToSql, orderBy directives interpolate o.direction without enum check:
-      // ${quoteIdentifier(o.columnKey)} ${o.direction.toUpperCase()}
       const injectionPlan = {
         id: 'plan_sqli_order',
         table: 'Sales_Data',
@@ -156,11 +154,9 @@ describe('Adversarial Red-Team Suite: Phase 3 Query Engine & Planner', () => {
       } as unknown as QueryPlan;
 
       const compiledSql = compileQueryPlanToSql(injectionPlan);
-      // Because direction is unvalidated, the subquery is compiled directly into the SQL!
-      expect(compiledSql).toContain('ASC, (SELECT COUNT(*) FROM SECRET_TABLE) ASC');
-
-      // Furthermore, SafeSqlQuerySchema accepts this because subqueries are valid in SELECT
-      expect(() => SafeSqlQuerySchema.parse(compiledSql)).not.toThrow();
+      // Direction is strictly validated/formatted to ASC or DESC, neutralizing injection
+      expect(compiledSql).not.toContain('SECRET_TABLE');
+      expect(compiledSql).toContain('ORDER BY "revenue" ASC');
     });
 
     it('ADV-P3-07: Hostile filter values with single quotes and comments are safely escaped by escapeSqlLiteral', () => {
@@ -214,10 +210,9 @@ describe('Adversarial Red-Team Suite: Phase 3 Query Engine & Planner', () => {
       // If a spreadsheet column is legitimately named "copy" or "create":
       const validQueryWithCopyColumn = 'SELECT "copy" FROM "Sales_Data"';
 
-      // SafeSqlQuerySchema uses word-boundary regex /\bCOPY\b/i which matches "copy" in quotes!
-      expect(() => SafeSqlQuerySchema.parse(validQueryWithCopyColumn)).toThrow(
-        /strictly prohibited/i
-      );
+      // SafeSqlQuerySchema uses maskSqlLiteralsAndIdentifiers so quoted identifiers matching keywords do NOT false-positive throw
+      const parsed = SafeSqlQuerySchema.parse(validQueryWithCopyColumn);
+      expect(parsed).toBe(validQueryWithCopyColumn);
     });
 
     it('ADV-P3-10: SQL LIKE wildcard characters (%, _) and trailing backslash are unescaped in contains/starts_with/ends_with', () => {
@@ -235,8 +230,8 @@ describe('Adversarial Red-Team Suite: Phase 3 Query Engine & Planner', () => {
       };
 
       const sql = compileQueryPlanToSql(plan);
-      // In compileFilter, only single quotes are replaced; %, _ and \ remain unescaped wildcards
-      expect(sql).toContain("LIKE '%100%_guaranteed\\%'");
+      // Wildcards are escaped and ESCAPE '\\' clause is appended
+      expect(sql).toContain("LIKE '%100\\%\\_guaranteed\\\\%' ESCAPE '\\'");
     });
   });
 
@@ -274,10 +269,9 @@ describe('Adversarial Red-Team Suite: Phase 3 Query Engine & Planner', () => {
         aggregations: [{ columnKey: 'revenue', function: 'min', alias: 'min_rev' }],
       };
 
-      // Spreading 150,000 arguments into Math.min causes Maximum call stack size exceeded!
-      expect(() => executeQueryInMemory(minPlan, largeSheet)).toThrow(
-        /Maximum call stack size exceeded/i
-      );
+      // Spreading 150,000 arguments into Math.min is prevented by iterative loop; query succeeds
+      const result = executeQueryInMemory(minPlan, largeSheet);
+      expect(result.rows[0]?.['min_rev']).toBe(10);
     });
 
     it('ADV-P3-12: Object.create(null) in grid cells triggers unhandled TypeError in matchesFilter and sorting', () => {
@@ -299,10 +293,9 @@ describe('Adversarial Red-Team Suite: Phase 3 Query Engine & Planner', () => {
         filters: [{ columnKey: 'region', operator: 'contains', value: 'north' }],
       };
 
-      // matchesFilter calls String(cell) which crashes on Object.create(null)
-      expect(() => executeQueryInMemory(filterPlan, hostileCellSheet)).toThrow(
-        /Cannot convert object to primitive value/i
-      );
+      // safeToString handles Object.create(null) safely without throwing TypeError
+      const result = executeQueryInMemory(filterPlan, hostileCellSheet);
+      expect(result).toBeDefined();
     });
 
     it('ADV-P3-13: distinctCount aggregation on BigInt or circular objects throws unhandled TypeError in JSON.stringify', () => {
@@ -381,14 +374,10 @@ describe('Adversarial Red-Team Suite: Phase 3 Query Engine & Planner', () => {
 
       const plan = buildWidgetQueryPlan(baseSheet, widget, staleFilters);
 
-      // Flaw: normalizeFilterEntry did not drop "deleted_column" despite allowedColKeys
-      expect(plan.filters).toBeDefined();
-      expect(plan.filters?.some((f) => f.columnKey === 'deleted_column')).toBe(true);
-
-      // Consequently, executeQueryInMemory rejects the query and fails
-      expect(() => executeQueryInMemory(plan, baseSheet)).toThrow(
-        /Filter column "deleted_column" is not allowlisted/i
-      );
+      // Stale / unrecognized filter key is successfully dropped by normalizeFilterEntry
+      expect(plan.filters).toBeUndefined();
+      const result = executeQueryInMemory(plan, baseSheet);
+      expect(result).toBeDefined();
     });
 
     it('ADV-P3-16: Missing columns referenced in widgets (schema drift) are rejected by validateQueryPlanAgainstSheet', () => {

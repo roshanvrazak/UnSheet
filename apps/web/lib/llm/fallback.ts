@@ -137,7 +137,7 @@ export function deterministicAskQuery(
     id: `plan_${Date.now()}`,
     table: sheetName,
     dimensions: [defaultDim],
-    aggregations: [{ columnKey: defaultMeasure, function: 'sum', alias: `sum_${defaultMeasure}` }],
+    aggregations: [{ columnKey: defaultMeasure, function: 'sum' as const, alias: `sum_${defaultMeasure}` }],
     limit: 50,
   };
 

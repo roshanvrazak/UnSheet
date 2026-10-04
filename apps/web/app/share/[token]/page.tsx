@@ -109,6 +109,16 @@ export default function SharedDashboardPage({ params }: SharedPageProps) {
     };
   }
 
+  const finalSheet: SheetModel = sheetModel ?? {
+    id: 'empty',
+    name: shareData.title,
+    headers: { detectedRowIndex: 0, confidence: 1, originalHeaders: [], sanitizedKeys: [] },
+    columns: [],
+    rows: [],
+    rowCount: 0,
+    columnCount: 0,
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Top Banner */}
@@ -120,16 +130,16 @@ export default function SharedDashboardPage({ params }: SharedPageProps) {
           <h1 className="text-sm font-semibold truncate max-w-md">{shareData.title}</h1>
         </div>
 
-        {shareData.allowExport && sheetModel && (
+        {shareData.allowExport && finalSheet && (
           <div className="bg-white/10 rounded-md">
-            <ExportDropdown sheet={sheetModel} />
+            <ExportDropdown sheet={finalSheet} />
           </div>
         )}
       </header>
 
       {/* Main Content */}
       <main className="flex-1 p-6 max-w-7xl mx-auto w-full">
-        <DashboardRenderer spec={shareData.spec} sheet={sheetModel} />
+        <DashboardRenderer spec={shareData.spec} sheet={finalSheet} />
       </main>
     </div>
   );

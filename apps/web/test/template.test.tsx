@@ -7,7 +7,11 @@ import { loadLocalTemplates, saveLocalTemplate, exportTemplateJson, importTempla
 import { DashboardSpec, Template } from '@unsheet/contracts';
 
 const mockSpec: DashboardSpec = {
+  version: '1.0',
+  id: 'dash-test',
+  sheetBinding: 'sheet-1',
   title: 'Test Dashboard',
+  layout: { columns: 12, gap: 16, padding: 16 },
   widgets: [
     {
       id: 'w-1',
@@ -15,10 +19,10 @@ const mockSpec: DashboardSpec = {
       title: 'Total Revenue',
       measure: 'revenue',
       aggregation: 'sum',
-      layout: { x: 0, y: 0, w: 4, h: 2 }
+      grid: { x: 0, y: 0, w: 4, h: 2 }
     }
   ],
-  globalFilters: []
+  filters: []
 };
 
 describe('Template Management Test Suite', () => {
@@ -32,9 +36,15 @@ describe('Template Management Test Suite', () => {
       id: 'test-template-1',
       name: 'Custom Test Template',
       description: 'Testing save',
-      category: 'custom',
+      category: 'financial',
       tags: ['test'],
-      version: '1.0.0',
+      fingerprint: {
+        hash: '0000000000000000000000000000000000000000000000000000000000000000',
+        version: '1.0',
+        columnCount: 1,
+        columns: [{ key: 'revenue', name: 'Revenue', inferredType: 'number', required: true }]
+      },
+      isBuiltIn: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       spec: mockSpec
@@ -50,9 +60,15 @@ describe('Template Management Test Suite', () => {
       id: 'test-template-2',
       name: 'Export Import Test',
       description: 'Testing JSON',
-      category: 'custom',
+      category: 'sales',
       tags: ['json'],
-      version: '1.0.0',
+      fingerprint: {
+        hash: '0000000000000000000000000000000000000000000000000000000000000000',
+        version: '1.0',
+        columnCount: 1,
+        columns: [{ key: 'revenue', name: 'Revenue', inferredType: 'number', required: true }]
+      },
+      isBuiltIn: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       spec: mockSpec

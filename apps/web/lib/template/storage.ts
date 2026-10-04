@@ -70,13 +70,26 @@ export function getDefaultTemplates(): Template[] {
       id: 'template-saas-metrics',
       name: 'SaaS ARR & Churn Dashboard',
       description: 'Monthly Recurring Revenue, Churn analysis, and Customer lifetime value breakdown.',
-      category: 'saas' as TemplateCategory,
+      category: 'sales' as TemplateCategory,
       tags: ['arr', 'churn', 'saas'],
-      version: '1.0.0',
+      fingerprint: {
+        hash: '0000000000000000000000000000000000000000000000000000000000000000',
+        version: '1.0',
+        columnCount: 2,
+        columns: [
+          { key: 'arr', name: 'ARR', inferredType: 'number', required: true },
+          { key: 'month', name: 'Month', inferredType: 'text', required: true }
+        ]
+      },
+      isBuiltIn: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       spec: {
+        version: '1.0',
+        id: 'spec-saas',
+        sheetBinding: 'sheet-1',
         title: 'SaaS ARR & Churn Dashboard',
+        layout: { columns: 12, gap: 16, padding: 16 },
         widgets: [
           {
             id: 'w-arr-kpi',
@@ -84,33 +97,46 @@ export function getDefaultTemplates(): Template[] {
             title: 'Total ARR',
             measure: 'arr',
             aggregation: 'sum',
-            formatting: { style: 'currency', currency: 'USD' },
-            layout: { x: 0, y: 0, w: 4, h: 2 }
+            format: { currency: 'USD' },
+            grid: { x: 0, y: 0, w: 4, h: 2 }
           },
           {
             id: 'w-arr-line',
             type: 'line',
             title: 'ARR Growth Trend',
-            dimension: 'month',
-            measure: 'arr',
+            timeDimension: 'month',
+            measures: ['arr'],
             aggregation: 'sum',
-            layout: { x: 4, y: 0, w: 8, h: 4 }
+            grid: { x: 4, y: 0, w: 8, h: 4 }
           }
         ],
-        globalFilters: []
+        filters: []
       }
     },
     {
       id: 'template-fin-pnl',
       name: 'Financial P&L Summary',
       description: 'Revenue, Operating Expenses, and Net Margins breakdown.',
-      category: 'finance' as TemplateCategory,
+      category: 'financial' as TemplateCategory,
       tags: ['finance', 'pnl', 'revenue'],
-      version: '1.0.0',
+      fingerprint: {
+        hash: '0000000000000000000000000000000000000000000000000000000000000000',
+        version: '1.0',
+        columnCount: 2,
+        columns: [
+          { key: 'revenue', name: 'Revenue', inferredType: 'number', required: true },
+          { key: 'expense', name: 'Expense', inferredType: 'number', required: true }
+        ]
+      },
+      isBuiltIn: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       spec: {
+        version: '1.0',
+        id: 'spec-fin',
+        sheetBinding: 'sheet-1',
         title: 'Financial P&L Summary',
+        layout: { columns: 12, gap: 16, padding: 16 },
         widgets: [
           {
             id: 'w-rev-kpi',
@@ -118,20 +144,20 @@ export function getDefaultTemplates(): Template[] {
             title: 'Total Revenue',
             measure: 'revenue',
             aggregation: 'sum',
-            formatting: { style: 'currency', currency: 'USD' },
-            layout: { x: 0, y: 0, w: 6, h: 2 }
+            format: { currency: 'USD' },
+            grid: { x: 0, y: 0, w: 6, h: 2 }
           },
           {
             id: 'w-exp-bar',
             type: 'bar',
             title: 'Expenses by Department',
             dimension: 'department',
-            measure: 'expense',
+            measures: ['expense'],
             aggregation: 'sum',
-            layout: { x: 0, y: 2, w: 12, h: 4 }
+            grid: { x: 0, y: 2, w: 12, h: 4 }
           }
         ],
-        globalFilters: []
+        filters: []
       }
     },
     {
@@ -140,11 +166,24 @@ export function getDefaultTemplates(): Template[] {
       description: 'Deal stages, conversion rates, and task completion metrics.',
       category: 'operations' as TemplateCategory,
       tags: ['crm', 'pipeline', 'sales'],
-      version: '1.0.0',
+      fingerprint: {
+        hash: '0000000000000000000000000000000000000000000000000000000000000000',
+        version: '1.0',
+        columnCount: 2,
+        columns: [
+          { key: 'deal_id', name: 'Deal ID', inferredType: 'id', required: true },
+          { key: 'stage', name: 'Stage', inferredType: 'text', required: true }
+        ]
+      },
+      isBuiltIn: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       spec: {
+        version: '1.0',
+        id: 'spec-ops',
+        sheetBinding: 'sheet-1',
         title: 'Operations & CRM Pipeline',
+        layout: { columns: 12, gap: 16, padding: 16 },
         widgets: [
           {
             id: 'w-deals-kpi',
@@ -152,7 +191,7 @@ export function getDefaultTemplates(): Template[] {
             title: 'Active Deals',
             measure: 'deal_id',
             aggregation: 'count',
-            layout: { x: 0, y: 0, w: 4, h: 2 }
+            grid: { x: 0, y: 0, w: 4, h: 2 }
           },
           {
             id: 'w-stage-donut',
@@ -161,10 +200,10 @@ export function getDefaultTemplates(): Template[] {
             dimension: 'stage',
             measure: 'deal_id',
             aggregation: 'count',
-            layout: { x: 4, y: 0, w: 8, h: 4 }
+            grid: { x: 4, y: 0, w: 8, h: 4 }
           }
         ],
-        globalFilters: []
+        filters: []
       }
     }
   ];

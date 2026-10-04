@@ -6,13 +6,15 @@ import { SheetProfile } from '@unsheet/contracts';
 
 const mockProfile: SheetProfile = {
   sheetId: 's1',
+  sheetName: 'Sheet1',
   rowCount: 100,
-  columnCount: 3,
   columnProfiles: [
-    { columnKey: 'arr', originalName: 'arr', type: 'number', semanticRole: 'measure', missingCount: 0, uniqueCount: 50 },
-    { columnKey: 'month', originalName: 'month', type: 'string', semanticRole: 'dimension', missingCount: 0, uniqueCount: 12 },
-    { columnKey: 'tier', originalName: 'tier', type: 'string', semanticRole: 'dimension', missingCount: 0, uniqueCount: 3 }
-  ]
+    { columnKey: 'arr', originalName: 'arr', inferredType: 'number', semanticRole: 'measure', nullable: false, nullCount: 0, totalCount: 100, distinctCount: 50, uniquenessRatio: 0.5, sampleValues: ['100', '200'] },
+    { columnKey: 'month', originalName: 'month', inferredType: 'text', semanticRole: 'dimension', nullable: false, nullCount: 0, totalCount: 100, distinctCount: 12, uniquenessRatio: 0.12, sampleValues: ['Jan', 'Feb'] },
+    { columnKey: 'tier', originalName: 'tier', inferredType: 'text', semanticRole: 'dimension', nullable: false, nullCount: 0, totalCount: 100, distinctCount: 3, uniquenessRatio: 0.03, sampleValues: ['Standard', 'Enterprise'] }
+  ],
+  recommendedDimensions: ['month', 'tier'],
+  recommendedMeasures: ['arr']
 };
 
 describe('FilterConfigModal Test Suite', () => {

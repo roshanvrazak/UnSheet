@@ -6,11 +6,17 @@ import { DriftReport, DashboardSpec, SheetProfile } from '@unsheet/contracts';
 
 const mockDriftReport: DriftReport = {
   templateId: 't-1',
-  confidenceScore: 0.85,
-  matchedColumns: ['arr', 'month'],
+  sourceSheetName: 'Sheet1',
+  overallConfidence: 0.85,
+  hasBreakingChanges: false,
+  matchedColumns: [
+    { expectedKey: 'arr', actualKey: 'arr', confidence: 1.0 },
+    { expectedKey: 'month', actualKey: 'month', confidence: 1.0 }
+  ],
   missingColumns: [],
-  suggestedRemappings: {},
-  breakingChanges: false
+  addedColumns: [],
+  typeMismatches: [],
+  suggestedRemappings: []
 };
 
 const mockSpec: DashboardSpec = {
@@ -18,30 +24,31 @@ const mockSpec: DashboardSpec = {
   id: 'dash_1',
   sheetBinding: 'sheet_1',
   title: 'Test Dashboard',
+  layout: { columns: 12, gap: 16, padding: 16 },
   widgets: [
     {
       id: 'w_1',
       type: 'kpi',
       title: 'ARR by Tier',
       measure: 'arr',
-      dimension: 'tier',
       aggregation: 'sum',
-      grid: { x: 0, y: 0, w: 4, h: 2 },
-      layout: { x: 0, y: 0, w: 4, h: 2 }
+      grid: { x: 0, y: 0, w: 4, h: 2 }
     }
   ],
   filters: []
-} as Record<string, unknown>;
+};
 
 const mockProfile: SheetProfile = {
   sheetId: 's1',
+  sheetName: 'Sheet1',
   rowCount: 100,
-  columnCount: 3,
   columnProfiles: [
-    { key: 'arr', type: 'number', semanticRole: 'measure', missingCount: 0, uniqueCount: 50 },
-    { key: 'month', type: 'string', semanticRole: 'dimension', missingCount: 0, uniqueCount: 12 },
-    { key: 'plan', type: 'string', semanticRole: 'dimension', missingCount: 0, uniqueCount: 3 }
-  ]
+    { columnKey: 'arr', originalName: 'arr', inferredType: 'number', semanticRole: 'measure', nullable: false, nullCount: 0, totalCount: 100, distinctCount: 50, uniquenessRatio: 0.5, sampleValues: ['100', '200'] },
+    { columnKey: 'month', originalName: 'month', inferredType: 'text', semanticRole: 'dimension', nullable: false, nullCount: 0, totalCount: 100, distinctCount: 12, uniquenessRatio: 0.12, sampleValues: ['Jan', 'Feb'] },
+    { columnKey: 'plan', originalName: 'plan', inferredType: 'text', semanticRole: 'dimension', nullable: false, nullCount: 0, totalCount: 100, distinctCount: 3, uniquenessRatio: 0.03, sampleValues: ['Pro', 'Enterprise'] }
+  ],
+  recommendedDimensions: ['month', 'plan'],
+  recommendedMeasures: ['arr']
 };
 
 describe('Schema Drift UI Test Suite', () => {

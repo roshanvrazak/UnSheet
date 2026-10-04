@@ -35,7 +35,11 @@ export function DriftResolutionModal({
   };
 
   const handleApply = () => {
-    const finalRemappings: Record<string, string> = { ...driftReport.suggestedRemappings, ...remappings };
+    const suggestedMap: Record<string, string> = {};
+    driftReport.suggestedRemappings.forEach(r => {
+      suggestedMap[r.missingKey] = r.suggestedKey;
+    });
+    const finalRemappings: Record<string, string> = { ...suggestedMap, ...remappings };
     const updatedSpec = applyRemappings(templateSpec, finalRemappings);
     onApplyRemappings(updatedSpec);
     onClose();
@@ -60,11 +64,11 @@ export function DriftResolutionModal({
               <p className="text-xs text-muted-foreground">Overall schema similarity check</p>
             </div>
             <div className="text-lg font-bold">
-              {Math.round(driftReport.confidenceScore * 100)}%
+              {Math.round(driftReport.overallConfidence * 100)}%
             </div>
           </div>
 
-          {driftReport.breakingChanges && (
+          {driftReport.hasBreakingChanges && (
             <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm font-medium flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
               Breaking changes detected: some template columns are missing in the new sheet profile.
@@ -74,9 +78,9 @@ export function DriftResolutionModal({
           <div className="space-y-2">
             <h4 className="text-xs font-semibold uppercase text-muted-foreground">Matched Columns</h4>
             <div className="space-y-1">
-              {driftReport.matchedColumns.map((col: string) => (
-                <div key={col} className="flex items-center justify-between text-sm py-1 px-2 rounded bg-muted/20">
-                  <span className="font-medium">{col}</span>
+              {driftReport.matchedColumns.map((m) => (
+                <div key={m.expectedKey} className="flex items-center justify-between text-sm py-1 px-2 rounded bg-muted/20">
+                  <span className="font-medium">{m.expectedKey} &rarr; {m.actualKey} ({Math.round(m.confidence * 100)}%)</span>
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
                 </div>
               ))}
@@ -87,24 +91,27 @@ export function DriftResolutionModal({
             <div className="space-y-2">
               <h4 className="text-xs font-semibold uppercase text-muted-foreground">Missing Columns & Remappings</h4>
               <div className="space-y-2">
-                {driftReport.missingColumns.map((col: string) => (
-                  <div key={col} className="flex items-center justify-between text-sm py-1.5 px-2 rounded border gap-4">
-                    <span className="font-medium text-destructive">{col}</span>
-                    <Select
-                      value={remappings[col] || driftReport.suggestedRemappings[col] || ''}
-                      onValueChange={v => handleSelectMapping(col, v)}
-                    >
-                      <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Map to new column..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableColumns.map((ac: string) => (
-                          <SelectItem key={ac} value={ac}>{ac}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ))}
+                {driftReport.missingColumns.map((col: string) => {
+                  const suggested = driftReport.suggestedRemappings.find(r => r.missingKey === col)?.suggestedKey || '';
+                  return (
+                    <div key={col} className="flex items-center justify-between text-sm py-1.5 px-2 rounded border gap-4">
+                      <span className="font-medium text-destructive">{col}</span>
+                      <Select
+                        value={remappings[col] || suggested || ''}
+                        onValueChange={v => handleSelectMapping(col, v)}
+                      >
+                        <SelectTrigger className="w-48">
+                          <SelectValue placeholder="Map to new column..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableColumns.map((ac: string) => (
+                            <SelectItem key={ac} value={ac}>{ac}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

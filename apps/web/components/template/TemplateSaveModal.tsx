@@ -22,7 +22,7 @@ export function TemplateSaveModal({
 }: TemplateSaveModalProps) {
   const [name, setName] = useState(dashboardSpec.title || 'My Dashboard Template');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('custom');
+  const [category, setCategory] = useState('general');
   const [tagsInput, setTagsInput] = useState('custom, dashboard');
 
   const handleSaveLocal = () => {
@@ -32,7 +32,13 @@ export function TemplateSaveModal({
       description,
       category: category as Template['category'],
       tags: tagsInput.split(',').map(t => t.trim()).filter(Boolean),
-      version: '1.0.0',
+      fingerprint: {
+        hash: '0000000000000000000000000000000000000000000000000000000000000000',
+        version: '1.0',
+        columnCount: dashboardSpec.widgets.length,
+        columns: dashboardSpec.widgets.map(w => ({ key: 'col1', name: 'Column 1', inferredType: 'number' as const, required: true }))
+      },
+      isBuiltIn: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       spec: dashboardSpec
@@ -48,7 +54,13 @@ export function TemplateSaveModal({
       description,
       category: category as Template['category'],
       tags: tagsInput.split(',').map(t => t.trim()).filter(Boolean),
-      version: '1.0.0',
+      fingerprint: {
+        hash: '0000000000000000000000000000000000000000000000000000000000000000',
+        version: '1.0',
+        columnCount: dashboardSpec.widgets.length,
+        columns: dashboardSpec.widgets.map(w => ({ key: 'col1', name: 'Column 1', inferredType: 'number' as const, required: true }))
+      },
+      isBuiltIn: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       spec: dashboardSpec

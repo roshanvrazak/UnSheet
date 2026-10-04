@@ -23,13 +23,14 @@ export function FilterConfigModal({
 }: FilterConfigModalProps) {
   const [columnKey, setColumnKey] = useState('');
   const [label, setLabel] = useState('');
-  const [filterType, setFilterType] = useState<'select' | 'range' | 'search'>('select');
+  const [filterType, setFilterType] = useState<GlobalFilter['type']>('select');
 
   const columns = sheetProfile?.columnProfiles || [];
 
   const handleSave = () => {
     if (!columnKey) return;
     const newFilter: GlobalFilter = {
+      id: `filter-${Math.random().toString(36).substring(2, 9)}`,
       columnKey,
       label: label || columnKey,
       type: filterType
@@ -52,8 +53,8 @@ export function FilterConfigModal({
                 <SelectValue placeholder="Select column..." />
               </SelectTrigger>
               <SelectContent>
-                {columns.map((c: { columnKey: SafeIdentifier; type: string }) => (
-                  <SelectItem key={c.columnKey} value={c.columnKey}>{c.columnKey} ({c.type})</SelectItem>
+                {columns.map((c: { columnKey: SafeIdentifier; inferredType: string }) => (
+                  <SelectItem key={c.columnKey} value={c.columnKey}>{c.columnKey} ({c.inferredType})</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -66,7 +67,7 @@ export function FilterConfigModal({
 
           <div>
             <Label>Filter Type</Label>
-            <Select value={filterType} onValueChange={(v: string) => setFilterType(v as 'select' | 'range' | 'search')}>
+            <Select value={filterType} onValueChange={(v: string) => setFilterType(v as GlobalFilter['type'])}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

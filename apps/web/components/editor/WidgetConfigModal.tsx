@@ -25,25 +25,63 @@ export function WidgetConfigModal({
 }: WidgetConfigModalProps) {
   const [title, setTitle] = useState(initialWidget?.title || 'New Widget');
   const [type, setType] = useState<WidgetSpec['type']>(initialWidget?.type || 'kpi');
-  const [measure, setMeasure] = useState(initialWidget?.measure || '');
-  const [dimension, setDimension] = useState(initialWidget?.dimension || '');
-  const [aggregation, setAggregation] = useState<AggregationFunction>(initialWidget?.aggregation || 'sum');
-  const [w, setW] = useState<number>(initialWidget?.layout?.w || 4);
-  const [h, setH] = useState<number>(initialWidget?.layout?.h || 2);
-  const [currency, setCurrency] = useState(initialWidget?.formatting?.currency || 'USD');
-  const [style, setStyle] = useState(initialWidget?.formatting?.style || 'number');
+  const [measure, setMeasure] = useState(
+    initialWidget?.type === 'kpi' ? initialWidget.measure :
+    initialWidget?.type === 'line' ? initialWidget.measures?.[0] || '' :
+    initialWidget?.type === 'bar' ? initialWidget.measures?.[0] || '' :
+    initialWidget?.type === 'donut' ? initialWidget.measure :
+    initialWidget?.type === 'table' ? initialWidget.columns?.[0]?.columnKey || '' :
+    initialWidget?.type === 'pivot' ? initialWidget.measures?.[0]?.columnKey || '' : ''
+  );
+  const [dimension, setDimension] = useState(
+    initialWidget?.type === 'line' ? initialWidget.timeDimension :
+    initialWidget?.type === 'bar' ? initialWidget.dimension :
+    initialWidget?.type === 'donut' ? initialWidget.dimension :
+    initialWidget?.type === 'pivot' ? initialWidget.rowDimensions?.[0] || '' : ''
+  );
+  const [aggregation, setAggregation] = useState<AggregationFunction>(
+    initialWidget?.type === 'kpi' ? initialWidget.aggregation :
+    initialWidget?.type === 'line' ? initialWidget.aggregation :
+    initialWidget?.type === 'bar' ? initialWidget.aggregation :
+    initialWidget?.type === 'donut' ? initialWidget.aggregation :
+    initialWidget?.type === 'pivot' ? initialWidget.measures?.[0]?.aggregation || 'sum' : 'sum'
+  );
+  const [w, setW] = useState<number>(initialWidget?.grid?.w || 4);
+  const [h, setH] = useState<number>(initialWidget?.grid?.h || 2);
+  const [currency, setCurrency] = useState(
+    initialWidget?.type === 'kpi' ? initialWidget.format?.currency || 'USD' : 'USD'
+  );
 
   React.useEffect(() => {
     if (initialWidget) {
       setTitle(initialWidget.title);
       setType(initialWidget.type);
-      setMeasure(initialWidget.measure);
-      setDimension(initialWidget.dimension || '');
-      setAggregation(initialWidget.aggregation);
-      setW(initialWidget.layout.w);
-      setH(initialWidget.layout.h);
-      setCurrency(initialWidget.formatting?.currency || 'USD');
-      setStyle(initialWidget.formatting?.style || 'number');
+      setMeasure(
+        initialWidget.type === 'kpi' ? initialWidget.measure :
+        initialWidget.type === 'line' ? initialWidget.measures?.[0] || '' :
+        initialWidget.type === 'bar' ? initialWidget.measures?.[0] || '' :
+        initialWidget.type === 'donut' ? initialWidget.measure :
+        initialWidget.type === 'table' ? initialWidget.columns?.[0]?.columnKey || '' :
+        initialWidget.type === 'pivot' ? initialWidget.measures?.[0]?.columnKey || '' : ''
+      );
+      setDimension(
+        initialWidget.type === 'line' ? initialWidget.timeDimension :
+        initialWidget.type === 'bar' ? initialWidget.dimension :
+        initialWidget.type === 'donut' ? initialWidget.dimension :
+        initialWidget.type === 'pivot' ? initialWidget.rowDimensions?.[0] || '' : ''
+      );
+      setAggregation(
+        initialWidget.type === 'kpi' ? initialWidget.aggregation :
+        initialWidget.type === 'line' ? initialWidget.aggregation :
+        initialWidget.type === 'bar' ? initialWidget.aggregation :
+        initialWidget.type === 'donut' ? initialWidget.aggregation :
+        initialWidget.type === 'pivot' ? initialWidget.measures?.[0]?.aggregation || 'sum' : 'sum'
+      );
+      setW(initialWidget.grid.w);
+      setH(initialWidget.grid.h);
+      if (initialWidget.type === 'kpi') {
+        setCurrency(initialWidget.format?.currency || 'USD');
+      }
     } else {
       setTitle('New Widget');
       setType('kpi');
@@ -58,21 +96,74 @@ export function WidgetConfigModal({
   const columns = sheetProfile?.columnProfiles || [];
 
   const handleSave = () => {
-    const widget: WidgetSpec = {
-      id: initialWidget?.id || `w-${Math.random().toString(36).substring(2, 9)}`,
-      type,
-      title,
-      measure,
-      dimension: type !== 'kpi' ? dimension : undefined,
-      aggregation,
-      formatting: style !== 'number' ? { style: style as 'currency' | 'percent' | 'compact', currency } : undefined,
-      layout: {
-        x: initialWidget?.layout?.x || 0,
-        y: initialWidget?.layout?.y || 0,
-        w: Number(w),
-        h: Number(h)
-      }
+    const id = initialWidget?.id || `w-${Math.random().toString(36).substring(2, 9)}`;
+    const grid = {
+      x: initialWidget?.grid?.x || 0,
+      y: initialWidget?.grid?.y || 0,
+      w: Number(w),
+      h: Number(h)
     };
+
+    let widget: WidgetSpec;
+    if (type === 'kpi') {
+      widget = {
+        id,
+        type: 'kpi',
+        title,
+        measure,
+        aggregation,
+        format: currency ? { currency } : undefined,
+        grid
+      };
+    } else if (type === 'line') {
+      widget = {
+        id,
+        type: 'line',
+        title,
+        timeDimension: dimension || 'date',
+        measures: [measure || 'value'],
+        aggregation,
+        grid
+      };
+    } else if (type === 'bar') {
+      widget = {
+        id,
+        type: 'bar',
+        title,
+        dimension: dimension || 'category',
+        measures: [measure || 'value'],
+        aggregation,
+        grid
+      };
+    } else if (type === 'donut') {
+      widget = {
+        id,
+        type: 'donut',
+        title,
+        dimension: dimension || 'category',
+        measure: measure || 'value',
+        aggregation,
+        grid
+      };
+    } else if (type === 'table') {
+      widget = {
+        id,
+        type: 'table',
+        title,
+        columns: [{ columnKey: measure || 'column', header: title }],
+        grid
+      };
+    } else {
+      widget = {
+        id,
+        type: 'pivot',
+        title,
+        rowDimensions: [dimension || 'category'],
+        measures: [{ columnKey: measure || 'value', aggregation }],
+        grid
+      };
+    }
+
     onSave(widget);
     onClose();
   };
@@ -109,7 +200,7 @@ export function WidgetConfigModal({
 
             <div>
               <Label>Aggregation</Label>
-              <Select value={aggregation} onValueChange={(v: string) => setAggregation(v as WidgetSpec['aggregation'])}>
+              <Select value={aggregation} onValueChange={(v: string) => setAggregation(v as AggregationFunction)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -133,8 +224,8 @@ export function WidgetConfigModal({
                   <SelectValue placeholder="Select column..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {columns.map((c: { columnKey: SafeIdentifier; type: string }) => (
-                    <SelectItem key={c.columnKey} value={c.columnKey}>{c.columnKey} ({c.type})</SelectItem>
+                  {columns.map((c: { columnKey: SafeIdentifier; inferredType: string }) => (
+                    <SelectItem key={c.columnKey} value={c.columnKey}>{c.columnKey} ({c.inferredType})</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -148,8 +239,8 @@ export function WidgetConfigModal({
                     <SelectValue placeholder="Select dimension..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {columns.map((c: { columnKey: SafeIdentifier; type: string }) => (
-                      <SelectItem key={c.columnKey} value={c.columnKey}>{c.columnKey} ({c.type})</SelectItem>
+                    {columns.map((c: { columnKey: SafeIdentifier; inferredType: string }) => (
+                      <SelectItem key={c.columnKey} value={c.columnKey}>{c.columnKey} ({c.inferredType})</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

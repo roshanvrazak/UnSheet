@@ -1,3 +1,5 @@
+import React from 'react';
+
 export function Dialog({ open, children }: { open: boolean; onOpenChange?: (open: boolean) => void; children: React.ReactNode }) {
   if (!open) return null;
   return (

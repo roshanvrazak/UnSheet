@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { QueryResult, SheetModel, WidgetSpec } from '@unsheet/contracts';
 import { WidgetSpecSchema } from '@unsheet/contracts';
 import { executeWidgetQuery } from '@/lib/query/executor';
@@ -32,9 +32,16 @@ function WidgetContainerInner({
   useDuckDB = false,
 }: WidgetContainerProps) {
   // 1. Total renderer guarantee: Validate widget spec with contracts schema
-  const parsed = WidgetSpecSchema.safeParse(widget);
-  if (!parsed.success) {
-    const errorDetails = parsed.error.issues
+  const validWidget = useMemo(() => {
+    const parsed = WidgetSpecSchema.safeParse(widget);
+    if (!parsed.success) {
+      return { success: false as const, error: parsed.error, raw: widget };
+    }
+    return { success: true as const, data: parsed.data };
+  }, [JSON.stringify(widget)]);
+
+  if (!validWidget.success) {
+    const errorDetails = validWidget.error.issues
       .map((i) => `${i.path.join('.')}: ${i.message}`)
       .join('; ');
     const titleCandidate =
@@ -55,7 +62,7 @@ function WidgetContainerInner({
     );
   }
 
-  const validWidget = parsed.data;
+  const widgetSpec = validWidget.data;
 
   // 2. Query state
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
@@ -67,7 +74,7 @@ function WidgetContainerInner({
     setIsLoading(true);
     setQueryError(null);
 
-    executeWidgetQuery(sheet, validWidget, { activeFilters, useDuckDB })
+    executeWidgetQuery(sheet, widgetSpec, { activeFilters, useDuckDB })
       .then((res) => {
         if (!isCancelled) {
           setQueryResult(res);
@@ -84,15 +91,15 @@ function WidgetContainerInner({
     return () => {
       isCancelled = true;
     };
-  }, [validWidget, sheet, activeFilters, useDuckDB]);
+  }, [widgetSpec, sheet, activeFilters, useDuckDB]);
 
   // 3. Render Query Error
   if (queryError) {
     return (
       <ErrorCardWidget
-        title={validWidget.title}
+        title={widgetSpec.title}
         error={queryError}
-        widgetId={validWidget.id}
+        widgetId={widgetSpec.id}
       />
     );
   }
@@ -102,7 +109,7 @@ function WidgetContainerInner({
     return (
       <div
         role="status"
-        aria-label={`Loading ${validWidget.title}`}
+        aria-label={`Loading ${widgetSpec.title}`}
         className="flex flex-col justify-between h-full min-h-[160px] rounded-xl border border-slate-200/80 bg-white p-5 animate-pulse"
       >
         <div>
@@ -115,21 +122,21 @@ function WidgetContainerInner({
   }
 
   // 5. Dispatch to widget renderer
-  switch (validWidget.type) {
+  switch (widgetSpec.type) {
     case 'kpi':
-      return <KPIWidget spec={validWidget} queryResult={queryResult!} />;
+      return <KPIWidget spec={widgetSpec} queryResult={queryResult!} />;
     case 'line':
-      return <LineChartWidget spec={validWidget} queryResult={queryResult!} />;
+      return <LineChartWidget spec={widgetSpec} queryResult={queryResult!} />;
     case 'bar':
-      return <BarChartWidget spec={validWidget} queryResult={queryResult!} />;
+      return <BarChartWidget spec={widgetSpec} queryResult={queryResult!} />;
     case 'donut':
-      return <DonutChartWidget spec={validWidget} queryResult={queryResult!} />;
+      return <DonutChartWidget spec={widgetSpec} queryResult={queryResult!} />;
     case 'table':
-      return <TableWidget spec={validWidget} queryResult={queryResult!} />;
+      return <TableWidget spec={widgetSpec} queryResult={queryResult!} />;
     case 'pivot':
-      return <PivotTableWidget spec={validWidget} queryResult={queryResult!} />;
+      return <PivotTableWidget spec={widgetSpec} queryResult={queryResult!} />;
     default: {
-      const exhaustiveCheck: never = validWidget;
+      const exhaustiveCheck: never = widgetSpec;
       return (
         <ErrorCardWidget
           title="Unsupported Widget"

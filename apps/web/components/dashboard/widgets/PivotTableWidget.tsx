@@ -44,8 +44,8 @@ export function PivotTableWidget({ spec, queryResult }: PivotTableWidgetProps) {
     const rList = Array.from(rowSet).sort();
     const cList = Array.from(colSet).sort();
 
-    const rTotals: Record<string, number> = {};
-    const cTotals: Record<string, number> = {};
+    const rTotals = new Map<string, number>();
+    const cTotals = new Map<string, number>();
     let gTotal = 0;
 
     for (const rVal of rList) {
@@ -53,9 +53,9 @@ export function PivotTableWidget({ spec, queryResult }: PivotTableWidgetProps) {
       for (const cVal of cList) {
         const val = cellMap.get(`${rVal}:::${cVal}`) ?? 0;
         rSum += val;
-        cTotals[cVal] = (cTotals[cVal] ?? 0) + val;
+        cTotals.set(cVal, (cTotals.get(cVal) ?? 0) + val);
       }
-      rTotals[rVal] = rSum;
+      rTotals.set(rVal, rSum);
       gTotal += rSum;
     }
 
@@ -146,7 +146,7 @@ export function PivotTableWidget({ spec, queryResult }: PivotTableWidgetProps) {
                     })}
                     {showTotals && (
                       <td className="px-3 py-2 text-right whitespace-nowrap font-mono font-semibold text-slate-900 bg-slate-50/40">
-                        {formatDisplayValue(rowTotals[rVal] ?? 0, primaryMeasure.format)}
+                        {formatDisplayValue(rowTotals.get(rVal) ?? 0, primaryMeasure.format)}
                       </td>
                     )}
                   </tr>
@@ -164,7 +164,7 @@ export function PivotTableWidget({ spec, queryResult }: PivotTableWidgetProps) {
                       key={cVal}
                       className="px-3 py-2.5 text-right whitespace-nowrap font-mono font-bold"
                     >
-                      {formatDisplayValue(colTotals[cVal] ?? 0, primaryMeasure.format)}
+                      {formatDisplayValue(colTotals.get(cVal) ?? 0, primaryMeasure.format)}
                     </td>
                   ))}
                   <td className="px-3 py-2.5 text-right whitespace-nowrap font-mono font-extrabold text-blue-600 bg-slate-100/80">

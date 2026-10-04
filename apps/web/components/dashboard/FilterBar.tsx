@@ -208,24 +208,35 @@ export function FilterBar({
 
           // 3. DATE RANGE filter
           if (filter.type === 'date-range') {
-            const rangeVal =
-              typeof currentValue === 'object' && currentValue !== null
-                ? (currentValue as { from?: string; to?: string })
-                : {};
+            let fromVal = '';
+            let toVal = '';
+            if (typeof currentValue === 'object' && currentValue !== null) {
+              const obj = currentValue as Record<string, unknown>;
+              if ('value' in obj && Array.isArray(obj.value)) {
+                fromVal = String(obj.value[0] ?? '');
+                toVal = String(obj.value[1] ?? '');
+              } else if ('from' in obj || 'to' in obj) {
+                fromVal = String(obj.from ?? '');
+                toVal = String(obj.to ?? '');
+              }
+            } else if (Array.isArray(currentValue)) {
+              fromVal = String(currentValue[0] ?? '');
+              toVal = String(currentValue[1] ?? '');
+            }
 
             return (
-              <div key={filter.id} className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-600">
+              <fieldset key={filter.id} className="flex flex-col gap-1.5 border-0 p-0 m-0 min-w-0">
+                <legend className="text-xs font-semibold text-slate-600 mb-1">
                   {filter.label}
-                </label>
+                </legend>
                 <div className="flex items-center gap-1.5">
                   <div className="relative flex-1">
                     <input
                       type="date"
-                      value={rangeVal.from ?? ''}
+                      value={fromVal}
                       onChange={(e) => {
                         const from = e.target.value;
-                        const to = rangeVal.to;
+                        const to = toVal;
                         if (!from && !to) {
                           handleValueChange(filter.id, undefined);
                         } else {
@@ -243,10 +254,10 @@ export function FilterBar({
                   <div className="relative flex-1">
                     <input
                       type="date"
-                      value={rangeVal.to ?? ''}
+                      value={toVal}
                       onChange={(e) => {
                         const to = e.target.value;
-                        const from = rangeVal.from;
+                        const from = fromVal;
                         if (!from && !to) {
                           handleValueChange(filter.id, undefined);
                         } else {
@@ -261,12 +272,19 @@ export function FilterBar({
                     />
                   </div>
                 </div>
-              </div>
+              </fieldset>
             );
           }
 
           // 4. SEARCH / TEXT filter
           if (filter.type === 'search') {
+            const searchVal =
+              typeof currentValue === 'string'
+                ? currentValue
+                : typeof currentValue === 'object' && currentValue !== null && 'value' in currentValue
+                ? String((currentValue as Record<string, unknown>).value ?? '')
+                : '';
+
             return (
               <div key={filter.id} className="flex flex-col gap-1.5">
                 <label
@@ -283,7 +301,7 @@ export function FilterBar({
                   <input
                     id={`filter-${filter.id}`}
                     type="text"
-                    value={typeof currentValue === 'string' ? currentValue : ''}
+                    value={searchVal}
                     onChange={(e) => {
                       const val = e.target.value;
                       handleValueChange(
@@ -301,20 +319,32 @@ export function FilterBar({
 
           // 5. NUMERIC RANGE filter
           if (filter.type === 'numeric-range') {
-            const rangeVal = Array.isArray(currentValue) ? currentValue : [];
+            let minVal: string | number = '';
+            let maxVal: string | number = '';
+            if (Array.isArray(currentValue)) {
+              minVal = currentValue[0] ?? '';
+              maxVal = currentValue[1] ?? '';
+            } else if (typeof currentValue === 'object' && currentValue !== null) {
+              const obj = currentValue as Record<string, unknown>;
+              if ('value' in obj && Array.isArray(obj.value)) {
+                minVal = obj.value[0] ?? '';
+                maxVal = obj.value[1] ?? '';
+              }
+            }
+
             return (
-              <div key={filter.id} className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-600">
+              <fieldset key={filter.id} className="flex flex-col gap-1.5 border-0 p-0 m-0 min-w-0">
+                <legend className="text-xs font-semibold text-slate-600 mb-1">
                   {filter.label}
-                </label>
+                </legend>
                 <div className="flex items-center gap-1.5">
                   <input
                     type="number"
                     placeholder="Min"
-                    value={rangeVal[0] ?? ''}
+                    value={minVal}
                     onChange={(e) => {
                       const min = e.target.value !== '' ? Number(e.target.value) : undefined;
-                      const max = rangeVal[1];
+                      const max = maxVal !== '' ? Number(maxVal) : undefined;
                       if (min === undefined && max === undefined) {
                         handleValueChange(filter.id, undefined);
                       } else {
@@ -331,10 +361,10 @@ export function FilterBar({
                   <input
                     type="number"
                     placeholder="Max"
-                    value={rangeVal[1] ?? ''}
+                    value={maxVal}
                     onChange={(e) => {
                       const max = e.target.value !== '' ? Number(e.target.value) : undefined;
-                      const min = rangeVal[0];
+                      const min = minVal !== '' ? Number(minVal) : undefined;
                       if (min === undefined && max === undefined) {
                         handleValueChange(filter.id, undefined);
                       } else {
@@ -348,7 +378,7 @@ export function FilterBar({
                     className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-2 py-1.5 text-xs text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
-              </div>
+              </fieldset>
             );
           }
 

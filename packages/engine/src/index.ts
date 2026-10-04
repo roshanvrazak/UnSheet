@@ -14,6 +14,7 @@ export * from './specgen/index.js';
 export * from './drift/index.js';
 export * from './query/index.js';
 export * from './template/index.js';
+export * from './export/index.js';
 
 export function getEngineInfo(): Version {
   return {

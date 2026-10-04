@@ -85,11 +85,11 @@ export function TemplateSaveModal({
         <div className="space-y-4 py-2">
           <div>
             <Label>Template Name</Label>
-            <Input value={name} onChange={e => setName(e.target.value)} />
+            <Input value={name} onChange={e => setName(e.target.value)} maxLength={128} />
           </div>
           <div>
             <Label>Description</Label>
-            <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Describe what this template is for..." />
+            <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Describe what this template is for..." maxLength={500} />
           </div>
           <div>
             <Label>Category</Label>
@@ -97,7 +97,7 @@ export function TemplateSaveModal({
           </div>
           <div>
             <Label>Tags (comma separated)</Label>
-            <Input value={tagsInput} onChange={e => setTagsInput(e.target.value)} />
+            <Input value={tagsInput} onChange={e => setTagsInput(e.target.value)} maxLength={320} />
           </div>
         </div>
         <DialogFooter className="flex gap-2">

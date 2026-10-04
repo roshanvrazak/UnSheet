@@ -1,4 +1,4 @@
-import { Template, TemplateCategory } from '@unsheet/contracts';
+import { Template, TemplateCategory, TemplateSchema } from '@unsheet/contracts';
 
 const LOCAL_STORAGE_KEY = 'unsheet_templates_v1';
 const memoryStorage: Record<string, string> = {};
@@ -9,7 +9,14 @@ export function loadLocalTemplates(): Template[] {
     if (!raw) return getDefaultTemplates();
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed;
+      const validTemplates: Template[] = [];
+      for (const item of parsed) {
+        const result = TemplateSchema.safeParse(item);
+        if (result.success) {
+          validTemplates.push(result.data);
+        }
+      }
+      return validTemplates.length > 0 ? validTemplates : getDefaultTemplates();
     }
   } catch (e) {
     console.error('Failed to load local templates', e);
@@ -57,11 +64,26 @@ export function exportTemplateJson(template: Template): string {
 }
 
 export function importTemplateJson(jsonString: string): Template {
-  const data = JSON.parse(jsonString);
-  if (data && data.spec && !data.spec.globalFilters) {
-    data.spec.globalFilters = data.spec.globalFilters || [];
+  if (jsonString.length > 1_048_576) {
+    throw new Error('Template file exceeds maximum permitted size of 1MB');
   }
-  return data as Template;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonString);
+  } catch (e: any) {
+    throw new Error('Invalid JSON: ' + (e?.message || 'Failed to parse JSON'));
+  }
+  if (parsed && typeof parsed === 'object' && parsed !== null && 'spec' in parsed) {
+    const spec = (parsed as any).spec;
+    if (spec && !spec.globalFilters) {
+      spec.globalFilters = [];
+    }
+  }
+  const result = TemplateSchema.safeParse(parsed);
+  if (!result.success) {
+    throw new Error('Invalid template structure: ' + result.error.message);
+  }
+  return result.data;
 }
 
 export function getDefaultTemplates(): Template[] {

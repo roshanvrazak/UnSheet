@@ -4,11 +4,11 @@ test.describe('Unsheet Full Pipeline & Dashboard E2E Tests', () => {
   test('Test 1: Full pipeline workflow - Load sample workbook, verify 5-step timing bar, verify dashboard grid rendered', async ({ page }) => {
     await page.goto('/');
 
-    // Verify title/branding
+    // Verify title/branding and h1 semantic heading
     await expect(page.locator('h1')).toContainText('Unsheet');
 
-    // Click sample workbook loader (e.g., Financials or SaaS Metrics)
-    const sampleButton = page.locator('button:has-text("SaaS Metrics")').first();
+    // Click sample workbook loader ("BOQ & Quotes")
+    const sampleButton = page.locator('button:has-text("BOQ & Quotes")').first();
     await sampleButton.click();
 
     // Verify 5-step timing bar (Parse -> Normalise -> Profile -> SpecGen -> Render)
@@ -22,10 +22,10 @@ test.describe('Unsheet Full Pipeline & Dashboard E2E Tests', () => {
 
   test('Test 2: Filter interactivity - Interact with filter bar controls and verify reactive dashboard updates', async ({ page }) => {
     await page.goto('/');
-    await page.locator('button:has-text("Financials")').first().click();
+    await page.locator('button:has-text("Project Pipeline")').first().click();
 
     // Wait for dashboard
-    await page.waitForSelector('text=Revenue', { timeout: 15000 });
+    await page.waitForSelector('text=Dashboard', { timeout: 15000 });
 
     // Locate filter controls if present
     const filterInput = page.locator('input[placeholder*="Filter"], input[type="search"]').first();
@@ -42,7 +42,7 @@ test.describe('Unsheet Full Pipeline & Dashboard E2E Tests', () => {
 
   test('Test 3: Ask-Your-Data interaction - Open Ask Data drawer, submit natural language query, add widget', async ({ page }) => {
     await page.goto('/');
-    await page.locator('button:has-text("Logistics")').first().click();
+    await page.locator('button:has-text("Supplier Lead Times")').first().click();
     await page.waitForSelector('text=Dashboard', { timeout: 15000 });
 
     // Open Ask Data drawer
@@ -52,7 +52,7 @@ test.describe('Unsheet Full Pipeline & Dashboard E2E Tests', () => {
       
       const promptInput = page.locator('input[placeholder*="query"], textarea[placeholder*="natural language"]').first();
       if (await promptInput.isVisible()) {
-        await promptInput.fill('Show total shipments by region');
+        await promptInput.fill('Show average lead time by supplier');
         const submitBtn = page.locator('button:has-text("Run"), button:has-text("Query")').first();
         await submitBtn.click();
 
@@ -71,7 +71,7 @@ test.describe('Unsheet Full Pipeline & Dashboard E2E Tests', () => {
 
   test('Test 4: Export workflow - Open export menu, trigger safe CSV download', async ({ page }) => {
     await page.goto('/');
-    await page.locator('button:has-text("Financials")').first().click();
+    await page.locator('button:has-text("BOQ & Quotes")').first().click();
     await page.waitForSelector('text=Dashboard', { timeout: 15000 });
 
     // Open export menu or button
@@ -92,7 +92,7 @@ test.describe('Unsheet Full Pipeline & Dashboard E2E Tests', () => {
 
   test('Test 5: Template saving and drift detection workflow', async ({ page }) => {
     await page.goto('/');
-    await page.locator('button:has-text("Financials")').first().click();
+    await page.locator('button:has-text("Project Pipeline")').first().click();
     await page.waitForSelector('text=Dashboard', { timeout: 15000 });
 
     // Save as template button

@@ -248,9 +248,9 @@ export default function HomePage() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-lg font-black tracking-tight text-slate-900">
+                <h1 className="text-lg font-black tracking-tight text-slate-900">
                   Unsheet
-                </span>
+                </h1>
                 <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200/80 rounded px-1.5 py-0.2">
                   Preview
                 </span>

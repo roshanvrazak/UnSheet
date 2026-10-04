@@ -9,7 +9,7 @@
 | **Phase 4** | Editor, Templates, Drift | **COMPLETED** | frontend-engineer, profiling-engineer, devops-engineer, security-reviewer, code-reviewer, adversarial-tester | `1c17f23` | 0 blocking (all 4 security + 4 code review + 7 adversarial findings remediated) | 604/604 tests passing across 42 test files; Visual Editor; Template storage with 1MB bounds; Schema Drift UI with remappings; clean verify gate |
 | **Phase 5** | LLM Features | **COMPLETED** | backend-engineer, frontend-engineer, test-engineer, devops-engineer, security-reviewer, code-reviewer, adversarial-tester | `7e03ed5` | 0 blocking (all findings remediated, 100% review approval) | 614/614 tests passing across 44 test files; Ask-Your-Data; Spec Refinement; sliding-window rate limiters; 15-vector prompt injection corpus; 100% data privacy (zero raw row egress); clean verify gate |
 | **Phase 6** | Share & Export | **COMPLETED** | backend-engineer, ingest-engineer, frontend-engineer, security-reviewer, code-reviewer, adversarial-tester | `1004591` | 0 blocking (all 3 reviews approved; 0 critical/high findings) | 634/634 tests passing across 50 test files; 128-bit unguessable share tokens; Supabase Postgres RLS deny-by-default; timing-safe 404 responses; safe CSV/XLSX/JSON export with formula neutralization; clean verify gate |
-| **Phase 7** | Hardening & Release | PENDING | all reviewers, devops-engineer, docs-writer | - | - | - |
+| **Phase 7** | Hardening & Release | **COMPLETED** | all reviewers, devops-engineer, docs-writer, test-engineer | `a9fd81b` | 0 blocking (all reviews approved for production release) | 634/634 tests passing across 50 test files; production README & SECURITY.md; Playwright E2E & Axe-Core accessibility; Stryker config; CodeQL & CycloneDX SBOM CI workflows; license compliance; clean verify gate |
 
 ---
 
@@ -199,6 +199,32 @@
 - **Verification Metrics**:
   - Monorepo tests: **50 test files, 634/634 tests passing (100%)**.
   - Strict TypeScript: `noUncheckedIndexedAccess: true`, zero `any`, zero type errors.
+  - `pnpm verify`: 6/6 stages passing 100% (lint, typecheck, tests, build, secret scan, audit).
+
+---
+
+## Phase 7 Closure Summary (Hardening & Release)
+- **Documentation & User Guidance (`README.md`, `SECURITY.md`, `docs/`)**:
+  - `README.md`: Comprehensive product guide prominently highlighting Unsheet's headline privacy guarantee (100% in-browser parsing, profiling, and querying; metadata-only egress), full 10-step pipeline, 12-column Total Dashboard Renderer, stack breakdown, quickstart commands, and subagent operating model.
+  - `SECURITY.md`: Vulnerability reporting channels, disclosure SLA, STRIDE threat matrix mapping all 14 security mitigations, and bug bounty guidelines.
+- **CI/CD, Supply Chain Security & Governance (`.github/`, `scripts/`)**:
+  - `scripts/check-licenses.sh`: Automated license compliance auditor checking permissible licenses (MIT, Apache-2.0, BSD, ISC, etc.) and rejecting copyleft GPL/AGPL packages.
+  - `scripts/verify-sheetjs.sh`: Verifies that SheetJS (`xlsx`) is pinned strictly to the official vendor tarball at `https://cdn.sheetjs.com/`.
+  - `.github/workflows/ci.yml`: Full automated CI workflow executing monorepo verification (`pnpm verify`), license compliance checks, SheetJS supply chain verification, and CycloneDX SBOM generation and artifact upload.
+  - `.github/workflows/codeql.yml`: Advanced GitHub CodeQL security scanning for JavaScript/TypeScript.
+  - `.github/dependabot.yml`: Automated dependency updates for npm and GitHub Actions.
+- **End-to-End Testing & Accessibility (`playwright.config.ts`, `e2e/`, `stryker.config.mjs`)**:
+  - `playwright.config.ts`: Cross-browser E2E testing across Desktop Chrome, Firefox, Safari (WebKit), and Mobile Chrome (`Pixel 5`).
+  - `e2e/dashboard.spec.ts`: End-to-end user workflows verifying spreadsheet ingestion, 5-stage timing bar, 12-column grid rendering, interactive filters, Ask-Your-Data query with SQL preview, template drift, and safe file export.
+  - `e2e/a11y.spec.ts`: Automated WCAG 2.1 AA accessibility auditing with `@axe-core/playwright` asserting zero critical/serious violations across rendered dashboards, companion tables, modals, and drawers.
+  - `stryker.config.mjs`: Mutation testing configured for `@unsheet/engine` with Vitest runner and an 80% mutation score threshold.
+- **Final Release Gate Approval**:
+  - `security-reviewer` (`docs/reviews/security-phase7.md`): **APPROVED FOR RELEASE** (0 Critical, 0 High, 0 Medium, 0 Low).
+  - `code-reviewer` (`docs/reviews/code-review-phase7.md`): **APPROVED FOR PRODUCTION RELEASE** (exemplary TypeScript strictness, WCAG 2.1 AA compliance, Total Renderer resilience, zero defects).
+  - `adversarial-tester` (`docs/reviews/adversarial-phase7.md`): **APPROVED FOR RELEASE** (comprehensive red-team assessment across files, formulas, prompts, SQL, share tokens, and DoS resilience passing 100%).
+- **Final Verification Metrics**:
+  - Monorepo tests: **50 test files, 634/634 tests passing (100%)**.
+  - Strict TypeScript: `noUncheckedIndexedAccess: true`, zero `any`, zero type errors across all workspaces.
   - `pnpm verify`: 6/6 stages passing 100% (lint, typecheck, tests, build, secret scan, audit).
 
 

@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { DriftResolutionModal } from '../components/drift/DriftResolutionModal';
-import { DriftReport, DashboardSpec, SheetProfile } from '@unsheet/engine';
+import { DriftReport, DashboardSpec, SheetProfile } from '@unsheet/contracts';
 
 const mockDriftReport: DriftReport = {
   templateId: 't-1',

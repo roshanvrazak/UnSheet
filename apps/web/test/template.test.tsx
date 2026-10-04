@@ -4,7 +4,7 @@ import { render, screen } from '@testing-library/react';
 import { TemplateSaveModal } from '../components/template/TemplateSaveModal';
 import { TemplateLibraryModal } from '../components/template/TemplateLibraryModal';
 import { loadLocalTemplates, saveLocalTemplate, exportTemplateJson, importTemplateJson } from '../lib/template/storage';
-import { DashboardSpec, Template } from '@unsheet/engine';
+import { DashboardSpec, Template } from '@unsheet/contracts';
 
 const mockSpec: DashboardSpec = {
   title: 'Test Dashboard',

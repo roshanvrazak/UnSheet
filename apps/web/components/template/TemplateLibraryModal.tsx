@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Template, DashboardSpec } from '@unsheet/engine';
+import { Template, DashboardSpec, WidgetSpec } from '@unsheet/contracts';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { loadLocalTemplates, deleteLocalTemplate, importTemplateJson } from '@/lib/template/storage';
@@ -109,7 +109,7 @@ export function TemplateLibraryModal({
                   <p className="text-sm text-muted-foreground mt-1">{selectedTemplate.description}</p>
                 </div>
                 <div className="flex gap-2 flex-wrap">
-                  {selectedTemplate.tags?.map(tag => (
+                  {selectedTemplate.tags?.map((tag: string) => (
                     <span key={tag} className="px-2 py-0.5 bg-secondary text-secondary-foreground rounded-full text-xs">
                       #{tag}
                     </span>
@@ -118,7 +118,7 @@ export function TemplateLibraryModal({
                 <div className="border rounded-md p-3 bg-muted/20">
                   <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Widgets included ({selectedTemplate.spec.widgets.length})</h4>
                   <div className="space-y-1 max-h-48 overflow-y-auto">
-                    {selectedTemplate.spec.widgets.map(w => (
+                    {selectedTemplate.spec.widgets.map((w: WidgetSpec) => (
                       <div key={w.id} className="text-xs flex justify-between items-center py-1 border-b last:border-0">
                         <span className="font-medium">{w.title}</span>
                         <span className="text-muted-foreground uppercase">{w.type}</span>

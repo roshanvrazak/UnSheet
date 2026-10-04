@@ -1,4 +1,4 @@
-import { Template, TemplateCategory } from '@unsheet/engine';
+import { Template, TemplateCategory } from '@unsheet/contracts';
 
 const LOCAL_STORAGE_KEY = 'unsheet_templates_v1';
 const memoryStorage: Record<string, string> = {};

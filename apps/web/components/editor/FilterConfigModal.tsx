@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { GlobalFilter, SheetProfile } from '@unsheet/engine';
+import { FilterSpec as GlobalFilter, SheetProfile, SafeIdentifier } from '@unsheet/contracts';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,8 +52,8 @@ export function FilterConfigModal({
                 <SelectValue placeholder="Select column..." />
               </SelectTrigger>
               <SelectContent>
-                {columns.map(c => (
-                  <SelectItem key={c.key} value={c.key}>{c.key} ({c.type})</SelectItem>
+                {columns.map((c: { columnKey: SafeIdentifier; type: string }) => (
+                  <SelectItem key={c.columnKey} value={c.columnKey}>{c.columnKey} ({c.type})</SelectItem>
                 ))}
               </SelectContent>
             </Select>

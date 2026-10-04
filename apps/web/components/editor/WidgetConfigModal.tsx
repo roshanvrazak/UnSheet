@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { WidgetSpec, SheetProfile, AggregationType } from '@unsheet/engine';
+import { WidgetSpec, SheetProfile, AggregationFunction, SafeIdentifier } from '@unsheet/contracts';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,7 +27,7 @@ export function WidgetConfigModal({
   const [type, setType] = useState<WidgetSpec['type']>(initialWidget?.type || 'kpi');
   const [measure, setMeasure] = useState(initialWidget?.measure || '');
   const [dimension, setDimension] = useState(initialWidget?.dimension || '');
-  const [aggregation, setAggregation] = useState<AggregationType>(initialWidget?.aggregation || 'sum');
+  const [aggregation, setAggregation] = useState<AggregationFunction>(initialWidget?.aggregation || 'sum');
   const [w, setW] = useState<number>(initialWidget?.layout?.w || 4);
   const [h, setH] = useState<number>(initialWidget?.layout?.h || 2);
   const [currency, setCurrency] = useState(initialWidget?.formatting?.currency || 'USD');
@@ -133,8 +133,8 @@ export function WidgetConfigModal({
                   <SelectValue placeholder="Select column..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {columns.map(c => (
-                    <SelectItem key={c.key} value={c.key}>{c.key} ({c.type})</SelectItem>
+                  {columns.map((c: { columnKey: SafeIdentifier; type: string }) => (
+                    <SelectItem key={c.columnKey} value={c.columnKey}>{c.columnKey} ({c.type})</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -148,8 +148,8 @@ export function WidgetConfigModal({
                     <SelectValue placeholder="Select dimension..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {columns.map(c => (
-                      <SelectItem key={c.key} value={c.key}>{c.key} ({c.type})</SelectItem>
+                    {columns.map((c: { columnKey: SafeIdentifier; type: string }) => (
+                      <SelectItem key={c.columnKey} value={c.columnKey}>{c.columnKey} ({c.type})</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

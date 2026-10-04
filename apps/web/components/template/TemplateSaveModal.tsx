@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { DashboardSpec, Template } from '@unsheet/engine';
+import { DashboardSpec, Template } from '@unsheet/contracts';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

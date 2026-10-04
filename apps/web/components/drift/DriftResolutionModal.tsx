@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { DriftReport, SheetProfile, DashboardSpec, applyRemappings } from '@unsheet/engine';
+import { DriftReport, SheetProfile, DashboardSpec } from '@unsheet/contracts';
+import { applyRemappings } from '@unsheet/engine';
+import { SafeIdentifier } from '@unsheet/contracts';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -39,7 +41,7 @@ export function DriftResolutionModal({
     onClose();
   };
 
-  const availableColumns = newSheetProfile.columnProfiles.map(c => c.key);
+  const availableColumns = newSheetProfile.columnProfiles.map((c: { columnKey: SafeIdentifier }) => c.columnKey);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -72,7 +74,7 @@ export function DriftResolutionModal({
           <div className="space-y-2">
             <h4 className="text-xs font-semibold uppercase text-muted-foreground">Matched Columns</h4>
             <div className="space-y-1">
-              {driftReport.matchedColumns.map(col => (
+              {driftReport.matchedColumns.map((col: string) => (
                 <div key={col} className="flex items-center justify-between text-sm py-1 px-2 rounded bg-muted/20">
                   <span className="font-medium">{col}</span>
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
@@ -85,7 +87,7 @@ export function DriftResolutionModal({
             <div className="space-y-2">
               <h4 className="text-xs font-semibold uppercase text-muted-foreground">Missing Columns & Remappings</h4>
               <div className="space-y-2">
-                {driftReport.missingColumns.map(col => (
+                {driftReport.missingColumns.map((col: string) => (
                   <div key={col} className="flex items-center justify-between text-sm py-1.5 px-2 rounded border gap-4">
                     <span className="font-medium text-destructive">{col}</span>
                     <Select
@@ -96,7 +98,7 @@ export function DriftResolutionModal({
                         <SelectValue placeholder="Map to new column..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {availableColumns.map(ac => (
+                        {availableColumns.map((ac: string) => (
                           <SelectItem key={ac} value={ac}>{ac}</SelectItem>
                         ))}
                       </SelectContent>

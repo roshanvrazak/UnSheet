@@ -2,16 +2,16 @@ import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { FilterConfigModal } from '../components/editor/FilterConfigModal';
-import { SheetProfile } from '@unsheet/engine';
+import { SheetProfile } from '@unsheet/contracts';
 
 const mockProfile: SheetProfile = {
   sheetId: 's1',
   rowCount: 100,
   columnCount: 3,
   columnProfiles: [
-    { key: 'arr', type: 'number', semanticRole: 'measure', missingCount: 0, uniqueCount: 50 },
-    { key: 'month', type: 'string', semanticRole: 'dimension', missingCount: 0, uniqueCount: 12 },
-    { key: 'tier', type: 'string', semanticRole: 'dimension', missingCount: 0, uniqueCount: 3 }
+    { columnKey: 'arr', originalName: 'arr', type: 'number', semanticRole: 'measure', missingCount: 0, uniqueCount: 50 },
+    { columnKey: 'month', originalName: 'month', type: 'string', semanticRole: 'dimension', missingCount: 0, uniqueCount: 12 },
+    { columnKey: 'tier', originalName: 'tier', type: 'string', semanticRole: 'dimension', missingCount: 0, uniqueCount: 3 }
   ]
 };
 

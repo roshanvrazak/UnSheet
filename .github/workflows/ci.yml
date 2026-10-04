@@ -2,35 +2,50 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [ main, master ]
   pull_request:
-    branches: [main, master]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [ main, master ]
 
 jobs:
   verify:
-    name: Verify Monorepo
+    name: Monorepo Verification & Security Compliance
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11
+          version: 9.15.0
 
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
           cache: 'pnpm'
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run Monorepo Verification
+      - name: Monorepo Verification (Lint, Typecheck, Test, Build, Audit)
         run: pnpm verify
+
+      - name: License Compliance Check
+        run: bash scripts/check-licenses.sh
+
+      - name: SheetJS Supply Chain Check
+        run: bash scripts/verify-sheetjs.sh
+
+      - name: Generate CycloneDX SBOM
+        uses: CycloneDX/gh-node-module-generate-sbom@v1
+        with:
+          output: bom.json
+
+      - name: Upload SBOM Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cyclone-dx-sbom
+          path: bom.json
+          retention-days: 30

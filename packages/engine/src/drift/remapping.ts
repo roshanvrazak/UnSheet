@@ -13,15 +13,24 @@ export function applyRemappings(
     return DashboardSpecSchema.parse(spec);
   }
 
+  const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
   const remapKey = (key?: string): string | undefined => {
     if (!key) return key;
-    return remappings[key] ?? key;
+    if (FORBIDDEN_KEYS.has(key)) return key;
+    if (!Object.prototype.hasOwnProperty.call(remappings, key)) return key;
+    const target = remappings[key];
+    if (typeof target !== 'string' || FORBIDDEN_KEYS.has(target) || !target.trim()) {
+      return key;
+    }
+    return target;
   };
 
   const remapArray = (arr?: string[]): string[] | undefined => {
     if (!arr) return arr;
-    return arr.map((k) => remappings[k] ?? k);
+    return arr.map((k) => remapKey(k)!);
   };
+
 
   // 1. Remap filters
   const filters = spec.filters.map((filter) => ({

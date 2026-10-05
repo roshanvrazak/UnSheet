@@ -159,6 +159,7 @@ export function DashboardRenderer({
           return (
             <div
               key={widgetKey}
+              id={`widget-${widgetKey}`}
               className={cn(colClass, 'flex flex-col')}
             >
               <WidgetContainer

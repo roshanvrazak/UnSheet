@@ -72,6 +72,11 @@ export async function POST(req: NextRequest) {
       queryPlanResult = fallback.queryPlan;
       widgetResult = fallback.suggestedWidget;
       explanationResult = fallback.explanation;
+    } else {
+      // If LLM succeeded, also provide suggestedWidget and queryPlan so client gets rich visualizations and in-memory execution
+      const fallback = deterministicAskQuery(question, sheetName, profiles);
+      queryPlanResult = fallback.queryPlan;
+      widgetResult = fallback.suggestedWidget;
     }
 
     // 5. Validate SQL with SafeSqlQuerySchema

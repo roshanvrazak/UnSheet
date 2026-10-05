@@ -65,6 +65,23 @@ export function SpecRefineBar({
 
       const prevSpec = JSON.parse(JSON.stringify(currentSpec));
       onSpecUpdate(data.updatedSpec);
+
+      // Smoothly focus/scroll to newly added widget if any
+      const prevIds = new Set(currentSpec.widgets.map((w) => w.id));
+      const newWidget = data.updatedSpec.widgets?.find((w: { id: string }) => !prevIds.has(w.id));
+      if (newWidget) {
+        setTimeout(() => {
+          const el = document.getElementById(`widget-${newWidget.id}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('ring-4', 'ring-indigo-500/50', 'transition-all', 'duration-500');
+            setTimeout(() => {
+              el.classList.remove('ring-4', 'ring-indigo-500/50');
+            }, 2000);
+          }
+        }, 200);
+      }
+
       setSuccessInfo({
         explanation: data.explanation,
         appliedChanges: data.appliedChanges || [],

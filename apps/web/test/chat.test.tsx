@@ -274,4 +274,74 @@ describe('Phase 5 Frontend Chat & LLM UI Components (`apps/web/test/chat.test.ts
     expect(screen.queryByText(/Total Order Date$/i)).toBeNull();
     expect(screen.getByText(/Total revenue/i)).toBeDefined();
   });
+
+  it('Test 5: AskYourDataDrawer provides conversational narrative and Add & Jump navigation', async () => {
+    const handleAddWidget = vi.fn();
+    const handleClose = vi.fn();
+
+    const sheetWithRows: SheetModel = {
+      ...sampleSheet,
+      rows: [
+        { region: 'North', revenue: 1500 },
+        { region: 'South', revenue: 2500 },
+      ],
+      rowCount: 2,
+    };
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          success: true,
+          interpretedIntent: 'Total revenue by region',
+          sql: 'SELECT "region", SUM("revenue") AS "total_revenue" FROM "sales_data" GROUP BY "region";',
+          explanation: 'Generated query for total revenue.',
+          suggestedWidget: {
+            id: 'widget_region_bar',
+            type: 'bar',
+            title: 'Revenue by Region',
+            grid: { x: 0, y: 0, w: 6, h: 6 },
+            dimension: 'region',
+            measures: ['revenue'],
+            aggregation: 'sum',
+            orientation: 'vertical',
+          },
+        }),
+      })
+    );
+
+    render(
+      <AskYourDataDrawer
+        isOpen={true}
+        onClose={handleClose}
+        sheet={sheetWithRows}
+        profile={sampleProfile}
+        onAddWidget={handleAddWidget}
+      />
+    );
+
+    const input = screen.getByPlaceholderText('Ask a question about your data...');
+    fireEvent.change(input, { target: { value: 'Compare revenue by region' } });
+
+    const askButton = screen.getByRole('button', { name: /Ask/i });
+    fireEvent.click(askButton);
+
+    await waitFor(() => {
+      // Conversational narrative generated from data rows
+      expect(screen.getByText(/Here is the breakdown for/i)).toBeDefined();
+      expect(screen.getByRole('button', { name: /Add & Jump/i })).toBeDefined();
+    });
+
+    const jumpButton = screen.getByRole('button', { name: /Add & Jump/i });
+    fireEvent.click(jumpButton);
+
+    expect(handleAddWidget).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'widget_region_bar',
+      })
+    );
+    expect(handleClose).toHaveBeenCalled();
+  });
 });

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { SheetModel, SheetProfile, WidgetSpec, QueryResult, ColumnProfile } from '@unsheet/contracts';
-import { toLLMColumnProfile, getSheetTableName } from '@unsheet/engine';
+import { toLLMColumnProfile, getSheetTableName, executeQueryInMemory, buildWidgetQueryPlan } from '@unsheet/engine';
 import { registerSheetTable, executeDuckDBQuery } from '@/lib/query/duckdb';
 import { X, Send, Sparkles, Database, Plus, Check, AlertCircle, ChevronDown, ChevronUp, Bot, Loader2, Table as TableIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -166,11 +166,57 @@ export function AskYourDataDrawer({
       }
 
       let executionResult: QueryResult | undefined;
-      try {
-        await registerSheetTable(sheet);
-        executionResult = await executeDuckDBQuery(data.sql);
-      } catch (dbErr) {
-        console.warn('In-browser DuckDB execution of generated SQL failed:', dbErr);
+
+      // 1. Instant in-memory execution via @unsheet/engine
+      const plan = data.queryPlan || (data.suggestedWidget ? buildWidgetQueryPlan(sheet, data.suggestedWidget) : undefined);
+      if (plan) {
+        try {
+          executionResult = executeQueryInMemory(plan, sheet);
+        } catch (memErr) {
+          console.warn('In-memory plan execution failed:', memErr);
+        }
+      }
+
+      // 2. DuckDB in-browser execution fallback if no plan or empty rows
+      if (!executionResult || executionResult.rows.length === 0) {
+        try {
+          await registerSheetTable(sheet);
+          executionResult = await executeDuckDBQuery(data.sql);
+        } catch (dbErr) {
+          console.warn('In-browser DuckDB execution of generated SQL failed:', dbErr);
+        }
+      }
+
+      // 3. Conversational natural-language analyst summary
+      let conversationalNarrative = data.explanation || '';
+      if (executionResult && executionResult.rows.length > 0) {
+        const rowCount = executionResult.rowCount;
+        const cols = executionResult.columns;
+
+        if (rowCount === 1 && cols.length === 1) {
+          const colName = cols[0]!.name;
+          const val = executionResult.rows[0]![colName];
+          const formattedVal = typeof val === 'number' ? Number(val).toLocaleString() : String(val ?? '');
+          conversationalNarrative = `Based on **${sheet.name}**, the total ${colName.replace(/_/g, ' ')} is **${formattedVal}**.`;
+        } else if (rowCount > 1 && cols.length >= 2) {
+          const dimCol = cols[0]!.name;
+          const valCol = cols[1]!.name;
+          const topRow = executionResult.rows[0]!;
+          const topDim = String(topRow[dimCol] ?? '');
+          const topVal = typeof topRow[valCol] === 'number' ? Number(topRow[valCol]).toLocaleString() : String(topRow[valCol] ?? '');
+
+          if (rowCount <= 5) {
+            const breakdown = executionResult.rows
+              .slice(0, 3)
+              .map((r) => `**${r[dimCol]}** (${typeof r[valCol] === 'number' ? Number(r[valCol]).toLocaleString() : r[valCol]})`)
+              .join(', ');
+            conversationalNarrative = `Here is the breakdown for **${sheet.name}**: ${breakdown}. **${topDim}** leads with **${topVal}**.`;
+          } else {
+            conversationalNarrative = `Analyzed **${rowCount}** categories in **${sheet.name}**. **${topDim}** is highest with **${topVal}**.`;
+          }
+        } else if (rowCount > 0) {
+          conversationalNarrative = `Found **${rowCount}** matching records in **${sheet.name}**.`;
+        }
       }
 
       setMessages((prev) => [
@@ -180,7 +226,7 @@ export function AskYourDataDrawer({
           sender: 'assistant',
           interpretedIntent: data.interpretedIntent,
           sql: data.sql,
-          explanation: data.explanation,
+          explanation: conversationalNarrative,
           suggestedWidget: data.suggestedWidget,
           queryResult: executionResult,
         },
@@ -198,6 +244,20 @@ export function AskYourDataDrawer({
     } finally {
       setIsSearching(false);
     }
+  };
+
+  const handleViewOnCanvas = (widgetId: string) => {
+    onClose();
+    setTimeout(() => {
+      const el = document.getElementById(`widget-${widgetId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('ring-4', 'ring-indigo-500/50', 'transition-all', 'duration-500');
+        setTimeout(() => {
+          el.classList.remove('ring-4', 'ring-indigo-500/50');
+        }, 2000);
+      }
+    }, 150);
   };
 
   const handleAddWidgetClick = (widget: WidgetSpec) => {
@@ -372,35 +432,50 @@ export function AskYourDataDrawer({
                       )}
 
                       {msg.suggestedWidget && (
-                        <div className="p-3 bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/50 rounded-lg space-y-2">
+                        <div className="p-3.5 bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/60 rounded-xl space-y-2.5">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-indigo-900 dark:text-indigo-300">
+                            <span className="text-xs font-semibold text-indigo-950 dark:text-indigo-200">
                               Suggested Widget: {msg.suggestedWidget.title} ({msg.suggestedWidget.type.toUpperCase()})
                             </span>
                           </div>
-                          <Button
-                            size="sm"
-                            onClick={() => handleAddWidgetClick(msg.suggestedWidget!)}
-                            disabled={addedWidgetIds[msg.suggestedWidget.id]}
-                            className={cn(
-                              'w-full text-xs font-medium',
-                              addedWidgetIds[msg.suggestedWidget.id]
-                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                                : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                            )}
-                          >
-                            {addedWidgetIds[msg.suggestedWidget.id] ? (
-                              <>
-                                <Check className="w-3.5 h-3.5 mr-1.5" />
-                                Added to dashboard!
-                              </>
-                            ) : (
-                              <>
+
+                          {addedWidgetIds[msg.suggestedWidget.id] ? (
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 py-1.5 px-3 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center justify-center text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                                <Check className="w-3.5 h-3.5 mr-1.5 shrink-0" />
+                                <span>Added to dashboard!</span>
+                              </div>
+                              <Button
+                                size="sm"
+                                onClick={() => handleViewOnCanvas(msg.suggestedWidget!.id)}
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs shrink-0"
+                              >
+                                View on Canvas →
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleAddWidgetClick(msg.suggestedWidget!)}
+                                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium shadow-xs"
+                              >
                                 <Plus className="w-3.5 h-3.5 mr-1.5" />
                                 Add to Dashboard
-                              </>
-                            )}
-                          </Button>
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  handleAddWidgetClick(msg.suggestedWidget!);
+                                  handleViewOnCanvas(msg.suggestedWidget!.id);
+                                }}
+                                className="text-xs border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 shrink-0"
+                              >
+                                Add & Jump →
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       )}
                     </>

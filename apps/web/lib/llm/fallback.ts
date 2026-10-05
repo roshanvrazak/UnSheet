@@ -16,25 +16,140 @@ export function deterministicRefineSpec(
     appliedChanges.push(`Changed dashboard title to "${newTitle}"`);
   }
 
-  const kpiMatch = prompt.match(/add\s+kpi\s+(?:for|column|metric)?\s*["']?([a-zA-Z0-9_]+)["']?/i);
-  if (kpiMatch && kpiMatch[1]) {
-    const colKey = kpiMatch[1].trim();
-    const matchingProfile = profiles.find((p) => p.columnKey.toLowerCase() === colKey.toLowerCase());
-    const fallbackMeasure = profiles.find((p) => p.semanticRole === 'measure')?.columnKey || profiles[0]?.columnKey || 'id';
-    const targetCol = matchingProfile ? matchingProfile.columnKey : fallbackMeasure;
+  const isTemporal = (colKey: string, name?: string) => {
+    const s = `${name || ''} ${colKey}`.toLowerCase();
+    const temporalWords = ['date', 'time', 'timestamp', 'year', 'month', 'day', 'quarter', 'created', 'updated', 'due', 'closed'];
+    const durationWords = ['duration', 'lead_days', 'days_to', 'elapsed', 'latency', 'hours_spent'];
+    return (
+      temporalWords.some((w) => s.includes(w) || colKey.endsWith(w)) &&
+      !durationWords.some((w) => s.includes(w))
+    );
+  };
 
-    const maxY = spec.widgets.reduce((max, w) => Math.max(max, w.grid.y + w.grid.h), 0);
-    const newWidget = {
-      id: `kpi_${Date.now()}`,
-      type: 'kpi' as const,
-      title: `${targetCol.replace(/_/g, ' ')} KPI`,
-      description: `Automated KPI for ${targetCol}`,
-      grid: { x: 0, y: maxY, w: 4, h: 4 },
-      measure: targetCol,
-      aggregation: 'sum' as const,
-    };
-    spec.widgets.push(newWidget);
-    appliedChanges.push(`Added KPI widget for column "${targetCol}"`);
+  const measures = profiles.filter(
+    (p) =>
+      (p.semanticRole === 'measure' || p.inferredType === 'number' || p.inferredType === 'currency') &&
+      p.semanticRole !== 'time' &&
+      p.inferredType !== 'date' &&
+      !isTemporal(p.columnKey, p.originalName)
+  );
+
+  const dimensions = profiles.filter(
+    (p) =>
+      p.semanticRole === 'dimension' ||
+      p.inferredType === 'category' ||
+      p.inferredType === 'text' ||
+      isTemporal(p.columnKey, p.originalName)
+  );
+
+  const matchedMeasure =
+    profiles.find(
+      (p) =>
+        measures.some((m) => m.columnKey === p.columnKey) &&
+        (lower.includes(p.columnKey.toLowerCase()) ||
+          (p.originalName && lower.includes(p.originalName.toLowerCase())))
+    )?.columnKey ||
+    measures[0]?.columnKey ||
+    'revenue';
+
+  const matchedDimension =
+    profiles.find(
+      (p) =>
+        dimensions.some((d) => d.columnKey === p.columnKey) &&
+        p.columnKey !== matchedMeasure &&
+        (lower.includes(p.columnKey.toLowerCase()) ||
+          (p.originalName && lower.includes(p.originalName.toLowerCase())))
+    )?.columnKey ||
+    dimensions.find((d) => d.columnKey !== matchedMeasure)?.columnKey ||
+    dimensions[0]?.columnKey ||
+    'category';
+
+  const isAddWidget =
+    lower.includes('add') ||
+    lower.includes('create') ||
+    lower.includes('insert') ||
+    lower.includes('show') ||
+    lower.includes('chart') ||
+    lower.includes('breakdown');
+
+  const maxY = spec.widgets.reduce((max, w) => Math.max(max, w.grid.y + w.grid.h), 0);
+
+  if (isAddWidget) {
+    if (lower.includes('donut') || lower.includes('pie') || lower.includes('breakdown') || lower.includes('share')) {
+      const newWidget = {
+        id: `donut_${Date.now()}`,
+        type: 'donut' as const,
+        title: `${matchedDimension.replace(/_/g, ' ')} Breakdown`,
+        description: `Distribution of ${matchedMeasure.replace(/_/g, ' ')} across ${matchedDimension.replace(/_/g, ' ')}`,
+        grid: { x: 0, y: maxY, w: 6, h: 6 },
+        dimension: matchedDimension,
+        measure: matchedMeasure,
+        aggregation: 'sum' as const,
+        innerRadius: 0.6,
+        showLegend: true,
+      };
+      spec.widgets.push(newWidget);
+      appliedChanges.push(`Added Donut Chart for "${matchedDimension}" by "${matchedMeasure}"`);
+    } else if (lower.includes('line') || lower.includes('trend') || lower.includes('timeline') || lower.includes('over time')) {
+      const timeCol =
+        profiles.find((p) => p.semanticRole === 'time' || isTemporal(p.columnKey, p.originalName))?.columnKey ||
+        matchedDimension;
+      const newWidget = {
+        id: `line_${Date.now()}`,
+        type: 'line' as const,
+        title: `${matchedMeasure.replace(/_/g, ' ')} Trend`,
+        description: `Trend of ${matchedMeasure.replace(/_/g, ' ')} across ${timeCol.replace(/_/g, ' ')}`,
+        grid: { x: 0, y: maxY, w: 8, h: 6 },
+        timeDimension: timeCol,
+        measures: [matchedMeasure],
+        aggregation: 'sum' as const,
+        showGrid: true,
+        showLegend: true,
+      };
+      spec.widgets.push(newWidget);
+      appliedChanges.push(`Added Line Trend Chart for "${matchedMeasure}" over "${timeCol}"`);
+    } else if (lower.includes('table') || lower.includes('records') || lower.includes('list')) {
+      const selectedProfiles = profiles.slice(0, 6);
+      const newWidget = {
+        id: `table_${Date.now()}`,
+        type: 'table' as const,
+        title: `Data Records (${spec.title || 'Table'})`,
+        grid: { x: 0, y: maxY, w: 12, h: 8 },
+        columns: selectedProfiles.map((p) => ({
+          columnKey: p.columnKey,
+          header: p.originalName || p.columnKey,
+        })),
+        pageSize: 10,
+      };
+      spec.widgets.push(newWidget);
+      appliedChanges.push(`Added interactive Table widget with ${selectedProfiles.length} columns`);
+    } else if (lower.includes('bar') || lower.includes('compare') || lower.includes('by') || (!lower.includes('kpi') && !lower.includes('metric'))) {
+      const newWidget = {
+        id: `bar_${Date.now()}`,
+        type: 'bar' as const,
+        title: `${matchedMeasure.replace(/_/g, ' ')} by ${matchedDimension.replace(/_/g, ' ')}`,
+        description: `Comparative bar chart for ${matchedMeasure.replace(/_/g, ' ')} grouped by ${matchedDimension.replace(/_/g, ' ')}`,
+        grid: { x: 0, y: maxY, w: 6, h: 6 },
+        dimension: matchedDimension,
+        measures: [matchedMeasure],
+        aggregation: 'sum' as const,
+        orientation: 'vertical' as const,
+      };
+      spec.widgets.push(newWidget);
+      appliedChanges.push(`Added visual Bar Chart for "${matchedDimension}" by "${matchedMeasure}"`);
+    } else if (lower.includes('kpi') || lower.includes('metric') || lower.includes('stat')) {
+      const newWidget = {
+        id: `kpi_${Date.now()}`,
+        type: 'kpi' as const,
+        title: `Total ${matchedMeasure.replace(/_/g, ' ')}`,
+        description: `Key performance metric for ${matchedMeasure}`,
+        grid: { x: 0, y: maxY, w: 4, h: 4 },
+        measure: matchedMeasure,
+        aggregation: 'sum' as const,
+      };
+      spec.widgets.push(newWidget);
+      appliedChanges.push(`Added KPI metric widget for "${matchedMeasure}"`);
+    }
   }
 
   // Convert chart types (e.g. "change bar chart to donut", "make it a donut", "convert to line chart")

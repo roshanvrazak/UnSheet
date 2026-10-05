@@ -12,19 +12,18 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { type SampleWorkbookMeta } from '@/lib/sample-workbooks';
-import { cn } from '@/lib/utils';
 
 export interface StudioNavbarProps {
-  workbookName?: string;
-  activeSheetName?: string;
-  rowCount?: number;
-  colCount?: number;
+  workbookName?: string | undefined;
+  activeSheetName?: string | undefined;
+  rowCount?: number | undefined;
+  colCount?: number | undefined;
   onUploadClick: () => void;
   onShareClick: () => void;
   isInspectorOpen: boolean;
   onToggleInspector: () => void;
-  activeSampleId?: string;
-  onSelectSample?: (sample: SampleWorkbookMeta) => void;
+  activeSampleId?: string | undefined;
+  onSelectSample?: ((sample: SampleWorkbookMeta) => void) | undefined;
 }
 
 export function StudioNavbar({

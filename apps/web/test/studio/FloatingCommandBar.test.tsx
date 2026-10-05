@@ -10,8 +10,17 @@ const mockSheet: SheetModel = {
   name: 'Sales Data',
   rowCount: 100,
   columnCount: 2,
-  headers: ['item', 'price'],
-  data: [],
+  headers: {
+    detectedRowIndex: 0,
+    confidence: 1,
+    originalHeaders: ['item', 'price'],
+    sanitizedKeys: ['item', 'price'],
+  },
+  columns: [
+    { key: 'item', originalName: 'item', columnIndex: 0 },
+    { key: 'price', originalName: 'price', columnIndex: 1 },
+  ],
+  rows: [],
 };
 
 describe('FloatingCommandBar Component', () => {

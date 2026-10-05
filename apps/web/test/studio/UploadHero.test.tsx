@@ -54,7 +54,7 @@ describe('UploadHero Component', () => {
       />
     );
 
-    const input = screen.getByTestId('studio-file-upload-input');
+    const input = screen.getByTestId('file-upload-input');
     const dummyFile = new File(['col1,col2\n1,2'], 'test.csv', { type: 'text/csv' });
 
     fireEvent.change(input, { target: { files: [dummyFile] } });

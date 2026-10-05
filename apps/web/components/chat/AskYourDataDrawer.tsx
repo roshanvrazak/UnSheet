@@ -231,7 +231,7 @@ export function AskYourDataDrawer({
                   <button
                     key={idx}
                     onClick={() => handleAsk(promptText)}
-                    className="text-xs bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-950 dark:hover:text-indigo-300 text-slate-800 dark:text-slate-200 font-medium px-3.5 py-2 rounded-full border border-slate-200 dark:border-slate-700 transition-colors text-left shadow-xs"
+                    className="text-xs font-medium px-3.5 py-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-left shadow-xs"
                   >
                     ✨ {promptText}
                   </button>

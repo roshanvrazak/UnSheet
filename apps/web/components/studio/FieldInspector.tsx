@@ -3,8 +3,6 @@
 import React from 'react';
 import {
   Layers,
-  CheckSquare,
-  Square,
   Clock,
   RefreshCw,
   X,

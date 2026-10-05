@@ -17,8 +17,9 @@ import { cn } from '@/lib/utils';
 export interface UploadHeroProps {
   onFileUpload: (file: File) => void;
   onSelectSample: (sample: SampleWorkbookMeta) => void;
-  activeSampleId?: string;
+  activeSampleId?: string | undefined;
   isProcessing: boolean;
+  fileInputRef?: React.RefObject<HTMLInputElement | null> | undefined;
 }
 
 export function UploadHero({
@@ -26,9 +27,11 @@ export function UploadHero({
   onSelectSample,
   activeSampleId,
   isProcessing,
+  fileInputRef,
 }: UploadHeroProps) {
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const internalInputRef = useRef<HTMLInputElement>(null);
+  const resolvedInputRef = fileInputRef || internalInputRef;
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -59,7 +62,7 @@ export function UploadHero({
       {/* 2. Modern Dropzone Card */}
       <div className="relative group">
         {/* Subtle Ambient Radial Glow */}
-        <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-blue-500/10 via-indigo-500/15 to-purple-500/10 blur-xl opacity-75 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute -inset-1 rounded-3xl bg-blue-500/5 blur-xl opacity-75 group-hover:opacity-100 transition-opacity" />
 
         <div
           onDragOver={(e) => {
@@ -72,7 +75,7 @@ export function UploadHero({
           }}
           onDrop={handleDrop}
           onClick={() => {
-            if (!isProcessing) fileInputRef.current?.click();
+            if (!isProcessing) resolvedInputRef.current?.click();
           }}
           className={cn(
             'relative flex flex-col items-center justify-center text-center cursor-pointer p-8 sm:p-12 rounded-2xl border-2 border-dashed bg-white transition-all shadow-sm',
@@ -83,10 +86,10 @@ export function UploadHero({
           )}
         >
           <input
-            ref={fileInputRef}
+            ref={resolvedInputRef}
             type="file"
             accept=".xlsx,.xls,.csv,.tsv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,text/tab-separated-values"
-            data-testid="studio-file-upload-input"
+            data-testid="file-upload-input"
             className="hidden"
             disabled={isProcessing}
             onClick={(e) => {
@@ -101,7 +104,7 @@ export function UploadHero({
             }}
           />
 
-          <div className="h-14 w-14 rounded-2xl bg-gradient-to-tr from-indigo-50 to-blue-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mb-4 shadow-inner group-hover:scale-105 transition-transform">
+          <div className="h-14 w-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-4 shadow-xs group-hover:scale-105 transition-transform">
             <UploadCloud className="h-7 w-7" aria-hidden="true" />
           </div>
 
@@ -123,13 +126,13 @@ export function UploadHero({
             </button>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-4 text-[11px] text-slate-600 font-medium">
+          <div className="mt-6 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-center gap-4 text-[11px] text-slate-600 font-medium">
             <span className="flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              100% In-Browser Privacy
+              100% In-Browser: your data never leaves your device
             </span>
             <span>•</span>
-            <span>Zero Server Data Egress</span>
+            <span>Zero server upload</span>
             <span>•</span>
             <span>DuckDB-WASM Engine</span>
           </div>

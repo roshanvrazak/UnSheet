@@ -1,18 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  ShieldCheck,
-  UploadCloud,
-  FileSpreadsheet,
-  CheckCircle2,
-  Clock,
-  Sparkles,
-  Layers,
-  ArrowRight,
-  AlertCircle,
-  FileText,
-} from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import type { DashboardSpec, SheetModel, WorkbookModel } from '@unsheet/contracts';
 import {
   parseWorkbook,
@@ -28,11 +16,19 @@ import {
 import { DashboardRenderer } from '@/components/dashboard/DashboardRenderer';
 import { AskYourDataDrawer } from '@/components/chat/AskYourDataDrawer';
 import { SpecRefineBar } from '@/components/chat/SpecRefineBar';
-import { ExportDropdown } from '@/components/export/ExportDropdown';
 import { ShareModal } from '@/components/share/ShareModal';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { Bot } from 'lucide-react';
+import { StudioNavbar } from '@/components/studio/StudioNavbar';
+import { UploadHero } from '@/components/studio/UploadHero';
+import { FieldInspector } from '@/components/studio/FieldInspector';
+import { FloatingCommandBar } from '@/components/studio/FloatingCommandBar';
+import {
+  AlertCircle,
+  Clock,
+  CheckCircle2,
+  ArrowRight,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 
 export interface PipelineTiming {
   parseMs: number;
@@ -51,10 +47,15 @@ export default function HomePage() {
   const [timing, setTiming] = useState<PipelineTiming | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isAskDrawerOpen, setIsAskDrawerOpen] = useState<boolean>(false);
   const [isSpecRefineOpen, setIsSpecRefineOpen] = useState<boolean>(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
+  const [isInspectorOpen, setIsInspectorOpen] = useState<boolean>(true);
+  const [isHeroExpanded, setIsHeroExpanded] = useState<boolean>(true);
+
+  // Field selection state
+  const [selectedColumnKeys, setSelectedColumnKeys] = useState<Set<string>>(new Set());
+  const [isFieldsDirty, setIsFieldsDirty] = useState<boolean>(false);
 
   const pipelineRunId = useRef<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -129,6 +130,12 @@ export default function HomePage() {
         renderMs,
         totalMs,
       });
+
+      // Initialize selected fields with all profiled columns
+      const allKeys = new Set(profile.columnProfiles.map((c) => c.columnKey));
+      setSelectedColumnKeys(allKeys);
+      setIsFieldsDirty(false);
+
       if (sampleId) {
         setActiveSampleId(sampleId);
       } else {
@@ -179,6 +186,10 @@ export default function HomePage() {
             }
           : null
       );
+
+      const allKeys = new Set(profile.columnProfiles.map((c) => c.columnKey));
+      setSelectedColumnKeys(allKeys);
+      setIsFieldsDirty(false);
     } catch (err) {
       setErrorMessage(
         err instanceof Error ? err.message : 'Failed to profile worksheet.'
@@ -232,7 +243,7 @@ export default function HomePage() {
       ? workbook.sheets[activeSheetIndex]!
       : null;
 
-  const currentProfile = React.useMemo(() => {
+  const currentProfile = useMemo(() => {
     if (!activeSheet) {
       return {
         sheetId: 'default',
@@ -247,341 +258,219 @@ export default function HomePage() {
     return profileSheet(activeSheet);
   }, [activeSheet]);
 
+  // Field selection actions
+  const handleToggleColumn = (columnKey: string) => {
+    setSelectedColumnKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(columnKey)) {
+        next.delete(columnKey);
+      } else {
+        next.add(columnKey);
+      }
+      return next;
+    });
+    setIsFieldsDirty(true);
+  };
+
+  const handleSelectAllFields = () => {
+    setSelectedColumnKeys(new Set(currentProfile.columnProfiles.map((c) => c.columnKey)));
+    setIsFieldsDirty(true);
+  };
+
+  const handleClearAllFields = () => {
+    setSelectedColumnKeys(new Set());
+    setIsFieldsDirty(true);
+  };
+
+  const handleApplyFields = () => {
+    if (!activeSheet || selectedColumnKeys.size === 0) return;
+
+    try {
+      const filteredProfiles = currentProfile.columnProfiles.filter((c) =>
+        selectedColumnKeys.has(c.columnKey)
+      );
+
+      const filteredSheetProfile = {
+        ...currentProfile,
+        columnProfiles: filteredProfiles,
+      };
+
+      const newSpec = generateDashboardSpec(filteredSheetProfile, {
+        title: `${activeSheet.name} Dashboard`,
+      });
+
+      setSpec(newSpec);
+      setIsFieldsDirty(false);
+    } catch (err) {
+      setErrorMessage(
+        err instanceof Error ? err.message : 'Failed to regenerate dashboard spec with selected fields.'
+      );
+    }
+  };
+
   return (
-    <main className="min-h-screen bg-slate-50/50 text-slate-900 pb-16">
-      {/* 1. Header Navigation */}
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-              <FileSpreadsheet className="h-5 w-5" aria-hidden="true" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-black tracking-tight text-slate-900">
-                  Unsheet
-                </h1>
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200/80 rounded px-1.5 py-0.2">
-                  Preview
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 font-medium hidden sm:block">
-                Any spreadsheet. Instant dashboard.
-              </p>
-            </div>
-          </div>
+    <div className="min-h-screen bg-slate-50/70 text-slate-900 flex flex-col font-sans">
+      {/* 1. Glassmorphic Studio Top Navigation */}
+      <StudioNavbar
+        workbookName={workbook?.filename}
+        activeSheetName={activeSheet?.name}
+        rowCount={activeSheet?.rowCount}
+        colCount={activeSheet?.columnCount}
+        onUploadClick={() => fileInputRef.current?.click()}
+        onShareClick={() => setIsShareModalOpen(true)}
+        isInspectorOpen={isInspectorOpen}
+        onToggleInspector={() => setIsInspectorOpen((prev) => !prev)}
+        activeSampleId={activeSampleId}
+        onSelectSample={handleLoadSample}
+      />
 
-          {/* Privacy Badge */}
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 border border-emerald-200/80 shadow-xs">
-            <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" aria-hidden="true" />
-            <span className="hidden sm:inline">100% In-Browser: your data never leaves your device</span>
-            <span className="sm:hidden">100% In-Browser</span>
-          </div>
-        </div>
-      </header>
+      {/* 2. Main Studio Workspace Layout */}
+      <div className="flex-1 flex w-full relative">
+        {/* Left Side Inspector (Sheets & Field Selector) */}
+        {workbook && activeSheet && (
+          <FieldInspector
+            isOpen={isInspectorOpen}
+            onClose={() => setIsInspectorOpen(false)}
+            sheets={workbook.sheets}
+            activeSheetIndex={activeSheetIndex}
+            onSelectSheet={handleSheetSwitch}
+            columnProfiles={currentProfile.columnProfiles}
+            selectedColumnKeys={selectedColumnKeys}
+            onToggleColumn={handleToggleColumn}
+            onSelectAll={handleSelectAllFields}
+            onClearAll={handleClearAllFields}
+            onApplyFields={handleApplyFields}
+            isDirty={isFieldsDirty}
+            pipelineTiming={timing}
+          />
+        )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
-        {/* 2. Upload Zone & Sample Loaders Row */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* File Upload Dropzone (5 cols) */}
-          <div className="lg:col-span-5 flex flex-col justify-between rounded-2xl border-2 border-dashed border-slate-200 bg-white p-5 hover:border-blue-400 transition-colors shadow-xs">
+        {/* Center Dashboard Canvas */}
+        <main className="flex-1 min-w-0 bg-dot-grid flex flex-col p-4 sm:p-6 lg:p-8 space-y-6 pb-28">
+          {/* Error Banner */}
+          {errorMessage && (
             <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setIsDragging(true);
-              }}
-              onDragLeave={(e) => {
-                e.preventDefault();
-                setIsDragging(false);
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                setIsDragging(false);
-                const file = e.dataTransfer.files[0];
-                if (file) {
-                  handleFileUpload(file);
-                }
-              }}
-              onClick={() => fileInputRef.current?.click()}
-              data-testid="upload-dropzone"
-              className={cn(
-                'flex flex-col items-center justify-center text-center cursor-pointer p-6 rounded-xl transition-all',
-                isDragging ? 'bg-blue-50/70 border border-blue-400' : 'hover:bg-slate-50'
-              )}
+              role="alert"
+              className="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50/90 backdrop-blur-xs p-4 text-rose-800 shadow-xs animate-in fade-in"
             >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls,.csv,.tsv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,text/tab-separated-values"
-                data-testid="file-upload-input"
-                className="hidden"
-                onClick={(e) => {
-                  (e.target as HTMLInputElement).value = '';
-                }}
-                onChange={(e) => {
-                  const eventTarget = e.target as HTMLInputElement;
-                  const files =
-                    eventTarget.files && eventTarget.files.length > 0
-                      ? eventTarget.files
-                      : (e as unknown as { target: { files?: FileList | File[] } }).target?.files;
-                  const file = files?.[0];
-                  if (file) {
-                    handleFileUpload(file);
-                  }
-                  eventTarget.value = '';
-                }}
-              />
-              <div className="h-12 w-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-3 shadow-inner">
-                <UploadCloud className="h-6 w-6" aria-hidden="true" />
+              <AlertCircle className="h-5 w-5 shrink-0 text-rose-600 mt-0.5" />
+              <div>
+                <h3 className="text-sm font-bold">Failed to load workbook</h3>
+                <p className="mt-1 text-xs text-rose-700">{errorMessage}</p>
               </div>
-              <h2 className="text-sm font-bold text-slate-800">
-                Drop your spreadsheet here
-              </h2>
-              <p className="mt-1 text-xs text-slate-500 max-w-xs">
-                Supports Excel (<span className="font-mono text-slate-700">.xlsx</span>) and CSV (<span className="font-mono text-slate-700">.csv</span>) files. Processed instantly in WebAssembly & client memory.
-              </p>
-              <button
-                type="button"
-                className="mt-3.5 inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50/60 hover:bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200/60 transition-colors"
-              >
-                Browse computer
-              </button>
             </div>
+          )}
 
-            <div className="mt-2 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600">
-              <span>Max 50MB</span>
-              <span>Zero server upload</span>
-            </div>
-          </div>
-
-          {/* Sample Workbooks Loader (7 cols) */}
-          <div className="lg:col-span-7 flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
-            <div>
-              <div className="flex items-center justify-between mb-3">
+          {/* Quick-toggle Hero Ingestion Card */}
+          <section className="space-y-3">
+            {workbook && (
+              <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-amber-500" aria-hidden="true" />
-                  <h2 className="text-sm font-bold text-slate-800">
-                    Try Pre-loaded Workbooks
-                  </h2>
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Datasets & Ingestion
+                  </span>
+                  <span className="text-[11px] text-slate-500 font-mono">
+                    ({workbook.filename})
+                  </span>
                 </div>
-                <span className="text-[11px] text-slate-600">
-                  Instant one-click demo
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {SAMPLE_WORKBOOKS.map((sample) => {
-                  const isSelected = activeSampleId === sample.id;
-
-                  return (
-                    <button
-                      key={sample.id}
-                      type="button"
-                      onClick={() => handleLoadSample(sample)}
-                      disabled={isProcessing}
-                      className={cn(
-                        'flex flex-col text-left p-3.5 rounded-xl border text-xs transition-all relative group',
-                        isSelected
-                          ? 'border-blue-500 bg-blue-50/40 ring-2 ring-blue-500/20 shadow-xs'
-                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/60 bg-white'
-                      )}
-                    >
-                      <div className="flex items-start justify-between w-full mb-1">
-                        <span className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
-                          {sample.name}
-                        </span>
-                        <span
-                          className={cn(
-                            'text-[10px] font-semibold rounded px-1.5 py-0.5 border',
-                            isSelected
-                              ? 'bg-blue-100 text-blue-700 border-blue-200'
-                              : 'bg-slate-100 text-slate-600 border-slate-200'
-                          )}
-                        >
-                          {sample.badge}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
-                        {sample.description}
-                      </p>
-                      <div className="mt-2.5 flex items-center justify-between w-full text-[10px] text-slate-600">
-                        <span>{sample.domain}</span>
-                        <span className="font-mono text-slate-600">{sample.filename}</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-600 flex items-center justify-between">
-              <span>Select any sample to re-run the end-to-end intelligence engine</span>
-              <span>Domain datasets</span>
-            </div>
-          </div>
-        </section>
-
-        {/* 3. Pipeline Status Bar */}
-        {timing && (
-          <section
-            role="region"
-            aria-label="Engine pipeline status"
-            className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs"
-          >
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-blue-600" aria-hidden="true" />
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                  Engine Pipeline
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200">
-                  <CheckCircle2 className="h-3 w-3" />
-                  {timing.totalMs}ms Total
-                </span>
-              </div>
-
-              {/* Pipeline Step Sequence */}
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
-                {/* Parse */}
-                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1">
-                  <span className="font-semibold text-slate-700">1. Parse</span>
-                  <span className="font-mono text-[11px] text-slate-500">{timing.parseMs}ms</span>
-                </div>
-                <ArrowRight className="h-3 w-3 text-slate-300 hidden sm:block" />
-
-                {/* Normalise */}
-                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1">
-                  <span className="font-semibold text-slate-700">2. Normalise</span>
-                  <span className="font-mono text-[11px] text-slate-500">{timing.normaliseMs}ms</span>
-                </div>
-                <ArrowRight className="h-3 w-3 text-slate-300 hidden sm:block" />
-
-                {/* Profile */}
-                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1">
-                  <span className="font-semibold text-slate-700">3. Profile</span>
-                  <span className="font-mono text-[11px] text-slate-500">{timing.profileMs}ms</span>
-                </div>
-                <ArrowRight className="h-3 w-3 text-slate-300 hidden sm:block" />
-
-                {/* SpecGen */}
-                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1">
-                  <span className="font-semibold text-slate-700">4. SpecGen</span>
-                  <span className="font-mono text-[11px] text-slate-500">{timing.specGenMs}ms</span>
-                </div>
-                <ArrowRight className="h-3 w-3 text-slate-300 hidden sm:block" />
-
-                {/* Render */}
-                <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1 text-blue-700">
-                  <span className="font-bold">5. Render</span>
-                  <span className="font-mono text-[11px] font-semibold">{timing.renderMs}ms</span>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* Error Alert */}
-        {errorMessage && (
-          <div
-            role="alert"
-            className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-800"
-          >
-            <AlertCircle className="h-5 w-5 shrink-0 text-rose-600 mt-0.5" />
-            <div>
-              <h3 className="text-sm font-bold">Failed to load workbook</h3>
-              <p className="mt-1 text-xs text-rose-700">{errorMessage}</p>
-            </div>
-          </div>
-        )}
-
-        {/* 4. Sheet Selector Tabs (if multi-sheet) */}
-        {workbook && workbook.sheets.length > 1 && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
-            <span className="text-xs font-semibold text-slate-500 flex items-center gap-1 pl-1">
-              <Layers className="h-3.5 w-3.5" /> Sheets:
-            </span>
-            {workbook.sheets.map((sheet, sIdx) => (
-              <button
-                key={sheet.id}
-                type="button"
-                onClick={() => handleSheetSwitch(sIdx)}
-                className={cn(
-                  'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
-                  activeSheetIndex === sIdx
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                )}
-              >
-                <FileText className="h-3 w-3" />
-                <span>{sheet.name}</span>
-                <span className="text-[10px] opacity-75 font-mono">({sheet.rowCount} rows)</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* 5. Rendered Dashboard */}
-        {isProcessing ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-xs">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent mb-4"></div>
-            <h3 className="text-base font-bold text-slate-800">
-              Profiling spreadsheet & generating dashboard spec...
-            </h3>
-            <p className="text-xs text-slate-500 mt-1">
-              Inferring data types, computing semantic roles, creating responsive grid layout
-            </p>
-          </div>
-        ) : spec && activeSheet ? (
-          <div className="space-y-4">
-            {/* Dashboard Action Toolbar */}
-            <div className="flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 shadow-xs">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  Sheet: {activeSheet.name}
-                </span>
-                <span className="text-xs text-slate-500">
-                  ({activeSheet.rowCount} rows, {activeSheet.columnCount} columns)
-                </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsSpecRefineOpen((prev) => !prev)}
-                  className="text-xs font-medium border-indigo-200 hover:bg-indigo-50 text-indigo-700 dark:border-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-950/50"
+                <button
+                  type="button"
+                  onClick={() => setIsHeroExpanded((prev) => !prev)}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
                 >
-                  <Sparkles className="w-3.5 h-3.5 mr-1.5 text-indigo-600 dark:text-indigo-400" />
-                  {isSpecRefineOpen ? 'Hide AI Refine' : 'AI Refine'}
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => setIsAskDrawerOpen(true)}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium shadow-xs"
-                >
-                  <Bot className="w-3.5 h-3.5 mr-1.5" />
-                  Ask Data
-                </Button>
-                <ExportDropdown sheet={activeSheet} />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setIsShareModalOpen(true)}
-                  className="text-xs font-medium"
-                >
-                  Share
-                </Button>
+                  <span>{isHeroExpanded ? 'Collapse' : 'Switch dataset / Upload'}</span>
+                  {isHeroExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
               </div>
-            </div>
-
-            {/* Spec Refine Bar */}
-            {isSpecRefineOpen && (
-              <SpecRefineBar
-                currentSpec={spec}
-                profile={currentProfile}
-                onSpecUpdate={setSpec}
-              />
             )}
 
+            {(!workbook || isHeroExpanded) && (
+              <UploadHero
+                onFileUpload={handleFileUpload}
+                onSelectSample={handleLoadSample}
+                activeSampleId={activeSampleId}
+                isProcessing={isProcessing}
+                fileInputRef={fileInputRef}
+              />
+            )}
+          </section>
+
+          {/* Collapsible Pipeline Timing Bar */}
+          {timing && workbook && (
+            <section
+              role="region"
+              aria-label="Engine pipeline status"
+              className="rounded-xl border border-slate-200/80 bg-white/90 backdrop-blur-xs p-3.5 shadow-xs"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-indigo-600" aria-hidden="true" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Engine Pipeline
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200/80">
+                    <CheckCircle2 className="h-3 w-3" />
+                    {timing.totalMs}ms Total
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs">
+                    <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded px-2 py-0.5">
+                      <span className="font-semibold text-slate-700">1. Parse</span>
+                      <span className="font-mono text-[10px] text-slate-500">{timing.parseMs}ms</span>
+                    </div>
+                    <ArrowRight className="h-3 w-3 text-slate-300 hidden sm:block" />
+
+                    <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded px-2 py-0.5">
+                      <span className="font-semibold text-slate-700">2. Normalise</span>
+                      <span className="font-mono text-[10px] text-slate-500">{timing.normaliseMs}ms</span>
+                    </div>
+                    <ArrowRight className="h-3 w-3 text-slate-300 hidden sm:block" />
+
+                    <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded px-2 py-0.5">
+                      <span className="font-semibold text-slate-700">3. Profile</span>
+                      <span className="font-mono text-[10px] text-slate-500">{timing.profileMs}ms</span>
+                    </div>
+                    <ArrowRight className="h-3 w-3 text-slate-300 hidden sm:block" />
+
+                    <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded px-2 py-0.5">
+                      <span className="font-semibold text-slate-700">4. SpecGen</span>
+                      <span className="font-mono text-[10px] text-slate-500">{timing.specGenMs}ms</span>
+                    </div>
+                    <ArrowRight className="h-3 w-3 text-slate-300 hidden sm:block" />
+
+                    <div className="flex items-center gap-1 bg-indigo-50 border border-indigo-200 rounded px-2 py-0.5 text-indigo-700">
+                      <span className="font-bold">5. Render</span>
+                      <span className="font-mono text-[10px] font-semibold">{timing.renderMs}ms</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* AI Spec Refine Bar */}
+          {isSpecRefineOpen && spec && (
+            <SpecRefineBar
+              currentSpec={spec}
+              profile={currentProfile}
+              onSpecUpdate={setSpec}
+            />
+          )}
+
+          {/* Rendered Dashboard Canvas */}
+          {isProcessing ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-xs">
+              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-indigo-600 border-r-transparent mb-4"></div>
+              <h3 className="text-base font-bold text-slate-800">
+                Profiling spreadsheet & generating dashboard spec...
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Inferring data types, computing semantic roles, creating responsive grid layout
+              </p>
+            </div>
+          ) : spec && activeSheet ? (
             <section className="rounded-2xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
               <DashboardRenderer
                 key={`${workbook?.id || 'wb'}_${activeSheet.id}_${spec.id}`}
@@ -589,28 +478,45 @@ export default function HomePage() {
                 sheet={activeSheet}
               />
             </section>
-
-            {/* Ask Your Data Drawer */}
-            <AskYourDataDrawer
-              isOpen={isAskDrawerOpen}
-              onClose={() => setIsAskDrawerOpen(false)}
-              sheet={activeSheet}
-              profile={currentProfile}
-              onAddWidget={(widget) => {
-                setSpec((prev) => (prev ? { ...prev, widgets: [...prev.widgets, widget] } : prev));
-              }}
-            />
-
-            {/* Share Modal */}
-            <ShareModal
-              isOpen={isShareModalOpen}
-              onClose={() => setIsShareModalOpen(false)}
-              spec={spec}
-              sheet={activeSheet}
-            />
-          </div>
-        ) : null}
+          ) : null}
+        </main>
       </div>
-    </main>
+
+      {/* 3. Floating Island Action Dock */}
+      {activeSheet && (
+        <FloatingCommandBar
+          onAskClick={() => setIsAskDrawerOpen(true)}
+          onRefineClick={() => setIsSpecRefineOpen((prev) => !prev)}
+          isRefineOpen={isSpecRefineOpen}
+          sheet={activeSheet}
+          onShareClick={() => setIsShareModalOpen(true)}
+          onToggleInspector={() => setIsInspectorOpen((prev) => !prev)}
+          isInspectorOpen={isInspectorOpen}
+        />
+      )}
+
+      {/* 4. Natural Language Analytical Drawer */}
+      {activeSheet && (
+        <AskYourDataDrawer
+          isOpen={isAskDrawerOpen}
+          onClose={() => setIsAskDrawerOpen(false)}
+          sheet={activeSheet}
+          profile={currentProfile}
+          onAddWidget={(widget) => {
+            setSpec((prev) => (prev ? { ...prev, widgets: [...prev.widgets, widget] } : prev));
+          }}
+        />
+      )}
+
+      {/* 5. Snapshot Share Modal */}
+      {spec && activeSheet && (
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          sheet={activeSheet}
+          spec={spec}
+        />
+      )}
+    </div>
   );
 }

@@ -143,11 +143,28 @@ export function deterministicAskQuery(
     );
   });
 
+  const isTemporal = (colKey: string, name?: string) => {
+    const s = `${name || ''} ${colKey}`.toLowerCase();
+    const temporalWords = ['date', 'time', 'timestamp', 'year', 'month', 'day', 'quarter', 'created', 'updated', 'due', 'closed'];
+    const durationWords = ['duration', 'lead_days', 'days_to', 'elapsed', 'latency', 'hours_spent'];
+    return temporalWords.some((w) => s.includes(w)) && !durationWords.some((w) => s.includes(w));
+  };
+
   const measures = profiles.filter(
-    (p) => p.semanticRole === 'measure' || p.inferredType === 'number' || p.inferredType === 'currency'
+    (p) =>
+      (p.semanticRole === 'measure' || p.inferredType === 'number' || p.inferredType === 'currency') &&
+      p.semanticRole !== 'time' &&
+      p.inferredType !== 'date' &&
+      !isTemporal(p.columnKey, p.originalName)
   );
   const dimensions = profiles.filter(
-    (p) => p.semanticRole === 'dimension' || p.inferredType === 'category' || p.inferredType === 'text'
+    (p) =>
+      p.semanticRole === 'dimension' ||
+      p.semanticRole === 'time' ||
+      p.inferredType === 'category' ||
+      p.inferredType === 'text' ||
+      p.inferredType === 'date' ||
+      isTemporal(p.columnKey, p.originalName)
   );
 
   // Preferred measure: mentioned measure, or first measure in schema
@@ -162,6 +179,7 @@ export function deterministicAskQuery(
   );
   const defaultDim =
     mentionedDim?.columnKey ||
+    dimensions.find((d) => d.columnKey !== defaultMeasure)?.columnKey ||
     dimensions[0]?.columnKey ||
     profiles.find((p) => p.columnKey !== defaultMeasure)?.columnKey ||
     profiles[0]?.columnKey;

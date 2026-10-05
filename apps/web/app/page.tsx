@@ -503,7 +503,15 @@ export default function HomePage() {
           sheet={activeSheet}
           profile={currentProfile}
           onAddWidget={(widget) => {
-            setSpec((prev) => (prev ? { ...prev, widgets: [...prev.widgets, widget] } : prev));
+            setSpec((prev) => {
+              if (!prev) return prev;
+              const maxY = prev.widgets.reduce((max, w) => Math.max(max, w.grid.y + w.grid.h), 0);
+              const positionedWidget = {
+                ...widget,
+                grid: { ...widget.grid, y: maxY },
+              };
+              return { ...prev, widgets: [...prev.widgets, positionedWidget] };
+            });
           }}
         />
       )}

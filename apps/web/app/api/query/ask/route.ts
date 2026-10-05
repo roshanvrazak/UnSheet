@@ -97,13 +97,18 @@ export async function POST(req: NextRequest) {
       ...fromMatches.map((m) => m.replace(/\b(?:from|join)\s+"/i, '').replace(/"$/, '').toLowerCase()),
     ]);
 
+    // Extract aliases defined after AS (e.g. AS "alias_name")
+    const asAliases = new Set(
+      Array.from(sqlResult.matchAll(/\bas\s+"([^"]+)"/gi)).map((m) => m[1]!.toLowerCase())
+    );
+
     // Extract quoted identifiers or words matching column keys
     const referencedMatches = sqlResult.match(/"([^"]+)"/g) || [];
     for (const match of referencedMatches) {
       const colName = match.replace(/"/g, '');
       const lowerCol = colName.toLowerCase();
-      // If it's a table name in the query, skip column check
-      if (tableNamesInSql.has(lowerCol)) {
+      // If it's a table name or an output alias in the query, skip column check
+      if (tableNamesInSql.has(lowerCol) || asAliases.has(lowerCol)) {
         continue;
       }
 

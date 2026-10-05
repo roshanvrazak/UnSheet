@@ -177,6 +177,52 @@ describe('Profile Module Unit Tests', () => {
       ).toBe('identifier');
     });
 
+    it('assigns time role to dates, timestamps, and temporal columns even when numeric', () => {
+      expect(
+        assignSemanticRole({
+          key: 'order_date',
+          originalName: 'Order Date',
+          inferredType: 'number',
+          uniquenessRatio: 0.8,
+          distinctCount: 8,
+          totalCount: 10,
+        })
+      ).toBe('time');
+
+      expect(
+        assignSemanticRole({
+          key: 'date',
+          originalName: 'Date',
+          inferredType: 'number',
+          uniquenessRatio: 0.8,
+          distinctCount: 8,
+          totalCount: 10,
+        })
+      ).toBe('time');
+
+      expect(
+        assignSemanticRole({
+          key: 'created_at',
+          originalName: 'Created At',
+          inferredType: 'number',
+          uniquenessRatio: 0.9,
+          distinctCount: 9,
+          totalCount: 10,
+        })
+      ).toBe('time');
+
+      expect(
+        assignSemanticRole({
+          key: 'due_date',
+          originalName: 'Due Date',
+          inferredType: 'number',
+          uniquenessRatio: 0.8,
+          distinctCount: 8,
+          totalCount: 10,
+        })
+      ).toBe('time');
+    });
+
     it('assigns measure role to continuous numeric metrics', () => {
       expect(
         assignSemanticRole({

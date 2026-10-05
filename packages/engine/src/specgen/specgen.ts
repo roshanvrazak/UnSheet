@@ -74,7 +74,18 @@ export function generateDashboardSpec(
       : profile.columnProfiles
           .filter((c) => c.semanticRole === 'measure')
           .map((c) => c.columnKey);
-  const measures = Array.from(new Set(rawMeasures));
+  const measures = Array.from(new Set(rawMeasures)).filter((mKey) => {
+    const colProf = profile.columnProfiles.find((c) => c.columnKey === mKey);
+    if (!colProf) return false;
+    if (colProf.semanticRole === 'time' || colProf.inferredType === 'date') return false;
+    const name = `${colProf.originalName || ''} ${colProf.columnKey}`.toLowerCase();
+    const isTemporal = [
+      'date', 'time', 'timestamp', 'year', 'quarter', 'month', 'day',
+      'created', 'updated', 'closed', 'opened', 'completed', 'due'
+    ].some((k) => name.includes(k) || colProf.columnKey.endsWith(k));
+    const isDuration = ['duration', 'lead_days', 'days_to', 'elapsed', 'latency', 'hours_spent'].some((k) => name.includes(k));
+    return !isTemporal || isDuration;
+  });
 
   const rawDimensions =
     profile.recommendedDimensions.length > 0

@@ -9,10 +9,10 @@ export interface ColumnInferenceResult {
 }
 
 const ISO_DATE_REGEX =
-  /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/;
+  /^\d{4}[/.-]\d{1,2}[/.-]\d{1,2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/;
 
 const OTHER_DATE_REGEX = new RegExp(
-  '^(?:\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}|\\d{1,2}[/-][A-Za-z]{3}[/-]\\d{2,4}|[A-Za-z]{3,9}\\s+\\d{1,2},?\\s+\\d{4})$'
+  '^(?:\\d{1,2}[/.\\-]\\d{1,2}[/.\\-]\\d{2,4}|\\d{1,2}[/-][A-Za-z]{3}[/-]\\d{2,4}|[A-Za-z]{3,9}\\s+\\d{1,2},?\\s+\\d{4}|\\d{4}\\s+[A-Za-z]{3,9}|[A-Za-z]{3,9}\\s+\\d{4})$'
 );
 
 const CURRENCY_SYMBOL_REGEX =
@@ -324,16 +324,22 @@ export function inferColumnType(
   const isSerialDateCol =
     (name.includes('serial') ||
       name.includes('date') ||
+      name.includes('time') ||
       name.includes('timestamp') ||
       name.includes('epoch') ||
       name.includes('launch') ||
+      name.includes('created') ||
+      name.includes('updated') ||
+      name.includes('closed') ||
+      name.includes('due') ||
       (name.includes('planned') &&
         !name.includes('budget') &&
         !name.includes('cost') &&
         !name.includes('unit'))) &&
     !CURRENCY_KEYWORDS.some((k) => name.includes(k)) &&
     !NUMBER_EXCLUSION_KEYWORDS.some((k) => name.includes(k));
-  if (isSerialDateCol && nonNull.every(isExcelSerialDate)) {
+  const serialDateCount = nonNull.filter(isExcelSerialDate).length;
+  if (isSerialDateCol && nonNull.length > 0 && serialDateCount / nonNull.length >= 0.8) {
     return { inferredType: 'date', confidence: 0.95, formatPattern: 'YYYY-MM-DD' };
   }
 

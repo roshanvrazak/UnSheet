@@ -227,4 +227,51 @@ describe('Phase 5 Frontend Chat & LLM UI Components (`apps/web/test/chat.test.ts
 
     expect(handleSpecUpdate).toHaveBeenCalledWith(sampleSpec);
   });
+
+  it('Test 4: AskYourDataDrawer excludes temporal columns from total suggestions', () => {
+    const profileWithDates: SheetProfile = {
+      ...sampleProfile,
+      columnProfiles: [
+        {
+          columnKey: 'order_date',
+          originalName: 'Order Date',
+          inferredType: 'date',
+          semanticRole: 'time',
+          nullable: false,
+          nullCount: 0,
+          totalCount: 100,
+          distinctCount: 50,
+          uniquenessRatio: 0.5,
+          sampleValues: ['2024-01-01'],
+        },
+        {
+          columnKey: 'revenue',
+          originalName: 'Revenue',
+          inferredType: 'currency',
+          semanticRole: 'measure',
+          nullable: false,
+          nullCount: 0,
+          totalCount: 100,
+          distinctCount: 50,
+          uniquenessRatio: 0.5,
+          sampleValues: ['1000'],
+        },
+      ],
+    };
+
+    render(
+      <AskYourDataDrawer
+        isOpen={true}
+        onClose={vi.fn()}
+        sheet={sampleSheet}
+        profile={profileWithDates}
+        onAddWidget={vi.fn()}
+      />
+    );
+
+    // It should suggest "Total revenue by order_date" or "Total revenue", but NEVER "Total order_date"
+    expect(screen.queryByText(/Total order_date$/i)).toBeNull();
+    expect(screen.queryByText(/Total Order Date$/i)).toBeNull();
+    expect(screen.getByText(/Total revenue/i)).toBeDefined();
+  });
 });

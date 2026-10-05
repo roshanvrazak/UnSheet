@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { SheetModel, SheetProfile, WidgetSpec } from '@unsheet/contracts';
+import { SheetModel, SheetProfile, WidgetSpec, QueryResult, ColumnProfile } from '@unsheet/contracts';
 import { toLLMColumnProfile, getSheetTableName } from '@unsheet/engine';
-import { X, Send, Sparkles, Database, Plus, Check, AlertCircle, ChevronDown, ChevronUp, Bot, Loader2 } from 'lucide-react';
+import { registerSheetTable, executeDuckDBQuery } from '@/lib/query/duckdb';
+import { X, Send, Sparkles, Database, Plus, Check, AlertCircle, ChevronDown, ChevronUp, Bot, Loader2, Table as TableIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -24,6 +25,7 @@ interface ChatMessage {
   sql?: string;
   explanation?: string;
   suggestedWidget?: WidgetSpec;
+  queryResult?: QueryResult | undefined;
   error?: string;
   isRateLimit?: boolean;
 }
@@ -71,11 +73,28 @@ export function AskYourDataDrawer({
   // Generate dynamic sample prompt suggestions based on actual profile columns
   const generatePromptSuggestions = () => {
     const cols = profile.columnProfiles;
+    const isTemporal = (c: ColumnProfile) => {
+      const s = `${c.originalName || ''} ${c.columnKey}`.toLowerCase();
+      const temporalWords = ['date', 'time', 'timestamp', 'year', 'month', 'day', 'quarter', 'created', 'updated', 'due', 'closed'];
+      const durationWords = ['duration', 'lead_days', 'days_to', 'elapsed', 'latency', 'hours_spent'];
+      return (
+        c.semanticRole === 'time' ||
+        c.inferredType === 'date' ||
+        (temporalWords.some((w) => s.includes(w)) && !durationWords.some((w) => s.includes(w)))
+      );
+    };
+
     const measures = cols.filter(
-      (c) => c.inferredType === 'number' || c.inferredType === 'currency' || c.semanticRole === 'measure'
+      (c) =>
+        (c.inferredType === 'number' || c.inferredType === 'currency' || c.semanticRole === 'measure') &&
+        !isTemporal(c)
     );
     const dimensions = cols.filter(
-      (c) => c.inferredType === 'category' || c.inferredType === 'text' || c.semanticRole === 'dimension'
+      (c) =>
+        c.inferredType === 'category' ||
+        c.inferredType === 'text' ||
+        c.semanticRole === 'dimension' ||
+        isTemporal(c)
     );
 
     const mName = measures[0]?.columnKey;
@@ -146,6 +165,14 @@ export function AskYourDataDrawer({
         throw new Error(data.error || 'Failed to query data.');
       }
 
+      let executionResult: QueryResult | undefined;
+      try {
+        await registerSheetTable(sheet);
+        executionResult = await executeDuckDBQuery(data.sql);
+      } catch (dbErr) {
+        console.warn('In-browser DuckDB execution of generated SQL failed:', dbErr);
+      }
+
       setMessages((prev) => [
         ...prev,
         {
@@ -155,6 +182,7 @@ export function AskYourDataDrawer({
           sql: data.sql,
           explanation: data.explanation,
           suggestedWidget: data.suggestedWidget,
+          queryResult: executionResult,
         },
       ]);
     } catch (err: unknown) {
@@ -266,6 +294,59 @@ export function AskYourDataDrawer({
                         <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed">
                           {msg.explanation}
                         </p>
+                      )}
+
+                      {msg.queryResult && (
+                        <div className="space-y-2">
+                          {msg.queryResult.rowCount === 1 && msg.queryResult.columns.length === 1 ? (
+                            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-xs">
+                              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                {msg.queryResult.columns[0]?.name}
+                              </div>
+                              <div className="text-2xl font-bold font-mono text-indigo-600 dark:text-indigo-400 mt-0.5">
+                                {String(msg.queryResult.rows[0]?.[msg.queryResult.columns[0]?.name ?? ''] ?? '-')}
+                              </div>
+                            </div>
+                          ) : msg.queryResult.rowCount > 0 ? (
+                            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
+                              <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                                <span className="flex items-center gap-1.5">
+                                  <TableIcon className="w-3.5 h-3.5 text-indigo-600" />
+                                  <span>Result ({msg.queryResult.rowCount} {msg.queryResult.rowCount === 1 ? 'row' : 'rows'})</span>
+                                </span>
+                                <span className="font-mono text-[10px] text-slate-600 dark:text-slate-400">{msg.queryResult.executionTimeMs}ms</span>
+                              </div>
+                              <div className="max-h-48 overflow-auto">
+                                <table className="w-full text-left text-xs border-collapse">
+                                  <thead className="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-[10px] uppercase font-bold sticky top-0">
+                                    <tr>
+                                      {msg.queryResult.columns.map((c) => (
+                                        <th key={c.name} className="px-3 py-1.5 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">
+                                          {c.name}
+                                        </th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono text-[11px]">
+                                    {msg.queryResult.rows.slice(0, 10).map((row, rIdx) => (
+                                      <tr key={rIdx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                        {msg.queryResult!.columns.map((c) => (
+                                          <td key={c.name} className="px-3 py-1.5 text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                                            {String(row[c.name] ?? '-')}
+                                          </td>
+                                        ))}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2.5 text-xs text-slate-600 dark:text-slate-400">
+                              Query returned 0 matching records.
+                            </div>
+                          )}
+                        </div>
                       )}
 
                       {msg.sql && (

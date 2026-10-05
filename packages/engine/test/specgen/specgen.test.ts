@@ -323,5 +323,49 @@ describe('Spec Generation Engine Unit & Property Tests', () => {
         { numRuns: 50 }
       );
     });
+
+    it('never generates KPI total or sum aggregation for date or temporal columns', () => {
+      const profileWithDateMeasure: SheetProfile = {
+        sheetId: 'sheet_mixed',
+        sheetName: 'Mixed Dates',
+        rowCount: 50,
+        columnProfiles: [
+          {
+            columnKey: 'order_date',
+            originalName: 'Order Date',
+            inferredType: 'date',
+            semanticRole: 'time',
+            nullable: false,
+            nullCount: 0,
+            totalCount: 50,
+            distinctCount: 20,
+            uniquenessRatio: 0.4,
+            sampleValues: ['2024-01-01'],
+          },
+          {
+            columnKey: 'revenue',
+            originalName: 'Revenue',
+            inferredType: 'currency',
+            semanticRole: 'measure',
+            nullable: false,
+            nullCount: 0,
+            totalCount: 50,
+            distinctCount: 45,
+            uniquenessRatio: 0.9,
+            sampleValues: ['1000'],
+          },
+        ],
+        recommendedDimensions: [],
+        // Simulating if recommendedMeasures somehow contained order_date
+        recommendedMeasures: ['order_date', 'revenue'],
+      };
+
+      const spec = generateDashboardSpec(profileWithDateMeasure);
+      const kpis = spec.widgets.filter((w) => w.type === 'kpi');
+      for (const kpi of kpis) {
+        expect((kpi as { measure: string }).measure).not.toBe('order_date');
+        expect(kpi.title.toLowerCase()).not.toContain('total order date');
+      }
+    });
   });
 });

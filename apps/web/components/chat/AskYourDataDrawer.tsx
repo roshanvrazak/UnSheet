@@ -4,10 +4,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { SheetModel, SheetProfile, WidgetSpec, QueryResult, ColumnProfile } from '@unsheet/contracts';
 import { toLLMColumnProfile, getSheetTableName, executeQueryInMemory, buildWidgetQueryPlan } from '@unsheet/engine';
 import { registerSheetTable, executeDuckDBQuery } from '@/lib/query/duckdb';
-import { X, Send, Sparkles, Database, Plus, Check, AlertCircle, ChevronDown, ChevronUp, Bot, Loader2, Table as TableIcon } from 'lucide-react';
+import { X, Send, Sparkles, Database, Plus, Check, AlertCircle, ChevronDown, ChevronUp, Bot, Loader2, Table as TableIcon, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { getAIHeaders } from '@/lib/llm/client-settings';
+import { AISettingsModal } from '@/components/studio/AISettingsModal';
 
 export interface AskYourDataDrawerProps {
   isOpen: boolean;
@@ -42,6 +44,7 @@ export function AskYourDataDrawer({
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [addedWidgetIds, setAddedWidgetIds] = useState<Record<string, boolean>>({});
   const [showSqlMap, setShowSqlMap] = useState<Record<string, boolean>>({});
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
 
   const drawerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -138,7 +141,10 @@ export function AskYourDataDrawer({
       const tableName = getSheetTableName(sheet);
       const res = await fetch('/api/query/ask', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAIHeaders(),
+        },
         body: JSON.stringify({
           question: queryText,
           sheetName: tableName,
@@ -289,15 +295,27 @@ export function AskYourDataDrawer({
               </p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-            aria-label="Close drawer"
-          >
-            <X className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center space-x-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSettingsOpen(true)}
+              className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              aria-label="AI Settings"
+              title="Configure Grok / OpenAI API Key"
+            >
+              <Settings className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              aria-label="Close drawer"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Content / Message History */}
@@ -524,6 +542,8 @@ export function AskYourDataDrawer({
           </form>
         </div>
       </div>
+
+      <AISettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );
 }

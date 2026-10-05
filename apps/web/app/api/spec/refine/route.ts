@@ -4,7 +4,7 @@ import { checkRateLimit, rateLimitResponse } from '@/lib/llm/rate-limit';
 import { formatSchemaMetadata, SPEC_REFINEMENT_SYSTEM_INSTRUCTION } from '@/lib/llm/prompts';
 import { deterministicRefineSpec } from '@/lib/llm/fallback';
 import { generateObject } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import { resolveLLM } from '@/lib/llm/provider';
 import { z } from 'zod';
 
 export async function POST(req: NextRequest) {
@@ -31,11 +31,12 @@ export async function POST(req: NextRequest) {
     const { prompt, currentSpec, profiles } = parseResult.data;
     const schemaMetadataStr = formatSchemaMetadata(profiles);
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (apiKey && apiKey.trim() !== '') {
+    const resolved = resolveLLM(req);
+    if (resolved) {
       try {
+        console.log(`[Spec Refine] Calling ${resolved.providerName} (${resolved.modelName}) [source: ${resolved.source}]...`);
         const result = await generateObject({
-          model: openai('gpt-4o-mini'),
+          model: resolved.model,
           system: SPEC_REFINEMENT_SYSTEM_INSTRUCTION + '\n\n' + schemaMetadataStr,
           prompt,
           schema: z.object({
@@ -54,9 +55,12 @@ export async function POST(req: NextRequest) {
 
         const validatedResponse = SpecRefinementResponseSchema.parse(responsePayload);
         return NextResponse.json(validatedResponse);
-      } catch (llmError) {
-        console.warn('OpenAI generateObject failed, falling back to deterministic modifier:', llmError);
+      } catch (llmError: unknown) {
+        const errorMsg = llmError instanceof Error ? llmError.message : String(llmError);
+        console.warn(`[Spec Refine] ${resolved.providerName} (${resolved.modelName}) failed: ${errorMsg}. Falling back to deterministic engine.`);
       }
+    } else {
+      console.log('[Spec Refine] No LLM API key configured (env or client header). Using deterministic engine.');
     }
 
     const fallbackResult = deterministicRefineSpec(prompt, currentSpec, profiles);

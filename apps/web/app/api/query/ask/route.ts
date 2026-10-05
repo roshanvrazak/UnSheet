@@ -4,7 +4,7 @@ import { checkRateLimit, rateLimitResponse } from '@/lib/llm/rate-limit';
 import { formatSchemaMetadata, ASK_YOUR_DATA_SYSTEM_INSTRUCTION } from '@/lib/llm/prompts';
 import { deterministicAskQuery } from '@/lib/llm/fallback';
 import { generateObject } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import { resolveLLM } from '@/lib/llm/provider';
 import { z } from 'zod';
 
 export async function POST(req: NextRequest) {
@@ -41,12 +41,13 @@ export async function POST(req: NextRequest) {
     let widgetResult: WidgetSpec | undefined = undefined;
     let explanationResult = '';
 
-    // 3. Check if OpenAI API key is present
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (apiKey && apiKey.trim() !== '') {
+    // 3. Resolve LLM provider (xAI/Grok, OpenAI, or custom endpoint)
+    const resolved = resolveLLM(req);
+    if (resolved) {
       try {
+        console.log(`[Ask AI] Calling ${resolved.providerName} (${resolved.modelName}) [source: ${resolved.source}]...`);
         const result = await generateObject({
-          model: openai('gpt-4o-mini'),
+          model: resolved.model,
           system: ASK_YOUR_DATA_SYSTEM_INSTRUCTION + '\n\n' + schemaMetadataStr,
           prompt: `Table name: "${sheetName}"\nQuestion: ${question}`,
           schema: z.object({
@@ -59,9 +60,13 @@ export async function POST(req: NextRequest) {
         sqlResult = result.object.sql.trim();
         intentResult = result.object.interpretedIntent;
         explanationResult = result.object.explanation;
-      } catch (llmError) {
-        console.warn('OpenAI generateObject failed for ask-your-data, falling back to deterministic parser:', llmError);
+        console.log(`[Ask AI] ${resolved.providerName} successfully answered question.`);
+      } catch (llmError: unknown) {
+        const errorMsg = llmError instanceof Error ? llmError.message : String(llmError);
+        console.warn(`[Ask AI] ${resolved.providerName} (${resolved.modelName}) call failed: ${errorMsg}. Falling back to deterministic engine.`);
       }
+    } else {
+      console.log('[Ask AI] No LLM API key configured (env or client header). Using deterministic engine.');
     }
 
     // 4. Fallback if no key or LLM failed

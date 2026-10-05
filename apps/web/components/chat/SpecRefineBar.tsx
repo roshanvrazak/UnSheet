@@ -7,6 +7,7 @@ import { Sparkles, Send, Loader2, AlertCircle, Undo2, CheckCircle2 } from 'lucid
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { getAIHeaders } from '@/lib/llm/client-settings';
 
 export interface SpecRefineBarProps {
   currentSpec: DashboardSpec;
@@ -43,7 +44,10 @@ export function SpecRefineBar({
       const llmProfiles = profile.columnProfiles.map(toLLMColumnProfile);
       const res = await fetch('/api/spec/refine', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAIHeaders(),
+        },
         body: JSON.stringify({
           prompt,
           currentSpec,

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   FileSpreadsheet,
   ShieldCheck,
@@ -9,9 +9,11 @@ import {
   PanelLeftClose,
   PanelLeft,
   ChevronRight,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { type SampleWorkbookMeta } from '@/lib/sample-workbooks';
+import { AISettingsModal } from '@/components/studio/AISettingsModal';
 
 export interface StudioNavbarProps {
   workbookName?: string | undefined;
@@ -36,6 +38,8 @@ export function StudioNavbar({
   isInspectorOpen,
   onToggleInspector,
 }: StudioNavbarProps) {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
   return (
     <header className="sticky top-0 z-40 h-14 w-full border-b border-slate-200/80 bg-white/80 backdrop-blur-md transition-colors">
       <div className="h-full px-4 sm:px-6 flex items-center justify-between gap-4">
@@ -114,6 +118,18 @@ export function StudioNavbar({
           <Button
             size="sm"
             variant="outline"
+            onClick={() => setIsSettingsOpen(true)}
+            className="h-8 px-2.5 text-xs font-medium text-slate-700 hover:text-slate-900 border-slate-200 hover:bg-slate-50"
+            aria-label="Configure AI Provider"
+            title="Configure Grok or OpenAI API key"
+          >
+            <Sparkles className="w-3.5 h-3.5 sm:mr-1.5 text-indigo-600" />
+            <span className="hidden sm:inline">AI Settings</span>
+          </Button>
+
+          <Button
+            size="sm"
+            variant="outline"
             onClick={onUploadClick}
             className="h-8 px-2.5 text-xs font-medium text-slate-700 hover:text-slate-900 border-slate-200 hover:bg-slate-50"
           >
@@ -132,6 +148,8 @@ export function StudioNavbar({
           </Button>
         </div>
       </div>
+
+      <AISettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </header>
   );
 }

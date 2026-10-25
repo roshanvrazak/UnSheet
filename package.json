@@ -15,7 +15,7 @@
     "verify": "bash scripts/verify.sh"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.13.0",
+    "@axe-core/playwright": "^4.14.0",
     "@eslint/js": "^9.21.0",
     "@playwright/test": "^1.63.0",
     "@stryker-mutator/core": "^10.0.0",

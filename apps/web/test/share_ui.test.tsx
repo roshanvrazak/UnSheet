@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { ExportDropdown } from '../components/export/ExportDropdown';
@@ -50,7 +50,16 @@ const mockSpec: DashboardSpec = {
 describe('Phase 6 Frontend Share & Export UI Test Suite', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    const values = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+      removeItem: (key: string) => values.delete(key),
+      clear: () => values.clear(),
+    });
   });
+
+  afterEach(() => vi.unstubAllGlobals());
 
   it('Test 1: ExportDropdown renders and triggers CSV, JSON, and XLSX export functions', () => {
     render(<ExportDropdown sheet={mockSheet} />);
@@ -138,6 +147,33 @@ describe('Phase 6 Frontend Share & Export UI Test Suite', () => {
 
 
 
+
+  it('keeps management credentials private, restores creator access, and revokes with the secret', async () => {
+    const shareToken = 'anonymous_view_token_123456';
+    const managementToken = 'anonymous_manage_token_123456';
+    const shareUrl = `http://localhost:3000/share/${shareToken}`;
+    const fetchSpy = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ shareToken, shareUrl, managementToken }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) });
+    vi.stubGlobal('fetch', fetchSpy);
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    const props = { isOpen: true, onClose: vi.fn(), spec: mockSpec, sheet: mockSheet };
+    const view = render(<ShareModal {...props} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Create Share Link' }));
+    await screen.findByRole('button', { name: 'Revoke Link' });
+    fireEvent.click(screen.getByRole('button', { name: 'Copy Link' }));
+    expect(writeText).toHaveBeenCalledWith(shareUrl);
+    expect(screen.queryByText(managementToken)).toBeNull();
+    view.unmount();
+    render(<ShareModal {...props} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Revoke Link' }));
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledWith(`/api/share/${shareToken}/revoke`, {
+      method: 'POST', headers: { 'x-share-management-token': managementToken },
+    }));
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Revoke Link' })).toBeNull());
+    expect(localStorage.getItem('unsheet_share_management')).toBe('[]');
+  });
 
   it('Test 3: share/[token]/page.tsx renders shared dashboard when API succeeds', async () => {
     const { shareToken } = await createShareLink({

@@ -57,16 +57,31 @@ export async function getDuckDB(): Promise<{ db: AsyncDuckDB; conn: AsyncDuckDBC
     const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
     const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
 
-    const worker = new Worker(bundle.mainWorker!);
+    // Browsers reject direct cross-origin Worker URLs. Fetch through connect-src
+    // and start the worker from a same-origin blob instead.
+    const workerResponse = await fetch(bundle.mainWorker!);
+    if (!workerResponse.ok) throw new Error('Unable to download the browser database worker');
+    const workerUrl = URL.createObjectURL(new Blob([await workerResponse.text()], { type: 'text/javascript' }));
+    const worker = new Worker(workerUrl);
     const logger = new duckdb.ConsoleLogger();
     const db = new duckdb.AsyncDuckDB(logger, worker);
-    await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+    try {
+      await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+    } catch (error) {
+      worker.terminate();
+      throw error;
+    } finally {
+      URL.revokeObjectURL(workerUrl);
+    }
 
     const conn = await db.connect();
     dbInstance = db;
     connInstance = conn;
     return { db, conn };
-  })();
+  })().catch((error) => {
+    initPromise = null;
+    throw error;
+  });
 
   return initPromise;
 }

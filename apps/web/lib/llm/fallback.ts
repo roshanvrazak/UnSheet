@@ -1,4 +1,5 @@
 import { DashboardSpec, LLMColumnProfile, WidgetSpec, QueryPlan } from '@unsheet/contracts';
+import { buildWidgetQueryPlan, compileQueryPlanToSql } from '@unsheet/engine';
 
 export function deterministicRefineSpec(
   prompt: string,
@@ -64,13 +65,14 @@ export function deterministicRefineSpec(
     dimensions[0]?.columnKey ||
     'category';
 
-  const isAddWidget =
+  const isConversion = /\b(change|convert|switch|make)\b/i.test(prompt);
+  const isAddWidget = !isConversion && (
     lower.includes('add') ||
     lower.includes('create') ||
     lower.includes('insert') ||
     lower.includes('show') ||
     lower.includes('chart') ||
-    lower.includes('breakdown');
+    lower.includes('breakdown'));
 
   const maxY = spec.widgets.reduce((max, w) => Math.max(max, w.grid.y + w.grid.h), 0);
 
@@ -153,7 +155,7 @@ export function deterministicRefineSpec(
   }
 
   // Convert chart types (e.g. "change bar chart to donut", "make it a donut", "convert to line chart")
-  if (lower.includes('donut') || lower.includes('pie')) {
+  if (isConversion && (lower.includes('donut') || lower.includes('pie'))) {
     const targetIdx = spec.widgets.findIndex((w) => w.type === 'bar' || w.type === 'line');
     if (targetIdx !== -1) {
       const oldW = spec.widgets[targetIdx] as unknown as Record<string, unknown>;
@@ -173,7 +175,7 @@ export function deterministicRefineSpec(
       };
       appliedChanges.push(`Converted widget to donut chart for "${dim}" by "${meas}"`);
     }
-  } else if (lower.includes('bar')) {
+  } else if (isConversion && lower.includes('bar')) {
     const targetIdx = spec.widgets.findIndex((w) => w.type === 'donut' || w.type === 'line');
     if (targetIdx !== -1) {
       const oldW = spec.widgets[targetIdx] as unknown as Record<string, unknown>;
@@ -192,7 +194,7 @@ export function deterministicRefineSpec(
       };
       appliedChanges.push(`Converted widget to bar chart for "${dim}" by "${meas}"`);
     }
-  } else if (lower.includes('line') || lower.includes('trend')) {
+  } else if (isConversion && (lower.includes('line') || lower.includes('trend'))) {
     const targetIdx = spec.widgets.findIndex((w) => w.type === 'bar' || w.type === 'donut');
     if (targetIdx !== -1) {
       const oldW = spec.widgets[targetIdx] as unknown as Record<string, unknown>;
@@ -308,13 +310,15 @@ export function deterministicAskQuery(
 
   if (isTop && defaultMeasure && defaultDim && defaultMeasure !== defaultDim) {
     const limitMatch = lower.match(/(?:top|first)\s+(\d+)/);
-    const limit = limitMatch && limitMatch[1] ? parseInt(limitMatch[1], 10) : 5;
+    const limit = limitMatch && limitMatch[1] ? Math.min(100, Math.max(1, parseInt(limitMatch[1], 10))) : 5;
     intent = `Top ${limit} records grouped by ${defaultDim} ordered by ${defaultMeasure} descending`;
     sql = `SELECT "${defaultDim}", SUM("${defaultMeasure}") AS "total_${defaultMeasure}" FROM "${sheetName}" GROUP BY "${defaultDim}" ORDER BY "total_${defaultMeasure}" DESC LIMIT ${limit};`;
     widget = {
       id: `bar_${Date.now()}`,
       type: 'bar',
       title: `Top ${limit} ${defaultDim} by ${defaultMeasure}`,
+      limit,
+      sort: { by: 'value', direction: 'desc' },
       grid: { x: 0, y: 0, w: 6, h: 6 },
       dimension: defaultDim,
       measures: [defaultMeasure],
@@ -322,7 +326,7 @@ export function deterministicAskQuery(
       orientation: 'vertical',
     };
   } else if (isAvg && defaultMeasure) {
-    if (defaultDim && defaultDim !== defaultMeasure) {
+    if (defaultDim && defaultDim !== defaultMeasure && (/\b(by|per)\b/.test(lower) || mentionedDim)) {
       intent = `Average of ${defaultMeasure} grouped by ${defaultDim}`;
       sql = `SELECT "${defaultDim}", AVG("${defaultMeasure}") AS "avg_${defaultMeasure}" FROM "${sheetName}" GROUP BY "${defaultDim}" LIMIT 20;`;
       widget = {
@@ -401,13 +405,20 @@ export function deterministicAskQuery(
     };
   }
 
-  const queryPlan: QueryPlan | undefined = defaultMeasure && defaultDim ? {
-    id: `plan_${Date.now()}`,
-    table: sheetName,
-    dimensions: [defaultDim],
-    aggregations: [{ columnKey: defaultMeasure, function: 'sum' as const, alias: `sum_${defaultMeasure}` }],
-    limit: 50,
-  } : undefined;
+  // Derive execution and SQL from the same plan so previews, answers and widgets agree.
+  const queryPlan = widget ? buildWidgetQueryPlan({
+    sheetId: sheetName,
+    sheetName,
+    rowCount: 0,
+    columnProfiles: profiles,
+    recommendedDimensions: [],
+    recommendedMeasures: [],
+  }, widget) : undefined;
+  if (queryPlan) {
+    queryPlan.table = sheetName;
+    if (widget?.type === 'table') queryPlan.limit = 50;
+    sql = compileQueryPlanToSql(queryPlan);
+  }
 
   return {
     interpretedIntent: intent,

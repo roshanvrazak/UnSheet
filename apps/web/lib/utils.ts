@@ -14,12 +14,12 @@ export function cn(...inputs: ClassValue[]): string {
  * High-contrast, colorblind-distinguishable hex codes conforming to WCAG AA.
  */
 export const CHART_PALETTE: readonly string[] = [
-  '#2563eb', // blue-600
-  '#059669', // emerald-600
-  '#d97706', // amber-600
-  '#7c3aed', // violet-600
-  '#e11d48', // rose-600
-  '#0891b2', // cyan-600
+  '#3f744a', // forest green
+  '#b27d2b', // ochre
+  '#5c86a6', // muted blue
+  '#9780ad', // muted violet
+  '#bb7166', // terracotta
+  '#448e88', // teal
   '#4f46e5', // indigo-600
   '#ca8a04', // yellow-600
   '#0d9488', // teal-600
@@ -76,7 +76,7 @@ export function formatDisplayValue(
   }
 
   // Handle numbers / numeric strings
-  const num = typeof value === 'number' ? value : Number(value);
+  const num = (typeof value === 'number' ? value : Number(value)) * (format?.scale ?? 1);
   const isNumeric = typeof value === 'number' || (typeof value === 'string' && value.trim() !== '' && !Number.isNaN(num));
 
   let rawFormatted: string;

@@ -72,6 +72,7 @@ export type AggregationFunction = z.infer<typeof AggregationFunctionSchema>;
  * Number and currency display formatting options.
  */
 export const DisplayFormatSchema = z.object({
+  scale: z.number().finite().optional(),
   prefix: z.string().max(16).optional(),
   suffix: z.string().max(16).optional(),
   precision: z.number().int().min(0).max(10).optional(),

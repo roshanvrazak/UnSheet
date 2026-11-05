@@ -6,6 +6,8 @@ import { deterministicAskQuery } from '@/lib/llm/fallback';
 import { generateObject } from 'ai';
 import { resolveLLM } from '@/lib/llm/provider';
 import { z } from 'zod';
+import { runAIRequest, readAIRequestBody } from '@/lib/llm/request-policy';
+import { AIRequestError } from '@/lib/llm/endpoint';
 
 export async function POST(req: NextRequest) {
   // 1. Rate Limiting (max 30 calls/min)
@@ -15,7 +17,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const body = await req.json();
+    const body = await readAIRequestBody(req);
 
     // 2. Parse request with AskYourDataRequestSchema
     const parseResult = AskYourDataRequestSchema.safeParse(body);
@@ -46,8 +48,11 @@ export async function POST(req: NextRequest) {
     if (resolved) {
       try {
         console.log(`[Ask AI] Calling ${resolved.providerName} (${resolved.modelName}) [source: ${resolved.source}]...`);
-        const result = await generateObject({
+        const result = await runAIRequest(req, 'query-ask', () => generateObject({
           model: resolved.model,
+          abortSignal: AbortSignal.any([req.signal, AbortSignal.timeout(20000)]),
+          maxRetries: 1,
+          maxTokens: 4096,
           system: ASK_YOUR_DATA_SYSTEM_INSTRUCTION + '\n\n' + schemaMetadataStr,
           prompt: `Table name: "${sheetName}"\nQuestion: ${question}`,
           schema: z.object({
@@ -55,13 +60,14 @@ export async function POST(req: NextRequest) {
             sql: z.string().max(4000),
             explanation: z.string().max(2000),
           }),
-        });
+        }));
 
         sqlResult = result.object.sql.trim();
         intentResult = result.object.interpretedIntent;
         explanationResult = result.object.explanation;
         console.log(`[Ask AI] ${resolved.providerName} successfully answered question.`);
       } catch (llmError: unknown) {
+        if (llmError instanceof AIRequestError) throw llmError;
         const errorMsg = llmError instanceof Error ? llmError.message : String(llmError);
         console.warn(`[Ask AI] ${resolved.providerName} (${resolved.modelName}) call failed: ${errorMsg}. Falling back to deterministic engine.`);
       }
@@ -76,13 +82,10 @@ export async function POST(req: NextRequest) {
       intentResult = fallback.interpretedIntent;
       queryPlanResult = fallback.queryPlan;
       widgetResult = fallback.suggestedWidget;
-      explanationResult = fallback.explanation;
-    } else {
-      // If LLM succeeded, also provide suggestedWidget and queryPlan so client gets rich visualizations and in-memory execution
-      const fallback = deterministicAskQuery(question, sheetName, profiles);
-      queryPlanResult = fallback.queryPlan;
-      widgetResult = fallback.suggestedWidget;
+      explanationResult = `${resolved ? 'AI provider unavailable; using demo rules.' : 'Demo mode: no AI provider configured.'} ${fallback.explanation}`;
     }
+    // LLM SQL must execute as returned. A heuristic plan or widget can represent
+    // a different question, especially when SQL includes filters or expressions.
 
     // 5. Validate SQL with SafeSqlQuerySchema
     const sqlValidation = SafeSqlQuerySchema.safeParse(sqlResult);
@@ -154,6 +157,12 @@ export async function POST(req: NextRequest) {
     const validatedResponse = AskYourDataResponseSchema.parse(responsePayload);
     return NextResponse.json(validatedResponse);
   } catch (error: unknown) {
+    if (error instanceof AIRequestError) {
+      return NextResponse.json({ success: false, error: error.message }, {
+        status: error.status,
+        headers: error.retryAfterSeconds ? { 'Retry-After': String(error.retryAfterSeconds) } : {},
+      });
+    }
     console.error('Error in /api/query/ask:', error);
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(

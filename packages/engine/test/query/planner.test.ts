@@ -260,11 +260,11 @@ describe('Query Planner (buildWidgetQueryPlan)', () => {
       defaultSort: { columnKey: 'revenue', direction: 'desc' },
     };
 
-    it('generates valid QueryPlan with select columns, default sort, and page size limit', () => {
+    it('generates valid QueryPlan with select columns, default sort, and full dataset limit', () => {
       const plan = buildWidgetQueryPlan(mockSheetModel, tableWidget);
       expect(plan.select).toEqual(['region', 'revenue']);
       expect(plan.orderBy).toEqual([{ columnKey: 'revenue', direction: 'desc' }]);
-      expect(plan.limit).toBe(25);
+      expect(plan.limit).toBe(mockSheetModel.rows.length);
       expect(plan.offset).toBe(0);
       expect(() => QueryPlanSchema.parse(plan)).not.toThrow();
     });

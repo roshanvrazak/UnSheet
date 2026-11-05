@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import type { DashboardSpec, SheetModel } from '@unsheet/contracts';
 import { Button } from '@/components/ui/button';
 import { Copy, Check, AlertTriangle, X } from 'lucide-react';
+import { loadManagedShares, saveManagedShares, type ManagedShare } from '@/lib/share/client-storage';
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -20,6 +21,12 @@ export function ShareModal({ isOpen, onClose, spec, sheet }: ShareModalProps) {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
+  const [managedShares, setManagedShares] = useState<ManagedShare[]>([]);
+  const [revokingToken, setRevokingToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) setManagedShares(loadManagedShares());
+  }, [isOpen]);
 
   // Reset state when modal opens/closes
   useEffect(() => {
@@ -48,6 +55,10 @@ export function ShareModal({ isOpen, onClose, spec, sheet }: ShareModalProps) {
   if (!isOpen) return null;
 
   const handleCreateShareLink = async () => {
+    if (managedShares.length >= 20) {
+      setErrorMessage('Revoke an existing link before creating another. This browser can manage up to 20 links.');
+      return;
+    }
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
@@ -74,10 +85,43 @@ export function ShareModal({ isOpen, onClose, spec, sheet }: ShareModalProps) {
 
       const data = await res.json();
       setShareUrl(data.shareUrl);
+      if (data.managementToken) {
+        const shares = [{ shareToken: data.shareToken, shareUrl: data.shareUrl, managementToken: data.managementToken }, ...managedShares].slice(0, 20);
+        setManagedShares(shares);
+        try {
+          saveManagedShares(shares);
+        } catch {
+          setErrorMessage('This browser could not save link management access. Revoke the link before closing if you need to remove it.');
+        }
+      }
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : 'An unexpected error occurred.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleRevoke = async (share: ManagedShare) => {
+    setRevokingToken(share.shareToken);
+    setErrorMessage(null);
+    try {
+      const res = await fetch(`/api/share/${share.shareToken}/revoke`, {
+        method: 'POST',
+        headers: { 'x-share-management-token': share.managementToken },
+      });
+      if (!res.ok) throw new Error('Unable to revoke this share link. Please try again.');
+      const remaining = managedShares.filter(item => item.shareToken !== share.shareToken);
+      setManagedShares(remaining);
+      if (shareUrl === share.shareUrl) setShareUrl(null);
+      try {
+        saveManagedShares(remaining);
+      } catch {
+        setErrorMessage('The link was revoked, but this browser could not update saved link management access.');
+      }
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Unable to revoke link.');
+    } finally {
+      setRevokingToken(null);
     }
   };
 
@@ -126,7 +170,7 @@ export function ShareModal({ isOpen, onClose, spec, sheet }: ShareModalProps) {
                 onChange={(e) =>
                   setExpiresInHours(e.target.value ? Number(e.target.value) : undefined)
                 }
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               >
                 <option value={24}>24 Hours</option>
                 <option value={168}>7 Days</option>
@@ -145,7 +189,7 @@ export function ShareModal({ isOpen, onClose, spec, sheet }: ShareModalProps) {
                 type="checkbox"
                 checked={allowExport}
                 onChange={(e) => setAllowExport(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
               />
             </div>
 
@@ -160,7 +204,7 @@ export function ShareModal({ isOpen, onClose, spec, sheet }: ShareModalProps) {
                   type="checkbox"
                   checked={includeDataSnapshot}
                   onChange={(e) => setIncludeDataSnapshot(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
                 />
               </div>
               {includeDataSnapshot && (
@@ -213,6 +257,22 @@ export function ShareModal({ isOpen, onClose, spec, sheet }: ShareModalProps) {
             <div className="flex justify-end pt-4 border-t">
               <Button onClick={onClose}>Done</Button>
             </div>
+          </div>
+        )}
+        {managedShares.length > 0 && (
+          <div className="space-y-2 border-t pt-4">
+            <h3 className="text-sm font-medium text-gray-900">Links created in this browser</h3>
+            <p className="text-xs text-gray-500">Management access stays in this browser. Copy Link shares viewing access only.</p>
+            <ul className="space-y-2 max-h-40 overflow-y-auto">
+              {managedShares.map(share => (
+                <li key={share.shareToken} className="flex items-center gap-2">
+                  <span className="truncate text-xs text-gray-600 flex-1">{share.shareUrl}</span>
+                  <Button variant="outline" size="sm" disabled={revokingToken !== null} onClick={() => handleRevoke(share)}>
+                    {revokingToken === share.shareToken ? 'Revoking...' : 'Revoke Link'}
+                  </Button>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>

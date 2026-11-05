@@ -1,11 +1,12 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { DashboardSpec } from '@unsheet/contracts';
-import { generateShareToken } from './token';
+import { generateShareToken, hashManagementToken, matchesManagementToken } from './token';
 
 export interface ShareLinkRecord {
   id: string;
   user_id: string | null;
   share_token: string;
+  management_token_hash: string | null;
   title: string;
   spec: DashboardSpec;
   allow_export: boolean;
@@ -15,28 +16,19 @@ export interface ShareLinkRecord {
   created_at: string;
 }
 
-// In-memory fallback store for offline/demo mode or when Supabase credentials are absent
+// Demo-only store when no Supabase URL is configured.
 const memoryStore = new Map<string, ShareLinkRecord>();
 
 let supabaseClient: SupabaseClient | null = null;
 
-function getSupabase(): SupabaseClient | null {
+export function getShareSupabase(): SupabaseClient | null {
   if (supabaseClient) return supabaseClient;
-  
   const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  
-  if (url && key) {
-    try {
-      supabaseClient = createClient(url, key, {
-        auth: { persistSession: false },
-      });
-      return supabaseClient;
-    } catch (e) {
-      console.warn('Failed to initialize Supabase client in store:', e);
-    }
-  }
-  return null;
+  if (!url) return null;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) throw new Error('Sharing requires SUPABASE_SERVICE_ROLE_KEY when Supabase is configured');
+  supabaseClient = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+  return supabaseClient;
 }
 
 export interface CreateShareLinkOptions {
@@ -48,8 +40,9 @@ export interface CreateShareLinkOptions {
   dataSnapshot?: Record<string, unknown>[] | undefined;
 }
 
-export async function createShareLink(options: CreateShareLinkOptions): Promise<{ shareToken: string; expiresAt?: string | undefined }> {
+export async function createShareLink(options: CreateShareLinkOptions): Promise<{ shareToken: string; managementToken?: string | undefined; expiresAt?: string | undefined }> {
   const shareToken = generateShareToken();
+  const managementToken = options.userId ? undefined : generateShareToken();
   const now = new Date();
   let expiresAt: Date | undefined;
   
@@ -61,6 +54,7 @@ export async function createShareLink(options: CreateShareLinkOptions): Promise<
     id: crypto.randomUUID(),
     user_id: options.userId || null,
     share_token: shareToken,
+    management_token_hash: managementToken ? hashManagementToken(managementToken) : null,
     title: options.title,
     spec: options.spec,
     allow_export: options.allowExport ?? false,
@@ -70,12 +64,13 @@ export async function createShareLink(options: CreateShareLinkOptions): Promise<
     created_at: now.toISOString(),
   };
 
-  const supabase = getSupabase();
+  const supabase = getShareSupabase();
   if (supabase) {
     const { error } = await supabase.from('share_links').insert({
       id: record.id,
       user_id: record.user_id,
       share_token: record.share_token,
+      management_token_hash: record.management_token_hash,
       title: record.title,
       spec: record.spec,
       allow_export: record.allow_export,
@@ -87,8 +82,7 @@ export async function createShareLink(options: CreateShareLinkOptions): Promise<
 
     if (error) {
       console.error('Supabase error creating share link:', error);
-      // Fall back to memory store if Supabase insert fails (e.g., table not migrated yet in test environment)
-      memoryStore.set(shareToken, record);
+      throw new Error('Unable to persist share link');
     }
   } else {
     memoryStore.set(shareToken, record);
@@ -96,12 +90,13 @@ export async function createShareLink(options: CreateShareLinkOptions): Promise<
 
   return {
     shareToken,
+    managementToken,
     expiresAt: expiresAt ? expiresAt.toISOString() : undefined,
   };
 }
 
 export async function getShareLinkByToken(token: string): Promise<ShareLinkRecord | null> {
-  const supabase = getSupabase();
+  const supabase = getShareSupabase();
   let record: ShareLinkRecord | null = null;
 
   if (supabase) {
@@ -139,40 +134,32 @@ export async function getShareLinkByToken(token: string): Promise<ShareLinkRecor
   return record;
 }
 
-export async function revokeShareLink(token: string, userId?: string | null): Promise<boolean> {
-  const supabase = getSupabase();
-  
-  if (supabase) {
-    let query = supabase
-      .from('share_links')
-      .update({ is_revoked: true })
-      .eq('share_token', token);
+export interface ShareManagementCredentials {
+  userId?: string | null | undefined;
+  managementToken?: string | undefined;
+}
 
+export async function revokeShareLink(token: string, credentials: ShareManagementCredentials = {}): Promise<boolean> {
+  const { userId, managementToken } = credentials;
+  if (!userId && !managementToken) return false;
+  const supabase = getShareSupabase();
+  if (supabase) {
+    let query = supabase.from('share_links').update({ is_revoked: true }).eq('share_token', token);
     if (userId) {
       query = query.eq('user_id', userId);
+    } else {
+      query = query.is('user_id', null).eq('management_token_hash', hashManagementToken(managementToken!));
     }
-
-    const { error } = await query.select();
-    if (!error) {
-      // Also update memory store if present
-      const mem = memoryStore.get(token);
-      if (mem) {
-        mem.is_revoked = true;
-        memoryStore.set(token, mem);
-      }
-      return true;
-    }
+    const { data, error } = await query.select('id');
+    if (error) throw new Error('Unable to revoke share link');
+    return Boolean(data?.length);
   }
-
-  const mem = memoryStore.get(token);
-  if (mem) {
-    if (userId && mem.user_id && mem.user_id !== userId) {
-      return false; // Unauthorized
-    }
-    mem.is_revoked = true;
-    memoryStore.set(token, mem);
-    return true;
-  }
-
-  return false;
+  const record = memoryStore.get(token);
+  if (!record) return false;
+  const authorized = userId
+    ? record.user_id === userId
+    : Boolean(!record.user_id && managementToken && record.management_token_hash && matchesManagementToken(managementToken, record.management_token_hash));
+  if (!authorized) return false;
+  record.is_revoked = true;
+  return true;
 }

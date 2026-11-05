@@ -18,7 +18,7 @@ export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 export const SpecRefinementRequestSchema = z.object({
   prompt: z.string().min(1, 'Prompt cannot be empty').max(2000, 'Prompt exceeds 2000 characters'),
   currentSpec: DashboardSpecSchema,
-  profiles: z.array(LLMColumnProfileSchema).min(1, 'Must include at least one column profile'),
+  profiles: z.array(LLMColumnProfileSchema).min(1, 'Must include at least one column profile').max(200),
   history: z.array(ChatMessageSchema).max(20).optional(),
 });
 
@@ -63,6 +63,7 @@ export type CreateShareLinkRequest = z.infer<typeof CreateShareLinkRequestSchema
 export const CreateShareLinkResponseSchema = z.object({
   shareToken: ShareTokenSchema,
   shareUrl: SafeUrlSchema,
+  managementToken: ShareTokenSchema.optional(),
   expiresAt: IsoDateTimeSchema.optional(),
 });
 
@@ -86,7 +87,7 @@ export type GetShareLinkResponse = z.infer<typeof GetShareLinkResponseSchema>;
 export const AskYourDataRequestSchema = z.object({
   question: z.string().min(1, 'Question cannot be empty').max(1000, 'Question exceeds 1000 characters'),
   sheetName: z.string().min(1).max(128),
-  profiles: z.array(LLMColumnProfileSchema).min(1, 'At least one column profile is required'),
+  profiles: z.array(LLMColumnProfileSchema).min(1, 'At least one column profile is required').max(200),
 });
 
 export type AskYourDataRequest = z.infer<typeof AskYourDataRequestSchema>;

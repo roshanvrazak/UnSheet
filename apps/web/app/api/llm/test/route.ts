@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveLLM, getLLMStatus } from '@/lib/llm/provider';
 import { generateText } from 'ai';
+import { runAIRequest } from '@/lib/llm/request-policy';
+import { AIRequestError } from '@/lib/llm/endpoint';
 
 export async function GET(req: NextRequest) {
-  const status = getLLMStatus(req);
-  return NextResponse.json(status);
+  try {
+    return NextResponse.json(getLLMStatus(req));
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error instanceof AIRequestError ? error.message : 'Invalid AI configuration' }, { status: 400 });
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -22,11 +27,13 @@ export async function POST(req: NextRequest) {
 
     console.log(`[LLM Test] Testing connection to ${resolved.providerName} (${resolved.modelName})...`);
 
-    const result = await generateText({
+    const result = await runAIRequest(req, 'llm-test', () => generateText({
       model: resolved.model,
       prompt: 'Respond with the single word "READY".',
       maxTokens: 10,
-    });
+      maxRetries: 0,
+      abortSignal: AbortSignal.any([req.signal, AbortSignal.timeout(10000)]),
+    }));
 
     return NextResponse.json({
       success: true,
@@ -37,12 +44,17 @@ export async function POST(req: NextRequest) {
       response: result.text.trim(),
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('[LLM Test] Connection test failed:', errorMessage);
+    if (error instanceof AIRequestError) {
+      return NextResponse.json({ success: false, error: error.message }, {
+        status: error.status,
+        headers: error.retryAfterSeconds ? { 'Retry-After': String(error.retryAfterSeconds) } : {},
+      });
+    }
+    console.error('[LLM Test] Connection test failed');
     return NextResponse.json(
       {
         success: false,
-        error: errorMessage,
+        error: 'AI provider connection failed. Check your settings and try again.',
       },
       { status: 400 }
     );

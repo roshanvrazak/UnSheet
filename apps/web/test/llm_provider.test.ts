@@ -15,6 +15,10 @@ describe('Unified LLM Provider & Auto-Detection Suite', () => {
     delete process.env.GROK_BASE_URL;
     delete process.env.XAI_BASE_URL;
     delete process.env.OPENAI_BASE_URL;
+    delete process.env.AI_MODEL;
+    delete process.env.GROK_MODEL;
+    delete process.env.OPENAI_MODEL;
+    delete process.env.DISABLE_LLM;
   });
 
   afterEach(() => {
@@ -80,6 +84,26 @@ describe('Unified LLM Provider & Auto-Detection Suite', () => {
     expect(resolved?.provider).toBe('grok');
     expect(resolved?.modelName).toBe('grok-2');
     expect(resolved?.source).toBe('header');
+  });
+
+  it('ignores client routing overrides when using the server key', () => {
+    process.env.OPENAI_API_KEY = 'sk-server-key';
+    const req = new NextRequest('http://localhost/api/query/ask', { headers: {
+      'x-api-base-url': 'https://attacker.invalid/v1', 'x-api-provider': 'grok', 'x-api-model': 'attacker-model',
+    } });
+    expect(resolveLLM(req)).toMatchObject({ provider: 'openai', modelName: 'gpt-4o-mini', source: 'env' });
+  });
+
+  it('uses provider-specific model settings', () => {
+    process.env.OPENAI_API_KEY = 'sk-server-key';
+    process.env.GROK_MODEL = 'grok-model';
+    process.env.OPENAI_MODEL = 'openai-model';
+    expect(resolveLLM()?.modelName).toBe('openai-model');
+  });
+
+  it('honors the server AI kill switch even for client keys', () => {
+    process.env.DISABLE_LLM = 'true';
+    expect(resolveLLM(new NextRequest('http://localhost/api/query/ask', { headers: { 'x-api-key': 'sk-client' } }))).toBeNull();
   });
 
   it('GET /api/llm/test returns status', async () => {

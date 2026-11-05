@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CreateShareLinkRequestSchema, CreateShareLinkResponseSchema } from '@unsheet/contracts';
 import { createShareLink } from '../../../lib/share/store';
+import { getVerifiedShareUserId, ShareAuthenticationError } from '@/lib/share/auth';
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,12 +17,7 @@ export async function POST(req: NextRequest) {
 
     const { title, spec, allowExport, expiresInHours, includeDataSnapshot, dataSnapshot } = parsed.data;
 
-    // Optional user ID from auth headers or session if present
-    const authHeader = req.headers.get('authorization');
-    const userId: string | null = null;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      // In production with Supabase JWT, this would be decoded or verified. For now we accept or leave null for anonymous.
-    }
+    const userId = await getVerifiedShareUserId(req);
 
     const result = await createShareLink({
       userId,
@@ -38,12 +34,16 @@ export async function POST(req: NextRequest) {
 
     const responsePayload = CreateShareLinkResponseSchema.parse({
       shareToken: result.shareToken,
+      managementToken: result.managementToken,
       shareUrl,
       expiresAt: result.expiresAt,
     });
 
-    return NextResponse.json(responsePayload, { status: 201 });
+    return NextResponse.json(responsePayload, { status: 201, headers: { 'Cache-Control': 'no-store' } });
   } catch (e: unknown) {
+    if (e instanceof ShareAuthenticationError) {
+      return NextResponse.json({ error: 'Invalid authorization' }, { status: 401 });
+    }
     const message = e instanceof Error ? e.message : 'Unknown error';
     return NextResponse.json(
       { error: 'Internal server error: ' + message },

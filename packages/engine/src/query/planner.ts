@@ -353,7 +353,7 @@ function buildTablePlan(
     select,
     filters: filters.length > 0 ? filters : undefined,
     orderBy,
-    limit: widget.pageSize ?? defaultLimit,
+    limit: defaultLimit,
     offset: 0,
   };
   return QueryPlanSchema.parse(plan);

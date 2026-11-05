@@ -166,6 +166,7 @@ export function generateDashboardSpec(
           : isPercent
           ? {
               suffix: '%',
+              scale: 100,
               precision: 1,
             }
           : undefined,

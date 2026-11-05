@@ -111,6 +111,7 @@ describe('Phase 6 Share Links & Templates API & Security', () => {
 
     const revokeReq = new NextRequest(`http://localhost:3000/api/share/${token}/revoke`, {
       method: 'POST',
+      headers: { 'x-share-management-token': createData.managementToken },
     });
     await revokeSharePost(revokeReq, { params: Promise.resolve({ token }) });
 

@@ -17,3 +17,14 @@ export function generateShareToken(): ShareToken {
   
   return parsed.data;
 }
+
+/** Only the digest is stored server-side; the secret is returned once to its creator. */
+export function hashManagementToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+export function matchesManagementToken(token: string, digest: string): boolean {
+  const candidate = Buffer.from(hashManagementToken(token), 'hex');
+  const stored = Buffer.from(digest, 'hex');
+  return candidate.length === stored.length && crypto.timingSafeEqual(candidate, stored);
+}

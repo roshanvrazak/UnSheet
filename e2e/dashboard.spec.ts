@@ -1,110 +1,100 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Unsheet Full Pipeline & Dashboard E2E Tests', () => {
-  test('Test 1: Full pipeline workflow - Load sample workbook, verify 5-step timing bar, verify dashboard grid rendered', async ({ page }) => {
-    await page.goto('/');
+async function loadDashboard(page: import('@playwright/test').Page) {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Capital_Projects Dashboard', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Raw Records', exact: true }).getByText('Page 1 of 3')).toBeVisible();
+}
 
-    // Verify title/branding and h1 semantic heading
-    await expect(page.locator('h1')).toContainText('Unsheet');
+test('loads samples and paginates all records', async ({ page }) => {
+  await loadDashboard(page);
+  const table = page.getByRole('region', { name: 'Raw Records', exact: true });
+  await table.getByRole('button', { name: 'Next page' }).click();
+  await expect(table.getByText('Page 2 of 3')).toBeVisible();
+  await page.getByRole('button', { name: /BOQ & Quotes/ }).click();
+  await expect(page.getByRole('heading', { name: 'Bill_of_Quantities Dashboard', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Engine pipeline status' })).toContainText('4. SpecGen');
+});
 
-    // Click sample workbook loader ("BOQ & Quotes")
-    const sampleButton = page.locator('button:has-text("BOQ & Quotes")').first();
-    await sampleButton.click();
+test('filters update totals and reset restores records', async ({ page }) => {
+  await loadDashboard(page);
+  const table = page.getByRole('region', { name: 'Raw Records', exact: true });
+  await page.getByLabel('Stage', { exact: true }).selectOption('Feasibility');
+  await expect(table.getByText('Page 1 of 1')).toBeVisible();
+  await expect(table.getByRole('cell', { name: 'Execution', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Reset filters' }).click();
+  await expect(table.getByText('Page 1 of 3')).toBeVisible();
+});
 
-    // Verify 5-step timing bar (Parse -> Normalise -> Profile -> SpecGen -> Render)
-    const timingBar = page.locator('text=/Parse|Normalise|Profile|SpecGen|Render/i').first();
-    await expect(timingBar).toBeVisible({ timeout: 15000 });
+test('Ask AI executes an average and adds its widget', async ({ page }) => {
+  await loadDashboard(page);
+  await page.getByRole('button', { name: 'Ask AI', exact: true }).click();
+  const drawer = page.getByRole('dialog', { name: 'Ask Your Data' });
+  await drawer.getByPlaceholder('Ask a question about your data...').fill('Average approved_budget');
+  await drawer.getByRole('button', { name: 'Ask', exact: true }).click();
+  await expect(drawer.getByText(/3,015,600/).first()).toBeVisible({ timeout: 60000 });
+  await drawer.getByRole('button', { name: 'Add to Dashboard', exact: true }).click();
+  await expect(drawer.getByText('Added to dashboard!')).toBeVisible();
+});
 
-    // Verify dashboard grid rendered with widget cards
-    const widgetCard = page.locator('.widget-card, [data-testid="widget-card"], div:has(> h3)').first();
-    await expect(widgetCard).toBeVisible({ timeout: 15000 });
+test('CSV export includes values under original headers', async ({ page }) => {
+  await loadDashboard(page);
+  await page.getByRole('button', { name: 'Export options', exact: true }).click();
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('menuitem', { name: 'Export CSV', exact: true }).click();
+  const download = await downloadPromise;
+  const stream = await download.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
+  const csv = Buffer.concat(chunks).toString();
+  expect(csv).toContain('Project Code,Project Name');
+  expect(csv).toContain('PRJ-01,NextGen Telemetry Grid');
+  expect(csv.split('\r\n')).toHaveLength(26);
+});
+
+test('navbar upload works with the ingestion panel collapsed', async ({ page }) => {
+  await loadDashboard(page);
+  await page.getByRole('button', { name: 'Switch dataset / Upload', exact: true }).click();
+  await page.getByRole('button', { name: 'Collapse', exact: true }).click();
+  const chooserPromise = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'New File', exact: true }).click();
+  const chooser = await chooserPromise;
+  await chooser.setFiles({ name: 'demo.csv', mimeType: 'text/csv', buffer: Buffer.from('Region,Revenue\nNorth,10\nSouth,30') });
+  await expect(page.getByRole('heading', { name: 'Sheet1 Dashboard', exact: true })).toBeVisible();
+});
+
+test('executes generated SQL in DuckDB without substituting a heuristic answer', async ({ page }) => {
+  test.setTimeout(90000);
+  await loadDashboard(page);
+  await page.route('**/api/query/ask', async route => {
+    await route.fulfill({ json: { success: true, interpretedIntent: 'Filtered average', sql: 'SELECT AVG("approved_budget") AS "average_budget" FROM "Capital_Projects" WHERE "approved_budget" > 4000000', explanation: 'Average for budgets above 4 million.' } });
   });
+  await page.getByRole('button', { name: 'Ask AI', exact: true }).click();
+  const drawer = page.getByRole('dialog', { name: 'Ask Your Data' });
+  await drawer.getByPlaceholder('Ask a question about your data...').fill('Average budget above 4 million');
+  await drawer.getByRole('button', { name: 'Ask', exact: true }).click();
+  await expect(drawer.getByText(/Result:.*average budget/)).toBeVisible({ timeout: 60000 });
+  await expect(drawer.getByRole('button', { name: 'Add to Dashboard', exact: true })).toHaveCount(0);
+});
 
-  test('Test 2: Filter interactivity - Interact with filter bar controls and verify reactive dashboard updates', async ({ page }) => {
-    await page.goto('/');
-    await page.locator('button:has-text("Project Pipeline")').first().click();
+test('refines the dashboard and undo restores its title', async ({ page }) => {
+  await loadDashboard(page);
+  await page.getByRole('button', { name: 'Refine', exact: true }).click();
+  await page.getByPlaceholder(/Refine dashboard with AI/).fill('Change title to Interview Demo');
+  await page.getByPlaceholder(/Refine dashboard with AI/).press('Enter');
+  await expect(page.getByRole('heading', { name: 'Interview Demo', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Capital_Projects Dashboard', exact: true })).toBeVisible();
+});
 
-    // Wait for dashboard
-    await page.waitForSelector('text=Dashboard', { timeout: 15000 });
-
-    // Locate filter controls if present
-    const filterInput = page.locator('input[placeholder*="Filter"], input[type="search"]').first();
-    if (await filterInput.isVisible()) {
-      await filterInput.fill('Q1');
-      // Verify reactive update
-      await expect(page.locator('text=Q1')).toBeVisible();
-    } else {
-      // Fallback assertion if filter bar is dropdown or custom
-      const filterBar = page.locator('div:has-text("Filter")').first();
-      await expect(filterBar).toBeVisible();
-    }
-  });
-
-  test('Test 3: Ask-Your-Data interaction - Open Ask Data drawer, submit natural language query, add widget', async ({ page }) => {
-    await page.goto('/');
-    await page.locator('button:has-text("Supplier Lead Times")').first().click();
-    await page.waitForSelector('text=Dashboard', { timeout: 15000 });
-
-    // Open Ask Data drawer
-    const askButton = page.locator('button:has-text("Ask Data"), button:has-text("Ask Your Data")').first();
-    if (await askButton.isVisible()) {
-      await askButton.click();
-      
-      const promptInput = page.locator('input[placeholder*="query"], textarea[placeholder*="natural language"]').first();
-      if (await promptInput.isVisible()) {
-        await promptInput.fill('Show average lead time by supplier');
-        const submitBtn = page.locator('button:has-text("Run"), button:has-text("Query")').first();
-        await submitBtn.click();
-
-        // Verify safe SQL preview
-        const sqlPreview = page.locator('pre, code, text=/SELECT/i').first();
-        await expect(sqlPreview).toBeVisible({ timeout: 10000 });
-
-        // Add widget to dashboard
-        const addWidgetBtn = page.locator('button:has-text("Add to Dashboard"), button:has-text("Add Widget")').first();
-        if (await addWidgetBtn.isVisible()) {
-          await addWidgetBtn.click();
-        }
-      }
-    }
-  });
-
-  test('Test 4: Export workflow - Open export menu, trigger safe CSV download', async ({ page }) => {
-    await page.goto('/');
-    await page.locator('button:has-text("BOQ & Quotes")').first().click();
-    await page.waitForSelector('text=Dashboard', { timeout: 15000 });
-
-    // Open export menu or button
-    const exportBtn = page.locator('button:has-text("Export"), button:has-text("Download")').first();
-    if (await exportBtn.isVisible()) {
-      await exportBtn.click();
-      const csvOption = page.locator('button:has-text("CSV"), a:has-text("CSV")').first();
-      if (await csvOption.isVisible()) {
-        const downloadPromise = page.waitForEvent('download').catch(() => null);
-        await csvOption.click();
-        const download = await downloadPromise;
-        if (download) {
-          expect(download.suggestedFilename()).toContain('.csv');
-        }
-      }
-    }
-  });
-
-  test('Test 5: Template saving and drift detection workflow', async ({ page }) => {
-    await page.goto('/');
-    await page.locator('button:has-text("Project Pipeline")').first().click();
-    await page.waitForSelector('text=Dashboard', { timeout: 15000 });
-
-    // Save as template button
-    const saveTemplateBtn = page.locator('button:has-text("Save Template"), button:has-text("Template")').first();
-    if (await saveTemplateBtn.isVisible()) {
-      await saveTemplateBtn.click();
-      const templateNameInput = page.locator('input[placeholder*="Template Name"]').first();
-      if (await templateNameInput.isVisible()) {
-        await templateNameInput.fill('E2E Test Template');
-        await page.locator('button:has-text("Confirm Save"), button:has-text("Save")').last().click();
-        await expect(page.locator('text=E2E Test Template')).toBeVisible();
-      }
-    }
-  });
+test('data explorer searches fields and closes with Escape', async ({ page, isMobile }) => {
+  await loadDashboard(page);
+  if (isMobile) await page.getByRole('button', { name: 'Toggle sheet and field inspector', exact: true }).click();
+  const inspector = page.getByRole('complementary', { name: 'Sheet and field inspector' });
+  await inspector.getByRole('searchbox', { name: 'Search fields' }).fill('Approved Budget');
+  await expect(inspector.getByRole('checkbox')).toHaveCount(1);
+  await expect(inspector.getByRole('checkbox', { name: 'toggle approved_budget' })).toBeChecked();
+  await page.keyboard.press('Escape');
+  await expect(inspector).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });

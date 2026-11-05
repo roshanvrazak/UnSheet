@@ -19,11 +19,9 @@ test.describe('WCAG 2.1 AA Accessibility Audit', () => {
 
   test('active rendered dashboard passes accessibility audit', async ({ page }) => {
     await page.goto('/');
-    const sampleBtn = page.locator('button:has-text("Financials")').first();
-    if (await sampleBtn.isVisible()) {
-      await sampleBtn.click();
-      await page.waitForSelector('text=Dashboard', { timeout: 10000 });
-    }
+    await expect(page.getByRole('heading', { name: 'Capital_Projects Dashboard', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: /BOQ & Quotes/ }).click();
+    await expect(page.getByRole('heading', { name: 'Bill_of_Quantities Dashboard', exact: true })).toBeVisible();
 
     const accessibilityScanResults = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])

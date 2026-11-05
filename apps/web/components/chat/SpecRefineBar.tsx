@@ -78,9 +78,9 @@ export function SpecRefineBar({
           const el = document.getElementById(`widget-${newWidget.id}`);
           if (el) {
             el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            el.classList.add('ring-4', 'ring-indigo-500/50', 'transition-all', 'duration-500');
+            el.classList.add('ring-4', 'ring-brand-500/50', 'transition-all', 'duration-500');
             setTimeout(() => {
-              el.classList.remove('ring-4', 'ring-indigo-500/50');
+              el.classList.remove('ring-4', 'ring-brand-500/50');
             }, 2000);
           }
         }, 200);
@@ -109,13 +109,14 @@ export function SpecRefineBar({
   return (
     <div className={cn('w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm space-y-3', className)}>
       <form onSubmit={handleRefine} className="flex items-center space-x-2">
-        <div className="p-2 bg-indigo-100 dark:bg-indigo-950/60 rounded-lg text-indigo-600 dark:text-indigo-400 shrink-0">
+        <div className="p-2 bg-brand-100 dark:bg-brand-950/60 rounded-lg text-brand-600 dark:text-brand-400 shrink-0">
           <Sparkles className="w-4 h-4" />
         </div>
         <Input
           type="text"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
+          aria-label="Dashboard refinement request"
           placeholder="Refine dashboard with AI (e.g. 'Add a KPI for total revenue', 'Change bar chart to donut')..."
           disabled={isRefining}
           className="flex-1 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 border border-slate-300 dark:border-slate-700 text-sm"
@@ -123,7 +124,7 @@ export function SpecRefineBar({
         <Button
           type="submit"
           disabled={isRefining || !prompt.trim()}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0 text-xs font-medium"
+          className="bg-brand-600 hover:bg-brand-700 text-white shrink-0 text-xs font-medium"
         >
           {isRefining ? (
             <>

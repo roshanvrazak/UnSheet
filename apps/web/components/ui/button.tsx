@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '@/lib/utils';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'default' | 'outline' | 'ghost' | 'destructive';
@@ -8,11 +9,11 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className = '', variant = 'default', size = 'default', children, ...props }, ref) => {
-    const baseStyles = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 cursor-pointer';
+    const baseStyles = 'inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer';
     const variantStyles = {
-      default: 'bg-primary text-primary-foreground hover:bg-primary/90 bg-blue-600 text-white',
-      outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-      ghost: 'hover:bg-accent hover:text-accent-foreground',
+      default: 'bg-brand-700 text-white hover:bg-brand-800',
+      outline: 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50',
+      ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
       destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90 bg-rose-600 text-white'
     };
     const sizeStyles = {
@@ -21,7 +22,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       icon: 'h-9 w-9'
     };
 
-    const combinedClassName = `${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className}`;
+    const combinedClassName = cn(baseStyles, variantStyles[variant], sizeStyles[size], className);
 
     return (
       <button ref={ref} className={combinedClassName} {...props}>

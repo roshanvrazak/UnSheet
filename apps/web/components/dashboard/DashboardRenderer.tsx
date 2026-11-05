@@ -113,18 +113,18 @@ export function DashboardRenderer({
 
   return (
     <div
-      className={cn('w-full flex flex-col space-y-6', className)}
+      className={cn('dashboard-renderer w-full flex flex-col space-y-5', className)}
       style={{ padding: `${paddingPx}px` }}
     >
       {/* Dashboard Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 pb-4">
+      <div className="dashboard-heading">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
-            {validSpec.title}
+          <h1 aria-label={validSpec.title}>
+            {validSpec.title.replace(/_/g, ' ')}
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">{validSpec.description}</p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-600">
+        <div className="dashboard-meta">
           <span>Sheet: <strong className="text-slate-700">{sheet.name}</strong></span>
           <span>•</span>
           <span>{sheet.rowCount.toLocaleString()} rows</span>
@@ -142,7 +142,7 @@ export function DashboardRenderer({
 
       {/* 12-Column Responsive CSS Grid */}
       <div
-        className="grid grid-cols-12 w-full"
+        className="dashboard-grid grid grid-cols-12 w-full"
         style={{ gap: `${gapPx}px` }}
       >
         {validSpec.widgets.map((widget: unknown, index: number) => {
@@ -160,7 +160,7 @@ export function DashboardRenderer({
             <div
               key={widgetKey}
               id={`widget-${widgetKey}`}
-              className={cn(colClass, 'flex flex-col')}
+              className={cn(colClass, 'flex flex-col min-w-0')}
             >
               <WidgetContainer
                 widget={widget}

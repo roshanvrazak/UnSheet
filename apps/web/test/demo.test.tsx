@@ -25,19 +25,22 @@ describe('Anonymous Demo App (HomePage)', () => {
   it('renders header, brand logo, tagline, and Privacy Badge', async () => {
     render(<HomePage />);
 
+    await screen.findByText('Engine Pipeline');
+    fireEvent.click(screen.getByRole('button', { name: 'Switch dataset / Upload' }));
+
     // Brand and tagline
     expect(screen.getByText('Unsheet')).toBeDefined();
     expect(
-      screen.getByText('Any spreadsheet. Instant dashboard.')
+      screen.getByRole('heading', { name: 'Any spreadsheet. Instant dashboard.' })
     ).toBeDefined();
 
     // Privacy badge
     expect(
-      screen.getByText(/100% In-Browser: your data never leaves your device/i)
+      screen.getByText(/Your files stay on your device/i)
     ).toBeDefined();
 
     // Upload zone
-    expect(screen.getByText('Drop your spreadsheet here')).toBeDefined();
+    expect(await screen.findByText('Drop your spreadsheet here')).toBeDefined();
     expect(screen.getByText(/Zero server upload/i)).toBeDefined();
 
     // Initial load auto-renders Project Pipeline dashboard
@@ -83,7 +86,7 @@ describe('Anonymous Demo App (HomePage)', () => {
     // Should switch to Bill of Quantities dashboard
     await waitFor(
       () => {
-        expect(screen.getByText(/Bill of Quantities/i)).toBeDefined();
+        expect(screen.getByRole('heading', { name: 'Bill_of_Quantities Dashboard' })).toBeDefined();
       },
       { timeout: 3000 }
     );

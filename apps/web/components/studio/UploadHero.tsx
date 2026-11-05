@@ -1,17 +1,8 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import {
-  UploadCloud,
-  FileSpreadsheet,
-  ShieldCheck,
-  Sparkles,
-  Zap,
-} from 'lucide-react';
-import {
-  SAMPLE_WORKBOOKS,
-  type SampleWorkbookMeta,
-} from '@/lib/sample-workbooks';
+import { UploadCloud, FileSpreadsheet, ShieldCheck, ArrowUpRight, Check, Layers, BarChart3, Truck, Table2 } from 'lucide-react';
+import { SAMPLE_WORKBOOKS, type SampleWorkbookMeta } from '@/lib/sample-workbooks';
 import { cn } from '@/lib/utils';
 
 export interface UploadHeroProps {
@@ -19,177 +10,56 @@ export interface UploadHeroProps {
   onSelectSample: (sample: SampleWorkbookMeta) => void;
   activeSampleId?: string | undefined;
   isProcessing: boolean;
+  showUpload?: boolean;
   fileInputRef?: React.RefObject<HTMLInputElement | null> | undefined;
 }
+const sampleIcons = [BarChart3, Layers, Truck, Table2];
+const sampleTones = ['sample-tone-0', 'sample-tone-1', 'sample-tone-2', 'sample-tone-3'];
 
-export function UploadHero({
-  onFileUpload,
-  onSelectSample,
-  activeSampleId,
-  isProcessing,
-  fileInputRef,
-}: UploadHeroProps) {
-  const [isDragging, setIsDragging] = useState<boolean>(false);
+export function UploadHero({ onFileUpload, onSelectSample, activeSampleId, isProcessing, fileInputRef, showUpload = true }: UploadHeroProps) {
+  const [isDragging, setIsDragging] = useState(false);
   const internalInputRef = useRef<HTMLInputElement>(null);
   const resolvedInputRef = fileInputRef || internalInputRef;
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (isProcessing) return;
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      onFileUpload(file);
-    }
-  };
-
   return (
-    <div className="w-full max-w-5xl mx-auto py-8 px-4 sm:px-6 space-y-8 animate-in fade-in duration-300">
-      {/* 1. Hero Title & Value Proposition */}
-      <div className="text-center space-y-3 max-w-2xl mx-auto">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200/80 text-xs font-semibold text-indigo-700 shadow-xs">
-          <Zap className="w-3.5 h-3.5 text-indigo-600" aria-hidden="true" />
-          <span>Instant In-Browser Analytics Studio</span>
+    <div className={cn('dataset-panel', !showUpload && 'is-compact')}>
+      <div className="dataset-intro" hidden={!showUpload}>
+        <div className="dataset-copy">
+          <span className="eyebrow"><span className="status-dot" />YOUR NEXT INSIGHT STARTS HERE</span>
+          <h2>Any spreadsheet.<br /> <span>Instant dashboard.</span></h2>
+          <p>A little less spreadsheet.<br className="hidden xl:block" /> A lot more clarity.</p>
+          <span className="dataset-privacy"><ShieldCheck size={14} aria-hidden="true" />Your files stay on your device.</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">
-          Any spreadsheet. Instant dashboard.
-        </h1>
-        <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-          Drop any raw Excel or CSV file. Unsheet automatically profiles your columns, selects key metrics, and builds an interactive analytical dashboard in your browser.
-        </p>
-      </div>
-
-      {/* 2. Modern Dropzone Card */}
-      <div className="relative group">
-        {/* Subtle Ambient Radial Glow */}
-        <div className="absolute -inset-1 rounded-3xl bg-blue-500/5 blur-xl opacity-75 group-hover:opacity-100 transition-opacity" />
-
         <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            if (!isProcessing) setIsDragging(true);
-          }}
-          onDragLeave={(e) => {
-            e.preventDefault();
-            setIsDragging(false);
-          }}
-          onDrop={handleDrop}
-          onClick={() => {
-            if (!isProcessing) resolvedInputRef.current?.click();
-          }}
-          className={cn(
-            'relative flex flex-col items-center justify-center text-center cursor-pointer p-8 sm:p-12 rounded-2xl border-2 border-dashed bg-white transition-all shadow-sm',
-            isDragging
-              ? 'border-indigo-500 bg-indigo-50/50 ring-4 ring-indigo-500/10'
-              : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50/70',
-            isProcessing && 'opacity-60 cursor-not-allowed'
-          )}
+          className={cn('upload-zone', isDragging && 'is-dragging', isProcessing && 'is-processing')}
+          onDragOver={(event) => { event.preventDefault(); if (!isProcessing) setIsDragging(true); }}
+          onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setIsDragging(false); }}
+          onDrop={(event) => { event.preventDefault(); setIsDragging(false); const file = event.dataTransfer.files[0]; if (file && !isProcessing) onFileUpload(file); }}
         >
-          <input
-            ref={resolvedInputRef}
-            type="file"
-            accept=".xlsx,.xls,.csv,.tsv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,text/tab-separated-values"
-            data-testid="file-upload-input"
-            className="hidden"
-            disabled={isProcessing}
-            onClick={(e) => {
-              (e.target as HTMLInputElement).value = '';
-            }}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                onFileUpload(file);
-              }
-              e.target.value = '';
-            }}
-          />
-
-          <div className="h-14 w-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-4 shadow-xs group-hover:scale-105 transition-transform">
-            <UploadCloud className="h-7 w-7" aria-hidden="true" />
+          <input ref={resolvedInputRef} type="file" accept=".xlsx,.xls,.csv,.tsv" data-testid="file-upload-input" aria-label="Choose a spreadsheet" className="hidden" disabled={isProcessing}
+            onClick={(event) => { event.currentTarget.value = ''; }}
+            onChange={(event) => { const file = event.target.files?.[0]; if (file) onFileUpload(file); event.target.value = ''; }} />
+          <span className="upload-icon"><UploadCloud size={24} strokeWidth={1.6} aria-hidden="true" /></span>
+          <div>
+            <h3>{isProcessing ? 'Reading your spreadsheet…' : 'Drop your spreadsheet here'}</h3>
+            <p>or <button type="button" className="browse-link" onClick={() => resolvedInputRef.current?.click()} disabled={isProcessing}>Browse files</button> to get started</p>
           </div>
-
-          <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-            Drop your spreadsheet here
-          </h2>
-          <p className="mt-1 text-xs text-slate-500 max-w-sm">
-            Supports <span className="font-mono text-slate-700">.xlsx</span>, <span className="font-mono text-slate-700">.xls</span>, <span className="font-mono text-slate-700">.csv</span>, and <span className="font-mono text-slate-700">.tsv</span> files up to 50MB.
-          </p>
-
-          <div className="mt-4 flex items-center gap-2">
-            <button
-              type="button"
-              disabled={isProcessing}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg shadow-sm transition-colors"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span>Browse files</span>
-            </button>
-          </div>
-
-          <div className="mt-6 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-center gap-4 text-[11px] text-slate-600 font-medium">
-            <span className="flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              100% In-Browser: your data never leaves your device
-            </span>
-            <span>•</span>
-            <span>Zero server upload</span>
-            <span>•</span>
-            <span>DuckDB-WASM Engine</span>
-          </div>
+          <div className="upload-formats"><span>.xlsx</span><span>.xls</span><span>.csv</span><span>.tsv</span><span className="format-limit">Up to 10 MB</span></div>
+          <span className="sr-only">Supports spreadsheet files up to 10MB. Zero server upload. 100% In-Browser: your raw workbook stays on your device. AI receives capped samples when used.</span>
         </div>
       </div>
-
-      {/* 3. Pre-loaded Sample Workbooks */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-500" aria-hidden="true" />
-            <h3 className="text-sm font-bold text-slate-800 tracking-tight">
-              Or explore interactive sample datasets
-            </h3>
-          </div>
-          <span className="text-xs text-slate-600">One-click live demo</span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {SAMPLE_WORKBOOKS.map((sample) => {
-            const isSelected = activeSampleId === sample.id;
-
+      <div className="sample-section">
+        <div className="sample-caption"><span>Just exploring?</span><span>Try a sample dataset <ArrowUpRight size={13} aria-hidden="true" /></span></div>
+        <div className="sample-grid">
+          {SAMPLE_WORKBOOKS.map((sample, index) => {
+            const selected = activeSampleId === sample.id;
+            const Icon = sampleIcons[index] || FileSpreadsheet;
             return (
-              <button
-                key={sample.id}
-                type="button"
-                onClick={() => onSelectSample(sample)}
-                disabled={isProcessing}
-                className={cn(
-                  'flex flex-col text-left p-3.5 rounded-xl border text-xs transition-all relative group bg-white shadow-xs',
-                  isSelected
-                    ? 'border-indigo-500 bg-indigo-50/40 ring-2 ring-indigo-500/20'
-                    : 'border-slate-200/80 hover:border-indigo-300 hover:shadow-sm'
-                )}
-              >
-                <div className="flex items-start justify-between w-full mb-1">
-                  <span className="font-bold text-slate-800 group-hover:text-indigo-600 transition-colors line-clamp-1">
-                    {sample.name}
-                  </span>
-                  <span
-                    className={cn(
-                      'text-[10px] font-semibold rounded px-1.5 py-0.5 border shrink-0 ml-1',
-                      isSelected
-                        ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
-                        : 'bg-slate-100 text-slate-600 border-slate-200'
-                    )}
-                  >
-                    {sample.badge}
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
-                  {sample.description}
-                </p>
-                <div className="mt-2.5 flex items-center justify-between w-full text-[10px] text-slate-600 pt-2 border-t border-slate-100">
-                  <span className="font-medium text-slate-600">{sample.domain}</span>
-                  <span className="font-mono text-slate-600">{sample.filename}</span>
-                </div>
+              <button key={sample.id} type="button" onClick={() => onSelectSample(sample)} disabled={isProcessing} aria-pressed={selected} className={cn('sample-card', selected && 'is-selected')} title={sample.description}>
+                <span className={cn('sample-icon', sampleTones[index])}><Icon size={18} strokeWidth={1.7} aria-hidden="true" /></span>
+                <span className="sample-text"><strong>{sample.name}</strong><span>{sample.domain}</span></span>
+                <span className="sample-state">{selected ? <Check size={15} aria-label="Selected" /> : <ArrowUpRight size={15} aria-hidden="true" />}</span>
+                <span className="sr-only">{sample.badge} {sample.filename}</span>
               </button>
             );
           })}

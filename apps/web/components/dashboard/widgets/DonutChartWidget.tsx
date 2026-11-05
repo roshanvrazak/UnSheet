@@ -51,7 +51,7 @@ export function DonutChartWidget({ spec, queryResult }: DonutChartWidgetProps) {
     <div
       role="region"
       aria-label={spec.title}
-      className="flex flex-col justify-between h-full rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm hover:shadow transition-shadow"
+      className="widget-card flex flex-col justify-between h-full p-5"
     >
       <div>
         <div>
@@ -64,13 +64,14 @@ export function DonutChartWidget({ spec, queryResult }: DonutChartWidgetProps) {
         {/* Visual Chart */}
         <div className="mt-4 h-64 w-full">
           {rows.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-xs text-slate-400">
+            <div className="flex h-full items-center justify-center text-xs text-slate-500">
               No data available for selected filters
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%" minHeight={200}>
               <PieChart>
                 <Pie
+                  isAnimationActive={false}
                   data={rows}
                   dataKey={spec.measure}
                   nameKey={spec.dimension}
@@ -78,9 +79,10 @@ export function DonutChartWidget({ spec, queryResult }: DonutChartWidgetProps) {
                   outerRadius="80%"
                   paddingAngle={2}
                 >
-                  {rows.map((_, index) => (
+                  {rows.map((row, index) => (
                     <Cell
                       key={`cell-${index}`}
+                      aria-label={`${String(row[spec.dimension])}: ${String(row[spec.measure])}`}
                       fill={getChartColor(index)}
                       stroke="#ffffff"
                       strokeWidth={1.5}
@@ -98,7 +100,7 @@ export function DonutChartWidget({ spec, queryResult }: DonutChartWidgetProps) {
                   }}
                   contentStyle={{
                     backgroundColor: '#ffffff',
-                    borderColor: '#e2e8f0',
+                    borderColor: '#e0e5dd',
                     borderRadius: '0.5rem',
                     fontSize: '12px',
                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',

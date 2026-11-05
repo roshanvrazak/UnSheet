@@ -16,7 +16,7 @@ describe('UploadHero Component', () => {
     );
 
     expect(screen.getByText('Drop your spreadsheet here')).toBeDefined();
-    expect(screen.getByText(/files up to 50MB/i)).toBeDefined();
+    expect(screen.getByText(/files up to 10MB/i)).toBeDefined();
     expect(screen.getByText('.xlsx')).toBeDefined();
     expect(screen.getByText(/100% In-Browser/i)).toBeDefined();
     expect(screen.getByText('Browse files')).toBeDefined();

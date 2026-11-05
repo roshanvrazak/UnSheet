@@ -146,7 +146,7 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900">
           <div className="flex items-center space-x-2.5">
-            <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+            <div className="p-2 rounded-xl bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
@@ -190,7 +190,7 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
                 onClick={() => handleProviderChange('grok')}
                 className={`py-2 px-3 text-xs font-semibold rounded-xl border flex flex-col items-center gap-1 transition-all ${
                   provider === 'grok'
-                    ? 'border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 shadow-xs'
+                    ? 'border-brand-600 bg-brand-50/70 dark:bg-brand-950/50 text-brand-700 dark:text-brand-300 shadow-xs'
                     : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
@@ -203,7 +203,7 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
                 onClick={() => handleProviderChange('openai')}
                 className={`py-2 px-3 text-xs font-semibold rounded-xl border flex flex-col items-center gap-1 transition-all ${
                   provider === 'openai'
-                    ? 'border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 shadow-xs'
+                    ? 'border-brand-600 bg-brand-50/70 dark:bg-brand-950/50 text-brand-700 dark:text-brand-300 shadow-xs'
                     : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
@@ -216,7 +216,7 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
                 onClick={() => handleProviderChange('custom')}
                 className={`py-2 px-3 text-xs font-semibold rounded-xl border flex flex-col items-center gap-1 transition-all ${
                   provider === 'custom'
-                    ? 'border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 shadow-xs'
+                    ? 'border-brand-600 bg-brand-50/70 dark:bg-brand-950/50 text-brand-700 dark:text-brand-300 shadow-xs'
                     : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
@@ -237,7 +237,7 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
                   href="https://console.x.ai/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                  className="text-[11px] text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1"
                 >
                   <span>Get Grok Key</span>
                   <ExternalLink className="w-3 h-3" />
@@ -283,7 +283,7 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
               <select
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
-                className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
               >
                 <option value="grok-2-mini">grok-2-mini (Recommended - Fast & Accurate)</option>
                 <option value="grok-2">grok-2 (High Precision Reasoning)</option>
@@ -293,7 +293,7 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
               <select
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
-                className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
               >
                 <option value="gpt-4o-mini">gpt-4o-mini (Fast & Recommended)</option>
                 <option value="gpt-4o">gpt-4o (Full Capability)</option>
@@ -378,7 +378,7 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
               type="button"
               size="sm"
               onClick={handleSave}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs h-9 px-4 font-semibold shadow-xs"
+              className="bg-brand-600 hover:bg-brand-700 text-white text-xs h-9 px-4 font-semibold shadow-xs"
             >
               Save & Apply
             </Button>

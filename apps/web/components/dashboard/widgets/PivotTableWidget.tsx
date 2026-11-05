@@ -75,7 +75,7 @@ export function PivotTableWidget({ spec, queryResult }: PivotTableWidgetProps) {
     <div
       role="region"
       aria-label={spec.title}
-      className="flex flex-col justify-between h-full rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm hover:shadow transition-shadow"
+      className="widget-card flex flex-col justify-between h-full p-5"
     >
       <div>
         <div className="mb-4">
@@ -117,7 +117,7 @@ export function PivotTableWidget({ spec, queryResult }: PivotTableWidgetProps) {
                 <tr>
                   <td
                     colSpan={colValues.length + (showTotals ? 2 : 1)}
-                    className="px-4 py-8 text-center text-xs text-slate-400"
+                    className="px-4 py-8 text-center text-xs text-slate-500"
                   >
                     No matrix data available
                   </td>
@@ -167,7 +167,7 @@ export function PivotTableWidget({ spec, queryResult }: PivotTableWidgetProps) {
                       {formatDisplayValue(colTotals.get(cVal) ?? 0, primaryMeasure.format)}
                     </td>
                   ))}
-                  <td className="px-3 py-2.5 text-right whitespace-nowrap font-mono font-extrabold text-blue-600 bg-slate-100/80">
+                  <td className="px-3 py-2.5 text-right whitespace-nowrap font-mono font-extrabold text-brand-600 bg-slate-100/80">
                     {formatDisplayValue(grandTotal, primaryMeasure.format)}
                   </td>
                 </tr>

@@ -69,7 +69,7 @@ export function FilterBar({
             Filters
           </span>
           {activeFilterCount > 0 && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-800">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-brand-100 text-brand-800">
               {activeFilterCount} active
             </span>
           )}
@@ -111,7 +111,7 @@ export function FilterBar({
                         e.target.value === '' ? undefined : e.target.value
                       )
                     }
-                    className="w-full appearance-none rounded-lg border border-slate-200 bg-slate-50/50 py-1.5 pl-3 pr-8 text-xs text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                    className="w-full appearance-none rounded-lg border border-slate-200 bg-slate-50/50 py-1.5 pl-3 pr-8 text-xs text-slate-800 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all"
                   >
                     <option value="">All {filter.label}</option>
                     {filter.options?.map((opt) => (
@@ -155,7 +155,7 @@ export function FilterBar({
                         : [...selectedVals, val];
                       handleValueChange(filter.id, next.length > 0 ? next : undefined);
                     }}
-                    className="w-full appearance-none rounded-lg border border-slate-200 bg-slate-50/50 py-1.5 pl-3 pr-8 text-xs text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                    className="w-full appearance-none rounded-lg border border-slate-200 bg-slate-50/50 py-1.5 pl-3 pr-8 text-xs text-slate-800 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all"
                   >
                     <option value="">
                       {selectedVals.length > 0
@@ -184,7 +184,7 @@ export function FilterBar({
                     {selectedVals.map((v) => (
                       <span
                         key={v}
-                        className="inline-flex items-center gap-1 rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-700 border border-blue-200/60"
+                        className="inline-flex items-center gap-1 rounded bg-brand-50 px-1.5 py-0.5 text-[11px] font-medium text-brand-700 border border-brand-200/60"
                       >
                         {v}
                         <button
@@ -193,7 +193,7 @@ export function FilterBar({
                             const next = selectedVals.filter((item) => item !== v);
                             handleValueChange(filter.id, next.length > 0 ? next : undefined);
                           }}
-                          className="hover:text-blue-900"
+                          className="hover:text-brand-900"
                           aria-label={`Remove ${v}`}
                         >
                           <X className="h-3 w-3" />
@@ -247,7 +247,7 @@ export function FilterBar({
                         }
                       }}
                       aria-label={`${filter.label} start date`}
-                      className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-2 py-1.5 text-xs text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-2 py-1.5 text-xs text-slate-800 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
                     />
                   </div>
                   <span className="text-xs text-slate-600">to</span>
@@ -268,7 +268,7 @@ export function FilterBar({
                         }
                       }}
                       aria-label={`${filter.label} end date`}
-                      className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-2 py-1.5 text-xs text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-2 py-1.5 text-xs text-slate-800 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
                     />
                   </div>
                 </div>
@@ -310,7 +310,7 @@ export function FilterBar({
                       );
                     }}
                     placeholder={`Search ${filter.label}...`}
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50/50 py-1.5 pl-8 pr-3 text-xs text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50/50 py-1.5 pl-8 pr-3 text-xs text-slate-800 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all"
                   />
                 </div>
               </div>
@@ -355,7 +355,7 @@ export function FilterBar({
                       }
                     }}
                     aria-label={`${filter.label} minimum`}
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-2 py-1.5 text-xs text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-2 py-1.5 text-xs text-slate-800 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
                   />
                   <span className="text-xs text-slate-400">-</span>
                   <input
@@ -375,7 +375,7 @@ export function FilterBar({
                       }
                     }}
                     aria-label={`${filter.label} maximum`}
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-2 py-1.5 text-xs text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-2 py-1.5 text-xs text-slate-800 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
                   />
                 </div>
               </fieldset>

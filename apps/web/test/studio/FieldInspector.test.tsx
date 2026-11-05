@@ -115,7 +115,7 @@ describe('FieldInspector Component', () => {
     expect(screen.getByText('category')).toBeDefined();
 
     // Telemetry badge
-    expect(screen.getByText(/12ms in WASM/i)).toBeDefined();
+    expect(screen.getByText(/Ready in 12ms/i)).toBeDefined();
   });
 
   it('triggers onToggleColumn when a field checkbox is toggled', () => {

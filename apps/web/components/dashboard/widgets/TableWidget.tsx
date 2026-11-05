@@ -105,7 +105,7 @@ export function TableWidget({ spec, queryResult }: TableWidgetProps) {
     <div
       role="region"
       aria-label={spec.title}
-      className="flex flex-col justify-between h-full rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm hover:shadow transition-shadow"
+      className="widget-card flex flex-col justify-between h-full p-5"
     >
       <div>
         {/* Header and Search */}
@@ -120,7 +120,7 @@ export function TableWidget({ spec, queryResult }: TableWidgetProps) {
           {spec.searchable !== false && (
             <div className="relative">
               <Search
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400"
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500"
                 aria-hidden="true"
               />
               <input
@@ -132,7 +132,7 @@ export function TableWidget({ spec, queryResult }: TableWidgetProps) {
                 }}
                 placeholder="Search table..."
                 aria-label="Search table records"
-                className="w-full sm:w-48 pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-slate-50/50 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                className="w-full sm:w-48 pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-slate-50/50 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
               />
             </div>
           )}
@@ -178,9 +178,9 @@ export function TableWidget({ spec, queryResult }: TableWidgetProps) {
                           <span className="text-slate-600">
                             {isSorted ? (
                               sortDir === 'asc' ? (
-                                <ArrowUp className="h-3 w-3 text-blue-600" aria-hidden="true" />
+                                <ArrowUp className="h-3 w-3 text-brand-600" aria-hidden="true" />
                               ) : (
-                                <ArrowDown className="h-3 w-3 text-blue-600" aria-hidden="true" />
+                                <ArrowDown className="h-3 w-3 text-brand-600" aria-hidden="true" />
                               )
                             ) : (
                               <ArrowUpDown className="h-3 w-3 opacity-40 hover:opacity-100" aria-hidden="true" />
@@ -198,7 +198,7 @@ export function TableWidget({ spec, queryResult }: TableWidgetProps) {
                 <tr>
                   <td
                     colSpan={spec.columns.length}
-                    className="px-4 py-8 text-center text-xs text-slate-400"
+                    className="px-4 py-8 text-center text-xs text-slate-500"
                   >
                     No matching records found
                   </td>

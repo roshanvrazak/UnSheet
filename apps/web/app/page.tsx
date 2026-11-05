@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import type { DashboardSpec, SheetModel, WorkbookModel } from '@unsheet/contracts';
+import type { DashboardSpec, SheetModel, WorkbookModel, SheetProfile } from '@unsheet/contracts';
 import {
   parseWorkbook,
   normaliseWorkbook,
@@ -21,11 +21,9 @@ import { StudioNavbar } from '@/components/studio/StudioNavbar';
 import { UploadHero } from '@/components/studio/UploadHero';
 import { FieldInspector } from '@/components/studio/FieldInspector';
 import { FloatingCommandBar } from '@/components/studio/FloatingCommandBar';
+import { PipelineStatus } from '@/components/studio/PipelineStatus';
 import {
   AlertCircle,
-  Clock,
-  CheckCircle2,
-  ArrowRight,
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
@@ -51,7 +49,7 @@ export default function HomePage() {
   const [isSpecRefineOpen, setIsSpecRefineOpen] = useState<boolean>(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
   const [isInspectorOpen, setIsInspectorOpen] = useState<boolean>(true);
-  const [isHeroExpanded, setIsHeroExpanded] = useState<boolean>(true);
+  const [isHeroExpanded, setIsHeroExpanded] = useState<boolean>(false);
 
   // Field selection state
   const [selectedColumnKeys, setSelectedColumnKeys] = useState<Set<string>>(new Set());
@@ -210,17 +208,14 @@ export default function HomePage() {
    */
   const handleFileUpload = async (file: File) => {
     try {
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error('File exceeds the maximum allowed size of 10MB.');
+      }
       let bytes: Uint8Array;
-      const lower = file.name.toLowerCase();
-      if ((lower.endsWith('.csv') || lower.endsWith('.tsv')) && typeof file.text === 'function') {
-        const text = await file.text();
-        bytes = new TextEncoder().encode(text);
-      } else if (typeof file.arrayBuffer === 'function') {
-        const arrayBuffer = await file.arrayBuffer();
-        bytes = new Uint8Array(arrayBuffer);
+      if (typeof file.arrayBuffer === 'function') {
+        bytes = new Uint8Array(await file.arrayBuffer());
       } else if (typeof file.text === 'function') {
-        const text = await file.text();
-        bytes = new TextEncoder().encode(text);
+        bytes = new TextEncoder().encode(await file.text());
       } else {
         throw new Error('Unable to read uploaded file format in this browser');
       }
@@ -232,6 +227,7 @@ export default function HomePage() {
 
   // Load default sample on mount
   useEffect(() => {
+    setIsInspectorOpen(window.matchMedia('(min-width: 1024px)').matches);
     const defaultSample = SAMPLE_WORKBOOKS[0];
     if (defaultSample) {
       handleLoadSample(defaultSample);
@@ -243,13 +239,12 @@ export default function HomePage() {
       ? workbook.sheets[activeSheetIndex]!
       : null;
 
-  const currentProfile = useMemo(() => {
+  const currentProfile = useMemo<SheetProfile>(() => {
     if (!activeSheet) {
       return {
         sheetId: 'default',
         sheetName: 'default',
         rowCount: 0,
-        columnCount: 0,
         columnProfiles: [],
         recommendedDimensions: [],
         recommendedMeasures: [],
@@ -293,6 +288,10 @@ export default function HomePage() {
       const filteredSheetProfile = {
         ...currentProfile,
         columnProfiles: filteredProfiles,
+        recommendedMeasures: currentProfile.recommendedMeasures.filter((key) => selectedColumnKeys.has(key)),
+        recommendedDimensions: currentProfile.recommendedDimensions.filter((key) => selectedColumnKeys.has(key)),
+        recommendedTimeColumn: currentProfile.recommendedTimeColumn && selectedColumnKeys.has(currentProfile.recommendedTimeColumn) ? currentProfile.recommendedTimeColumn : undefined,
+        primaryKeyCandidate: currentProfile.primaryKeyCandidate && selectedColumnKeys.has(currentProfile.primaryKeyCandidate) ? currentProfile.primaryKeyCandidate : undefined,
       };
 
       const newSpec = generateDashboardSpec(filteredSheetProfile, {
@@ -309,8 +308,9 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/70 text-slate-900 flex flex-col font-sans">
-      {/* 1. Glassmorphic Studio Top Navigation */}
+    <div className="studio-shell">
+      <a href="#main-content" className="skip-link">Skip to dashboard</a>
+      {/* Workspace navigation */}
       <StudioNavbar
         workbookName={workbook?.filename}
         activeSheetName={activeSheet?.name}
@@ -325,7 +325,7 @@ export default function HomePage() {
       />
 
       {/* 2. Main Studio Workspace Layout */}
-      <div className="flex-1 flex w-full relative">
+      <div className="studio-layout">
         {/* Left Side Inspector (Sheets & Field Selector) */}
         {workbook && activeSheet && (
           <FieldInspector
@@ -346,7 +346,20 @@ export default function HomePage() {
         )}
 
         {/* Center Dashboard Canvas */}
-        <main className="flex-1 min-w-0 bg-dot-grid flex flex-col p-4 sm:p-6 lg:p-8 space-y-6 pb-28">
+        <main id="main-content" className="studio-main">
+
+          {activeSheet && (
+            <FloatingCommandBar
+              onAskClick={() => setIsAskDrawerOpen(true)}
+              onRefineClick={() => setIsSpecRefineOpen((prev) => !prev)}
+              isRefineOpen={isSpecRefineOpen}
+              sheet={activeSheet}
+              onShareClick={() => setIsShareModalOpen(true)}
+              onToggleInspector={() => setIsInspectorOpen((prev) => !prev)}
+              isInspectorOpen={isInspectorOpen}
+            />
+          )}
+
           {/* Error Banner */}
           {errorMessage && (
             <div
@@ -362,21 +375,22 @@ export default function HomePage() {
           )}
 
           {/* Quick-toggle Hero Ingestion Card */}
-          <section className="space-y-3">
+          <section id="datasets" className="dataset-section" aria-label="Datasets and upload">
             {workbook && (
-              <div className="flex items-center justify-between px-1">
+              <div className="dataset-section-heading">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                    Datasets & Ingestion
+                  <span className="eyebrow">
+                    YOUR DATA, CONNECTED
                   </span>
-                  <span className="text-[11px] text-slate-500 font-mono">
-                    ({workbook.filename})
+                  <span className="dataset-filename">
+                    {workbook.filename}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsHeroExpanded((prev) => !prev)}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
+                  aria-expanded={isHeroExpanded}
+                  className="dataset-collapse"
                 >
                   <span>{isHeroExpanded ? 'Collapse' : 'Switch dataset / Upload'}</span>
                   {isHeroExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -384,75 +398,24 @@ export default function HomePage() {
               </div>
             )}
 
-            {(!workbook || isHeroExpanded) && (
+            <div>
               <UploadHero
                 onFileUpload={handleFileUpload}
                 onSelectSample={handleLoadSample}
                 activeSampleId={activeSampleId}
                 isProcessing={isProcessing}
                 fileInputRef={fileInputRef}
+                showUpload={!workbook || isHeroExpanded}
               />
-            )}
+            </div>
           </section>
 
-          {/* Collapsible Pipeline Timing Bar */}
-          {timing && workbook && (
-            <section
-              role="region"
-              aria-label="Engine pipeline status"
-              className="rounded-xl border border-slate-200/80 bg-white/90 backdrop-blur-xs p-3.5 shadow-xs"
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-indigo-600" aria-hidden="true" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                    Engine Pipeline
-                  </span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200/80">
-                    <CheckCircle2 className="h-3 w-3" />
-                    {timing.totalMs}ms Total
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs">
-                    <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded px-2 py-0.5">
-                      <span className="font-semibold text-slate-700">1. Parse</span>
-                      <span className="font-mono text-[10px] text-slate-500">{timing.parseMs}ms</span>
-                    </div>
-                    <ArrowRight className="h-3 w-3 text-slate-300 hidden sm:block" />
-
-                    <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded px-2 py-0.5">
-                      <span className="font-semibold text-slate-700">2. Normalise</span>
-                      <span className="font-mono text-[10px] text-slate-500">{timing.normaliseMs}ms</span>
-                    </div>
-                    <ArrowRight className="h-3 w-3 text-slate-300 hidden sm:block" />
-
-                    <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded px-2 py-0.5">
-                      <span className="font-semibold text-slate-700">3. Profile</span>
-                      <span className="font-mono text-[10px] text-slate-500">{timing.profileMs}ms</span>
-                    </div>
-                    <ArrowRight className="h-3 w-3 text-slate-300 hidden sm:block" />
-
-                    <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded px-2 py-0.5">
-                      <span className="font-semibold text-slate-700">4. SpecGen</span>
-                      <span className="font-mono text-[10px] text-slate-500">{timing.specGenMs}ms</span>
-                    </div>
-                    <ArrowRight className="h-3 w-3 text-slate-300 hidden sm:block" />
-
-                    <div className="flex items-center gap-1 bg-indigo-50 border border-indigo-200 rounded px-2 py-0.5 text-indigo-700">
-                      <span className="font-bold">5. Render</span>
-                      <span className="font-mono text-[10px] font-semibold">{timing.renderMs}ms</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-          )}
+          {timing && workbook && <PipelineStatus timing={timing} />}
 
           {/* AI Spec Refine Bar */}
           {isSpecRefineOpen && spec && (
             <SpecRefineBar
+              key={`${workbook?.id}_${activeSheet?.id}`}
               currentSpec={spec}
               profile={currentProfile}
               onSpecUpdate={setSpec}
@@ -461,8 +424,8 @@ export default function HomePage() {
 
           {/* Rendered Dashboard Canvas */}
           {isProcessing ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-xs">
-              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-indigo-600 border-r-transparent mb-4"></div>
+            <div role="status" aria-live="polite" className="processing-panel">
+              <div className="processing-spinner"></div>
               <h3 className="text-base font-bold text-slate-800">
                 Profiling spreadsheet & generating dashboard spec...
               </h3>
@@ -471,7 +434,7 @@ export default function HomePage() {
               </p>
             </div>
           ) : spec && activeSheet ? (
-            <section className="rounded-2xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
+            <section id="dashboard" className="dashboard-canvas" aria-label="Dashboard canvas">
               <DashboardRenderer
                 key={`${workbook?.id || 'wb'}_${activeSheet.id}_${spec.id}`}
                 spec={spec}
@@ -482,22 +445,10 @@ export default function HomePage() {
         </main>
       </div>
 
-      {/* 3. Floating Island Action Dock */}
-      {activeSheet && (
-        <FloatingCommandBar
-          onAskClick={() => setIsAskDrawerOpen(true)}
-          onRefineClick={() => setIsSpecRefineOpen((prev) => !prev)}
-          isRefineOpen={isSpecRefineOpen}
-          sheet={activeSheet}
-          onShareClick={() => setIsShareModalOpen(true)}
-          onToggleInspector={() => setIsInspectorOpen((prev) => !prev)}
-          isInspectorOpen={isInspectorOpen}
-        />
-      )}
-
       {/* 4. Natural Language Analytical Drawer */}
       {activeSheet && (
         <AskYourDataDrawer
+          key={`${workbook?.id}_${activeSheet.id}`}
           isOpen={isAskDrawerOpen}
           onClose={() => setIsAskDrawerOpen(false)}
           sheet={activeSheet}

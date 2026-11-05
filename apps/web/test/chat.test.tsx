@@ -100,6 +100,7 @@ describe('Phase 5 Frontend Chat & LLM UI Components (`apps/web/test/chat.test.ts
           interpretedIntent: 'Total revenue grouped by region',
           sql: 'SELECT "region", SUM("revenue") AS "total_revenue" FROM "sales_data" GROUP BY "region" LIMIT 20;',
           explanation: 'Grouped revenue by region successfully.',
+          queryPlan: { id: 'query_test', table: 'sales_data', dimensions: ['region'], aggregations: [{ columnKey: 'revenue', function: 'sum', alias: 'revenue' }] },
           suggestedWidget: {
             id: 'bar_widget_1',
             type: 'bar',
@@ -298,6 +299,7 @@ describe('Phase 5 Frontend Chat & LLM UI Components (`apps/web/test/chat.test.ts
           interpretedIntent: 'Total revenue by region',
           sql: 'SELECT "region", SUM("revenue") AS "total_revenue" FROM "sales_data" GROUP BY "region";',
           explanation: 'Generated query for total revenue.',
+          queryPlan: { id: 'query_test', table: 'sales_data', dimensions: ['region'], aggregations: [{ columnKey: 'revenue', function: 'sum', alias: 'revenue' }] },
           suggestedWidget: {
             id: 'widget_region_bar',
             type: 'bar',
@@ -330,7 +332,7 @@ describe('Phase 5 Frontend Chat & LLM UI Components (`apps/web/test/chat.test.ts
 
     await waitFor(() => {
       // Conversational narrative generated from data rows
-      expect(screen.getByText(/Here is the breakdown for/i)).toBeDefined();
+      expect(screen.getByText(/matching result rows/i)).toBeDefined();
       expect(screen.getByRole('button', { name: /Add & Jump/i })).toBeDefined();
     });
 

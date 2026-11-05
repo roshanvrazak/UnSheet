@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Unsheet',
-  description: 'Deterministic spreadsheet processing engine and dashboard',
+  description: 'Turn spreadsheets into clear, interactive dashboards. Explore your data, ask questions, and find your next insight with Unsheet.',
 };
 
 export default function RootLayout({

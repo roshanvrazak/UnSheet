@@ -13,7 +13,11 @@ export default tseslint.config(
       '**/build/**',
       '**/.next/**',
       '**/coverage/**',
-      '**/*.d.ts'
+      '**/*.d.ts',
+      '.claude/**',
+      '.github/skills/**',
+      '**/playwright-report/**',
+      '**/test-results/**'
     ]
   },
   {

@@ -72,65 +72,25 @@ export function KPIWidget({ spec, queryResult }: KPIWidgetProps) {
   }
 
   return (
-    <div
-      role="region"
-      aria-label={spec.title}
-      className="flex flex-col justify-between h-full rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all"
-    >
+    <div role="region" aria-label={spec.title} className="widget-card metric-card flex h-full flex-col justify-between">
       <div>
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
-              <MetricIcon className="h-3.5 w-3.5" aria-hidden="true" />
-            </div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 line-clamp-1">
-              {spec.title}
-            </h3>
-          </div>
+        <div className="metric-header">
+          <h3>{spec.title}</h3>
+          <span className="metric-icon"><MetricIcon size={15} aria-hidden="true" /></span>
+        </div>
+        <div className="metric-value">{formattedValue}</div>
+      </div>
+      <div className="metric-footer">
+        <div className="space-y-1">
+          <span className="block">{spec.description || 'Across all matching records'}</span>
           {changeBadge && (
-            <span
-              className={cn(
-                'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold',
-                changeBadge.direction === 'positive' &&
-                  'bg-emerald-50 text-emerald-700 border border-emerald-200/60',
-                changeBadge.direction === 'negative' &&
-                  'bg-rose-50 text-rose-700 border border-rose-200/60',
-                changeBadge.direction === 'neutral' &&
-                  'bg-slate-50 text-slate-700 border border-slate-200/60'
-              )}
-            >
-              {changeBadge.direction === 'positive' && (
-                <TrendingUp className="h-3 w-3" aria-hidden="true" />
-              )}
-              {changeBadge.direction === 'negative' && (
-                <TrendingDown className="h-3 w-3" aria-hidden="true" />
-              )}
-              {changeBadge.direction === 'neutral' && (
-                <Minus className="h-3 w-3" aria-hidden="true" />
-              )}
-              <span>{changeBadge.text}</span>
-              {changeBadge.label && (
-                <span className="font-normal opacity-85 ml-1">{changeBadge.label}</span>
-              )}
-            </span>
+          <span className={cn('inline-flex items-center gap-1', changeBadge.direction === 'positive' ? 'text-emerald-700' : changeBadge.direction === 'negative' ? 'text-rose-700' : 'text-slate-600')}>
+            {changeBadge.direction === 'positive' ? <TrendingUp size={13} aria-hidden="true" /> : changeBadge.direction === 'negative' ? <TrendingDown size={13} aria-hidden="true" /> : <Minus size={13} aria-hidden="true" />}
+            <span>{changeBadge.text}</span>{changeBadge.label && <span>{changeBadge.label}</span>}
+          </span>
           )}
         </div>
-
-        <div className="mt-4">
-          <div className="text-3xl font-extrabold tracking-tight text-slate-900 font-mono">
-            {formattedValue}
-          </div>
-          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden mt-3">
-            <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 w-3/4" />
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-        <span className="line-clamp-1">{spec.description}</span>
-        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0 ml-2">
-          {spec.aggregation}
-        </span>
+        <span className="metric-aggregation">{spec.aggregation}</span>
       </div>
     </div>
   );

@@ -16,7 +16,7 @@ export function ExportDropdown({ sheet, disabled = false }: ExportDropdownProps)
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
   const triggerDownload = (content: string | Uint8Array, filename: string, mimeType: string) => {
-    const blobPart: BlobPart = typeof content === 'string' ? content : (content.buffer as ArrayBuffer);
+    const blobPart: BlobPart = typeof content === 'string' ? content : new Uint8Array(content).buffer;
     const blob = new Blob([blobPart], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -32,7 +32,7 @@ export function ExportDropdown({ sheet, disabled = false }: ExportDropdownProps)
     const table: ExportTable = {
       sheetName: sheet.name,
       headers: sheet.headers.originalHeaders,
-      rows: sheet.rows as unknown as ExportRow[],
+      rows: sheet.rows.map((row) => sheet.columns.map((column) => row[column.key])) as ExportRow[],
     };
     const csvContent = exportToCsv(table);
     triggerDownload(csvContent, `${sheet.name}.csv`, 'text/csv;charset=utf-8;');
@@ -43,7 +43,7 @@ export function ExportDropdown({ sheet, disabled = false }: ExportDropdownProps)
     const table: ExportTable = {
       sheetName: sheet.name,
       headers: sheet.headers.originalHeaders,
-      rows: sheet.rows as unknown as ExportRow[],
+      rows: sheet.rows.map((row) => sheet.columns.map((column) => row[column.key])) as ExportRow[],
     };
     const xlsxBytes = exportToXlsx(table);
     triggerDownload(
@@ -122,7 +122,7 @@ export function ExportDropdown({ sheet, disabled = false }: ExportDropdownProps)
             onClick={handleExportJson}
             className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
           >
-            <Code className="h-4 w-4 text-blue-600" />
+            <Code className="h-4 w-4 text-brand-600" />
             <span>Export JSON</span>
           </button>
         </div>

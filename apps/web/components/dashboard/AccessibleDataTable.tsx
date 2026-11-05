@@ -51,7 +51,7 @@ export function AccessibleDataTable({
           onClick={() => setIsOpen((prev) => !prev)}
           aria-expanded={isOpen}
           aria-controls={`accessible-table-${tableId}`}
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded px-1.5 py-1 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-1 rounded px-1.5 py-1 transition-colors"
         >
           {isOpen ? (
             <>
@@ -106,7 +106,7 @@ export function AccessibleDataTable({
           tabIndex={0}
           role="region"
           aria-label={tableCaption}
-          className="mt-2.5 max-h-56 overflow-auto rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="mt-2.5 max-h-56 overflow-auto rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-brand-500"
         >
           <table className="w-full text-left text-xs text-slate-700">
             <caption className="sr-only">{tableCaption}</caption>

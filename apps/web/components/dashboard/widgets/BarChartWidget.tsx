@@ -44,7 +44,7 @@ export function BarChartWidget({ spec, queryResult }: BarChartWidgetProps) {
     <div
       role="region"
       aria-label={spec.title}
-      className="flex flex-col justify-between h-full rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm hover:shadow transition-shadow"
+      className="widget-card flex flex-col justify-between h-full p-5"
     >
       <div>
         <div>
@@ -57,7 +57,7 @@ export function BarChartWidget({ spec, queryResult }: BarChartWidgetProps) {
         {/* Visual Chart */}
         <div className="mt-4 h-64 w-full">
           {rows.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-xs text-slate-400">
+            <div className="flex h-full items-center justify-center text-xs text-slate-500">
               No data available for selected filters
             </div>
           ) : (
@@ -68,16 +68,16 @@ export function BarChartWidget({ spec, queryResult }: BarChartWidgetProps) {
                 margin={{ top: 10, right: 10, left: isHorizontal ? 20 : -10, bottom: 0 }}
               >
                 {spec.showGrid !== false && (
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#edf0e9" />
                 )}
                 {isHorizontal ? (
                   <>
                     <XAxis
                       type="number"
-                      stroke="#94a3b8"
+                      stroke="#647060"
                       fontSize={11}
                       tickLine={false}
-                      axisLine={{ stroke: '#e2e8f0' }}
+                      axisLine={{ stroke: '#e0e5dd' }}
                       tickFormatter={(val: number) =>
                         typeof val === 'number'
                           ? val >= 1000000
@@ -91,10 +91,10 @@ export function BarChartWidget({ spec, queryResult }: BarChartWidgetProps) {
                     <YAxis
                       dataKey={spec.dimension}
                       type="category"
-                      stroke="#94a3b8"
+                      stroke="#647060"
                       fontSize={11}
                       tickLine={false}
-                      axisLine={{ stroke: '#e2e8f0' }}
+                      axisLine={{ stroke: '#e0e5dd' }}
                       width={80}
                     />
                   </>
@@ -102,16 +102,16 @@ export function BarChartWidget({ spec, queryResult }: BarChartWidgetProps) {
                   <>
                     <XAxis
                       dataKey={spec.dimension}
-                      stroke="#94a3b8"
+                      stroke="#647060"
                       fontSize={11}
                       tickLine={false}
-                      axisLine={{ stroke: '#e2e8f0' }}
+                      axisLine={{ stroke: '#e0e5dd' }}
                     />
                     <YAxis
-                      stroke="#94a3b8"
+                      stroke="#647060"
                       fontSize={11}
                       tickLine={false}
-                      axisLine={{ stroke: '#e2e8f0' }}
+                      axisLine={{ stroke: '#e0e5dd' }}
                       tickFormatter={(val: number) =>
                         typeof val === 'number'
                           ? val >= 1000000
@@ -127,7 +127,7 @@ export function BarChartWidget({ spec, queryResult }: BarChartWidgetProps) {
                 <Tooltip
                   contentStyle={{
                     backgroundColor: '#ffffff',
-                    borderColor: '#e2e8f0',
+                    borderColor: '#e0e5dd',
                     borderRadius: '0.5rem',
                     fontSize: '12px',
                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
@@ -140,6 +140,7 @@ export function BarChartWidget({ spec, queryResult }: BarChartWidgetProps) {
                 )}
                 {spec.measures.map((measure, idx) => (
                   <Bar
+                  isAnimationActive={false}
                     key={measure}
                     dataKey={measure}
                     fill={getChartColor(idx)}

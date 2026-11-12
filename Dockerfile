@@ -30,5 +30,8 @@ ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0
 COPY --from=build --chown=node:node /app /app
 USER node
+WORKDIR /app/apps/web
 EXPOSE 3000
-CMD ["pnpm", "--filter", "@unsheet/web", "start"]
+# Call next directly: pnpm 10's verify-deps-before-run hook fails inside the
+# runtime image (prod node_modules, no registry access) and warns on every boot.
+CMD ["./node_modules/.bin/next", "start"]

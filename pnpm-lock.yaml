@@ -25,13 +25,13 @@ importers:
         version: 10.0.0(@types/node@22.20.4)
       '@stryker-mutator/vitest-runner':
         specifier: ^10.0.0
-        version: 10.0.0(@stryker-mutator/core@10.0.0(@types/node@22.20.4))(vitest@3.2.7(@types/node@22.20.4)(happy-dom@20.14.5)(jiti@1.21.7)(jsdom@30.1.1)(supports-color@7.2.0)(tsx@4.23.15))
+        version: 10.0.0(@stryker-mutator/core@10.0.0(@types/node@22.20.4))(vitest@3.2.7(@types/node@22.20.4)(happy-dom@20.14.6)(jiti@1.21.7)(jsdom@30.1.1)(supports-color@7.2.0)(tsx@4.23.15))
       '@types/node':
         specifier: ^22.13.9
         version: 22.20.4
       '@vitest/coverage-v8':
         specifier: ^3.0.7
-        version: 3.2.7(supports-color@7.2.0)(vitest@3.2.7(@types/node@22.20.4)(happy-dom@20.14.5)(jiti@1.21.7)(jsdom@30.1.1)(supports-color@7.2.0)(tsx@4.23.15))
+        version: 3.2.7(supports-color@7.2.0)(vitest@3.2.7(@types/node@22.20.4)(happy-dom@20.14.6)(jiti@1.21.7)(jsdom@30.1.1)(supports-color@7.2.0)(tsx@4.23.15))
       eslint:
         specifier: ^9.21.0
         version: 9.39.5(jiti@1.21.7)(supports-color@7.2.0)
@@ -49,7 +49,7 @@ importers:
         version: 8.71.0(eslint@9.39.5(jiti@1.21.7)(supports-color@7.2.0))(supports-color@7.2.0)(typescript@5.9.3)
       vitest:
         specifier: ^3.0.7
-        version: 3.2.7(@types/node@22.20.4)(happy-dom@20.14.5)(jiti@1.21.7)(jsdom@30.1.1)(supports-color@7.2.0)(tsx@4.23.15)
+        version: 3.2.7(@types/node@22.20.4)(happy-dom@20.14.6)(jiti@1.21.7)(jsdom@30.1.1)(supports-color@7.2.0)(tsx@4.23.15)
 
   apps/web:
     dependencies:
@@ -118,8 +118,8 @@ importers:
         specifier: ^10.4.20
         version: 10.6.1(postcss@8.5.28)
       happy-dom:
-        specifier: ^20.14.5
-        version: 20.14.5
+        specifier: ^20.14.6
+        version: 20.14.6
       jsdom:
         specifier: ^30.1.1
         version: 30.1.1
@@ -2260,8 +2260,8 @@ packages:
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
 
-  happy-dom@20.14.5:
-    resolution: {integrity: sha512-x/RzkpWO40bTjIoT30iQtt64FLLmH/iRcUCN2X//bLx7H3ifkdfPXyqsro/OYtqzIAhiLMMA7mmiOR9C3NOKjQ==}
+  happy-dom@20.14.6:
+    resolution: {integrity: sha512-5DDsf4QmEIlRL6NkCv/fxSjYHHkZceL/IaYQdJc2h3G7DRTEai++VTjbfL0LB9geW2VrA3+vrjF3Efx+OTtX0Q==}
     engines: {node: '>=20.0.0'}
 
   has-flag@3.0.0:
@@ -4505,14 +4505,14 @@ snapshots:
 
   '@stryker-mutator/util@10.0.0': {}
 
-  '@stryker-mutator/vitest-runner@10.0.0(@stryker-mutator/core@10.0.0(@types/node@22.20.4))(vitest@3.2.7(@types/node@22.20.4)(happy-dom@20.14.5)(jiti@1.21.7)(jsdom@30.1.1)(supports-color@7.2.0)(tsx@4.23.15))':
+  '@stryker-mutator/vitest-runner@10.0.0(@stryker-mutator/core@10.0.0(@types/node@22.20.4))(vitest@3.2.7(@types/node@22.20.4)(happy-dom@20.14.6)(jiti@1.21.7)(jsdom@30.1.1)(supports-color@7.2.0)(tsx@4.23.15))':
     dependencies:
       '@stryker-mutator/api': 10.0.0
       '@stryker-mutator/core': 10.0.0(@types/node@22.20.4)
       '@stryker-mutator/util': 10.0.0
       semver: 7.8.5
       tslib: 2.8.1
-      vitest: 3.2.7(@types/node@22.20.4)(happy-dom@20.14.5)(jiti@1.21.7)(jsdom@30.1.1)(supports-color@7.2.0)(tsx@4.23.15)
+      vitest: 3.2.7(@types/node@22.20.4)(happy-dom@20.14.6)(jiti@1.21.7)(jsdom@30.1.1)(supports-color@7.2.0)(tsx@4.23.15)
 
   '@supabase/auth-js@2.117.2':
     dependencies:
@@ -4739,7 +4739,7 @@ snapshots:
       '@typescript-eslint/types': 8.71.0
       eslint-visitor-keys: 5.0.1
 
-  '@vitest/coverage-v8@3.2.7(supports-color@7.2.0)(vitest@3.2.7(@types/node@22.20.4)(happy-dom@20.14.5)(jiti@1.21.7)(jsdom@30.1.1)(supports-color@7.2.0)(tsx@4.23.15))':
+  '@vitest/coverage-v8@3.2.7(supports-color@7.2.0)(vitest@3.2.7(@types/node@22.20.4)(happy-dom@20.14.6)(jiti@1.21.7)(jsdom@30.1.1)(supports-color@7.2.0)(tsx@4.23.15))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 1.0.2
@@ -4754,7 +4754,7 @@ snapshots:
       std-env: 3.10.0
       test-exclude: 7.0.2
       tinyrainbow: 2.0.0
-      vitest: 3.2.7(@types/node@22.20.4)(happy-dom@20.14.5)(jiti@1.21.7)(jsdom@30.1.1)(supports-color@7.2.0)(tsx@4.23.15)
+      vitest: 3.2.7(@types/node@22.20.4)(happy-dom@20.14.6)(jiti@1.21.7)(jsdom@30.1.1)(supports-color@7.2.0)(tsx@4.23.15)
     transitivePeerDependencies:
       - supports-color
 
@@ -5590,7 +5590,7 @@ snapshots:
 
   graceful-fs@4.2.11: {}
 
-  happy-dom@20.14.5:
+  happy-dom@20.14.6:
     dependencies:
       '@types/node': 22.20.4
       '@types/whatwg-mimetype': 3.0.2
@@ -6734,7 +6734,7 @@ snapshots:
       jiti: 1.21.7
       tsx: 4.23.15
 
-  vitest@3.2.7(@types/node@22.20.4)(happy-dom@20.14.5)(jiti@1.21.7)(jsdom@30.1.1)(supports-color@7.2.0)(tsx@4.23.15):
+  vitest@3.2.7(@types/node@22.20.4)(happy-dom@20.14.6)(jiti@1.21.7)(jsdom@30.1.1)(supports-color@7.2.0)(tsx@4.23.15):
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/expect': 3.2.7
@@ -6761,7 +6761,7 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 22.20.4
-      happy-dom: 20.14.5
+      happy-dom: 20.14.6
       jsdom: 30.1.1
     transitivePeerDependencies:
       - jiti
